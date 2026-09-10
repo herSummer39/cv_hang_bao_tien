@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+apps/web/build/
+
+# Production build
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.venv/
+venv/
+dist/
+*.pkl
+*.ubj
+
+# Models (too large for git)
+models/
+data/vietjobs/
+data/cv_synthetic/
+data/labels/
+data/gold/
+
+# Kaggle / HuggingFace secrets
+*.kaggle
+*.hf_token
+
+# Supabase local
+.supabase/
