@@ -1,0 +1,245 @@
+{
+  "contact": {
+    "full_name": "Hạ Chí Tiền",
+    "phone": [
+      "0565567789"
+    ],
+    "email": [
+      "hnak039@gmail.com"
+    ],
+    "github": "https://github.com/tien2922",
+    "linkedin": "",
+    "website": "",
+    "address": ""
+  },
+  "objective": "Sinh viên năm 3 chuyên ngành Công nghệ thông tin có kinh nghiệm thực tế trong việc phát triển, vận hành và tối ưu hóa hệ thống website doanh nghiệp. Thành thạo các nền tảng quản trị nội dung (đặc biệt là WordPress) và các công nghệ web hiện đại. Mong muốn tìm kiếm vị trí Quản lý Website để áp dụng kỹ năng giải quyết vấn đề, tối ưu hiệu suất (UI/UX, tốc độ tải trang), quản trị hosting/server và thiết kế hình ảnh nhằm duy trì hệ thống web hoạt động ổn định, phục vụ tốt nhất cho mục tiêu kinh doanh.",
+  "education": [
+    {
+      "school": "Đại học Bình Dương",
+      "major": "",
+      "degree": "",
+      "start_date": "Tháng 7/2023",
+      "end_date": "nay",
+      "description": []
+    },
+    {
+      "school": "Công nghệ thông tin (Sinh viên năm 3) |",
+      "major": "Tập trung vào kỹ thuật phần mềm, thiết kế hệ thống và quản trị cơ sở dữ liệu. Ứng dụng tư duy logic để giải quyết các vấn đề kỹ thuật trong",
+      "degree": "",
+      "start_date": "07/2023",
+      "end_date": "Hiện tại",
+      "description": [
+        "quá trình vận hành, bảo trì và nâng cấp website."
+      ]
+    }
+  ],
+  "experience": [
+    {
+      "company": "NATAFU Media Agenc",
+      "role": "Web Developer / Frontend Developer",
+      "start_date": "02/2026",
+      "end_date": "04/2026",
+      "description": [
+        "Cấu hình hosting, tên miền và trực tiếp triển khai các sản phẩm website thương mại từ môi trường phát triển lên môi trường thực tế",
+        "(production).",
+        "Quản trị và bảo trì hệ thống website B2B cho nhiều khách hàng doanh nghiệp, đảm bảo website luôn hoạt động ổn định.",
+        "Theo dõi, phát hiện và khắc phục các vấn đề về giao diện (UI/UX), đảm bảo tính tương thích trên đa nền tảng (Responsive) và nâng cao",
+        "trải nghiệm người dùng."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Giao diện Website Doanh nghiệp (Môi Trường Hồng Thái)",
+      "url": "",
+      "start_date": "03/2026",
+      "end_date": "04/2026",
+      "role": "",
+      "tech_stack": [
+        "WordPress",
+        "Flatsome Theme",
+        "UX Builder",
+        "CSS",
+        "HTML5.",
+        "Lập trình toàn bộ giao diện người dùng từ đầu (Full Frontend) sử dụng Flatsome và UX Builder."
+      ],
+      "description": [
+        "Lập trình Frontend",
+        "Website: moitruonghongthai.com",
+        "Mô tả: Cổng thông tin doanh nghiệp được phát triển để giới thiệu các dịch vụ môi trường với giao diện người dùng có tính tương tác cao.Tech",
+        "Thiết kế đáp ứng (Responsive Design): Xây dựng các module hiển thị mượt mà và tùy chỉnh logic CSS, đảm bảo giao diện tương thích hoàn",
+        "toàn trên tất cả các thiết bị di động và máy tính bảng."
+      ]
+    },
+    {
+      "name": "Giao diện Website Doanh nghiệp (Môi Trường Hồng Thái)",
+      "url": "",
+      "start_date": "03/2026",
+      "end_date": "04/2026",
+      "role": "",
+      "tech_stack": [
+        "WordPress",
+        "Flatsome Theme",
+        "UX Builder",
+        "CSS",
+        "HTML5.",
+        "Lập trình toàn bộ giao diện người dùng từ đầu (Full Frontend) sử dụng Flatsome và UX Builder."
+      ],
+      "description": [
+        "Lập trình Frontend",
+        "Website: moitruonghongthai.com",
+        "Mô tả: Cổng thông tin doanh nghiệp được phát triển để giới thiệu các dịch vụ môi trường với giao diện người dùng có tính tương tác cao.Tech",
+        "Thiết kế đáp ứng (Responsive Design): Xây dựng các module hiển thị mượt mà và tùy chỉnh logic CSS, đảm bảo giao diện tương thích hoàn",
+        "toàn trên tất cả các thiết bị di động và máy tính bảng."
+      ]
+    },
+    {
+      "name": "Hệ thống Quản lý Doanh nghiệp (Aviatek)",
+      "url": "",
+      "start_date": "04/2026",
+      "end_date": "Hiện tại",
+      "role": "",
+      "tech_stack": [
+        "Next.js 15",
+        "TypeScript",
+        "Supabase",
+        "PostgreSQL.",
+        "Thiết kế Kiến trúc Hexagonal (Hexagonal Architecture) độc lập để tách biệt logic nghiệp vụ khỏi các framework bên"
+      ],
+      "description": [
+        "Lập trình viên Fullstack",
+        "Website: cong-ty-aviatek1.vercel.app",
+        "Mô tả: Nền tảng quản lý doanh nghiệp toàn diện giúp tinh gọn các hoạt động kinh doanh và phân quyền người dùng.",
+        "ngoài, đảm bảo cấu trúc Ứng dụng Web Tiêu chuẩn dễ bảo trì.",
+        "Cơ sở dữ liệu & Bảo mật: Xây dựng cơ sở dữ liệu mạnh mẽ với hơn 50 bảng PostgreSQL và triển khai hệ thống Kiểm soát truy cập dựa trên",
+        "vai trò (RBAC) 4 lớp bảo mật.",
+        "Tích hợp API: Khai thác và tích hợp Shopee Open API để thiết lập đồng bộ hóa đơn hàng theo thời gian thực"
+      ]
+    },
+    {
+      "name": "Hệ thống Quản lý Doanh nghiệp (Aviatek)",
+      "url": "",
+      "start_date": "04/2026",
+      "end_date": "Hiện tại",
+      "role": "",
+      "tech_stack": [
+        "Next.js 15",
+        "TypeScript",
+        "Supabase",
+        "PostgreSQL.",
+        "Thiết kế Kiến trúc Hexagonal (Hexagonal Architecture) độc lập để tách biệt logic nghiệp vụ khỏi các framework bên"
+      ],
+      "description": [
+        "Lập trình viên Fullstack",
+        "Website: cong-ty-aviatek1.vercel.app",
+        "Mô tả: Nền tảng quản lý doanh nghiệp toàn diện giúp tinh gọn các hoạt động kinh doanh và phân quyền người dùng.",
+        "ngoài, đảm bảo cấu trúc Ứng dụng Web Tiêu chuẩn dễ bảo trì.",
+        "Cơ sở dữ liệu & Bảo mật: Xây dựng cơ sở dữ liệu mạnh mẽ với hơn 50 bảng PostgreSQL và triển khai hệ thống Kiểm soát truy cập dựa trên",
+        "vai trò (RBAC) 4 lớp bảo mật.",
+        "Tích hợp API: Khai thác và tích hợp Shopee Open API để thiết lập đồng bộ hóa đơn hàng theo thời gian thực"
+      ]
+    },
+    {
+      "name": "B2B Industrial Website System (SaniTech)",
+      "url": "",
+      "start_date": "03/2026",
+      "end_date": "04/2026",
+      "role": "",
+      "tech_stack": [
+        "WordPress",
+        "Flatsome Theme",
+        "UX Builder",
+        "PHP",
+        "CSS."
+      ],
+      "description": [
+        "Lập trình viên Web (Web Developer)",
+        "Website: sanitech.vn",
+        "Mô tả: Nền tảng thương mại điện tử B2B hoàn chỉnh được thiết kế cho một doanh nghiệp công nghiệp để trưng bày sản phẩm và kết nối với",
+        "các đối tác kinh doanh.",
+        "Phát triển toàn chu trình (Full-cycle Development): Xây dựng toàn bộ hệ thống website, tùy chỉnh các chức năng cốt lõi để đáp ứng các yêu",
+        "cầu vận hành B2B cụ thể.",
+        "Tối ưu hóa hiệu suất: Triển khai các chiến lược lưu bộ nhớ đệm (caching) và tối ưu hóa tài nguyên đa phương tiện để cải thiện đáng kể tốc độ",
+        "tải trang."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Khác",
+      "items": [
+        "Ngôn Ngữ Lập Trình JavaScript",
+        "TypeScript",
+        "Python",
+        "PHP",
+        "HTML5",
+        "CSS3 .",
+        "Kỹ Năng Mềm Kỹ năng giải quyết vấn đề một cách logic",
+        "làm việc nhóm hiệu quả và giao tiếp rõ ràng. Khả năng thích",
+        "ứng nhanh với các framework (nền tảng) mới và phương pháp làm việc agile (linh hoạt)"
+      ]
+    },
+    {
+      "category": "UI",
+      "items": [
+        "React",
+        "React Native",
+        "Tailwind Css"
+      ]
+    },
+    {
+      "category": "Backend & Database",
+      "items": [
+        "Node.js",
+        "Next.js",
+        "RESTful API",
+        "PostgreSQL",
+        "MySQL ."
+      ]
+    },
+    {
+      "category": "Cloud & Tools",
+      "items": [
+        "AWS ( EC2",
+        "RDS",
+        "ECS )",
+        "Git",
+        "Supabase",
+        "Vercel",
+        "Postman"
+      ]
+    }
+  ],
+  "all_skills_flat": [
+    "Next.js",
+    "RESTful API",
+    "CSS3 .",
+    "RDS",
+    "TypeScript",
+    "HTML5",
+    "React Native",
+    "Kỹ Năng Mềm Kỹ năng giải quyết vấn đề một cách logic",
+    "ECS )",
+    "Tailwind Css",
+    "PHP",
+    "làm việc nhóm hiệu quả và giao tiếp rõ ràng. Khả năng thích",
+    "Vercel",
+    "Ngôn Ngữ Lập Trình JavaScript",
+    "Postman",
+    "Supabase",
+    "AWS ( EC2",
+    "React",
+    "Node.js",
+    "MySQL .",
+    "ứng nhanh với các framework (nền tảng) mới và phương pháp làm việc agile (linh hoạt)",
+    "PostgreSQL",
+    "Python",
+    "Git"
+  ],
+  "awards": [],
+  "languages": [],
+  "activities": [],
+  "references": [],
+  "other": [],
+  "raw_text": "Hạ Chí Tiền\nQuản Lý Website\n 0565567789 ✉ hnak039@gmail.com  github.com/tien2922  Di An,Binh Duong\nMỤC TIÊU NGHỀ NGHIỆP\nSinh viên năm 3 chuyên ngành Công nghệ thông tin có kinh nghiệm thực tế trong việc phát triển, vận hành và tối ưu hóa hệ thống website\ndoanh nghiệp. Thành thạo các nền tảng quản trị nội dung (đặc biệt là WordPress) và các công nghệ web hiện đại. Mong muốn tìm kiếm vị trí\nQuản lý Website để áp dụng kỹ năng giải quyết vấn đề, tối ưu hiệu suất (UI/UX, tốc độ tải trang), quản trị hosting/server và thiết kế hình ảnh\nnhằm duy trì hệ thống web hoạt động ổn định, phục vụ tốt nhất cho mục tiêu kinh doanh.\nHỌC VẤN\nĐại học Bình Dương Tháng 7/2023 - nay\nCông nghệ thông tin (Sinh viên năm 3) | 07/2023 - Hiện tại\nTập trung vào kỹ thuật phần mềm, thiết kế hệ thống và quản trị cơ sở dữ liệu. Ứng dụng tư duy logic để giải quyết các vấn đề kỹ thuật trong\nquá trình vận hành, bảo trì và nâng cấp website.\nKINH NGHIỆM LÀM VIỆC\nNATAFU Media Agenc 02/2026 - 04/2026\nWeb Developer / Frontend Developer\nCấu hình hosting, tên miền và trực tiếp triển khai các sản phẩm website thương mại từ môi trường phát triển lên môi trường thực tế\n(production).\nQuản trị và bảo trì hệ thống website B2B cho nhiều khách hàng doanh nghiệp, đảm bảo website luôn hoạt động ổn định.\nTheo dõi, phát hiện và khắc phục các vấn đề về giao diện (UI/UX), đảm bảo tính tương thích trên đa nền tảng (Responsive) và nâng cao\ntrải nghiệm người dùng.\nKỸ NĂNG\nNgôn Ngữ Lập Trình JavaScript , TypeScript , Python , PHP , HTML5 , CSS3 .\nUI: React , React Native , Tailwind Css\nBackend & Database : Node.js , Next.js , RESTful API , PostgreSQL , MySQL .\nCloud & Tools : AWS ( EC2 , RDS , ECS ) , Git , Supabase , Vercel , Postman\nKỹ Năng Mềm Kỹ năng giải quyết vấn đề một cách logic, làm việc nhóm hiệu quả và giao tiếp rõ ràng. Khả năng thích\nứng nhanh với các framework (nền tảng) mới và phương pháp làm việc agile (linh hoạt)\nSẢN PHẨM\nGiao diện Website Doanh nghiệp (Môi Trường Hồng Thái) | 03/2026 - 04/2026 03/2026 - 04/2026\nLập trình Frontend\nWebsite: moitruonghongthai.com\nMô tả: Cổng thông tin doanh nghiệp được phát triển để giới thiệu các dịch vụ môi trường với giao diện người dùng có tính tương tác cao.Tech\nCông nghệ sử dụng: WordPress, Flatsome Theme, UX Builder, CSS, HTML5.\nPhát triển Frontend: Lập trình toàn bộ giao diện người dùng từ đầu (Full Frontend) sử dụng Flatsome và UX Builder.\nThiết kế đáp ứng (Responsive Design): Xây dựng các module hiển thị mượt mà và tùy chỉnh logic CSS, đảm bảo giao diện tương thích hoàn\ntoàn trên tất cả các thiết bị di động và máy tính bảng.\n\nHệ thống Quản lý Doanh nghiệp (Aviatek) | 04/2026 - Hiện tại 04/2026 - nay\nLập trình viên Fullstack\nWebsite: cong-ty-aviatek1.vercel.app\nMô tả: Nền tảng quản lý doanh nghiệp toàn diện giúp tinh gọn các hoạt động kinh doanh và phân quyền người dùng.\nCông nghệ sử dụng: Next.js 15, TypeScript, Supabase, PostgreSQL.\nKiến trúc hệ thống: Thiết kế Kiến trúc Hexagonal (Hexagonal Architecture) độc lập để tách biệt logic nghiệp vụ khỏi các framework bên\nngoài, đảm bảo cấu trúc Ứng dụng Web Tiêu chuẩn dễ bảo trì.\nCơ sở dữ liệu & Bảo mật: Xây dựng cơ sở dữ liệu mạnh mẽ với hơn 50 bảng PostgreSQL và triển khai hệ thống Kiểm soát truy cập dựa trên\nvai trò (RBAC) 4 lớp bảo mật.\nTích hợp API: Khai thác và tích hợp Shopee Open API để thiết lập đồng bộ hóa đơn hàng theo thời gian thực\nB2B Industrial Website System (SaniTech) 03/2026 - 04/2026\nLập trình viên Web (Web Developer)\nWebsite: sanitech.vn\nMô tả: Nền tảng thương mại điện tử B2B hoàn chỉnh được thiết kế cho một doanh nghiệp công nghiệp để trưng bày sản phẩm và kết nối với\ncác đối tác kinh doanh.\nCông nghệ sử dụng: WordPress, Flatsome Theme, UX Builder, PHP, CSS.\nPhát triển toàn chu trình (Full-cycle Development): Xây dựng toàn bộ hệ thống website, tùy chỉnh các chức năng cốt lõi để đáp ứng các yêu\ncầu vận hành B2B cụ thể.\nTối ưu hóa hiệu suất: Triển khai các chiến lược lưu bộ nhớ đệm (caching) và tối ưu hóa tài nguyên đa phương tiện để cải thiện đáng kể tốc độ\ntải trang."
+}
