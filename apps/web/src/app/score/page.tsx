@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
+import { createClient } from "@/lib/supabase/client";
 
 type Preset = "frontend" | "pm" | "sales";
 
@@ -75,8 +76,48 @@ export default function ScorePage() {
     setJdContent(p.jd);
   }
 
-  function handleAnalyze() {
+  async function handleAnalyze() {
     if (!formReady) return;
+
+    const supabase = createClient();
+    let cvB64: string | null = null;
+    let cvText: string | null = null;
+    let cvFilename: string | null = null;
+
+    // Encode PDF → base64 hoặc dùng raw text
+    if (hasFile && fileInputRef.current?.files?.[0]) {
+      const file = fileInputRef.current.files[0];
+      cvFilename = file.name;
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      bytes.forEach((b) => (binary += String.fromCharCode(b)));
+      cvB64 = btoa(binary);
+    } else if (rawCV.trim()) {
+      cvText = rawCV.trim();
+    }
+
+    // Tạo job trong Supabase
+    const { data, error } = await supabase
+      .from("analysis_jobs")
+      .insert({
+        cv_text: cvText,
+        cv_b64: cvB64,
+        cv_filename: cvFilename,
+        jd_text: jdContent,
+        job_title: jobTitle,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (error || !data?.id) {
+      alert("Lỗi kết nối Supabase: " + (error?.message || "unknown"));
+      return;
+    }
+
+    // Lưu jobId để processing page dùng
+    sessionStorage.setItem("cf_job_id", data.id);
     router.push("/score/processing");
   }
 

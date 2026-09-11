@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
@@ -108,6 +108,33 @@ export default function ResultPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
 
+  // Đọc kết quả thật từ API (lưu trong sessionStorage)
+  const [apiResult, setApiResult] = useState<{
+    score?: number;
+    similarity?: number;
+    strengths?: Array<{title: string; desc: string}>;
+    gaps?: Array<{title: string; desc: string}>;
+    questions?: Array<{id: string; category: string; categoryColor: string; badgeBg: string; duration: string; weight: string; weightColor: string; question: string; expected: string[]; redFlags: string[]}>;
+    job_title?: string;
+    matched_skills?: string[];
+    missing_skills?: string[];
+    cv_exp_years?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("cf_result");
+    console.log("[ResultPage] cf_result from sessionStorage:", raw ? JSON.parse(raw) : null);
+    if (raw) {
+      try { setApiResult(JSON.parse(raw)); } catch (e) { console.error("Parse error:", e); }
+    }
+  }, []);
+
+  // Dùng data thật nếu có, fallback về mock data
+  const strengths = apiResult?.strengths || STRENGTHS;
+  const gaps      = apiResult?.gaps      || GAPS;
+  const questions = apiResult?.questions || QUESTIONS;
+  const finalScore = apiResult?.score ?? 82;
+
   function handleExport() {
     setExportLoading(true);
     setExportDone(false);
@@ -163,7 +190,9 @@ export default function ResultPage() {
                       <span className="material-symbols-outlined text-[18px]">business_center</span>
                       Vị trí tuyển chọn:
                     </span>
-                    <span className="font-semibold text-[#0b1c30]">Kiến trúc sư Frontend Cấp cao (Lead Frontend Architect L6)</span>
+                    <span className="font-semibold text-[#0b1c30]">
+                      {apiResult?.job_title || "Kiến trúc sư Frontend Cấp cao (Lead Frontend Architect L6)"}
+                    </span>
                     <span className="text-[#c4c5d7]">•</span>
                     <span className="text-[#565e74] text-[13px]">Khối Kỹ nghệ Nền tảng Core Banking</span>
                   </div>
@@ -253,7 +282,7 @@ export default function ResultPage() {
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                       <span className="font-[family-name:var(--font-plus-jakarta)] text-[36px] font-bold text-[#004f35] leading-none tracking-tight">
-                        88<span className="text-[16px]">%</span>
+                        {finalScore}<span className="text-[16px]">%</span>
                       </span>
                       <span className="text-[11px] text-[#565e74] uppercase font-semibold">Tương thích</span>
                     </div>

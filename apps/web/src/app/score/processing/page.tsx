@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
+import { createClient } from "@/lib/supabase/client";
 
 const STAGES = [
   {
@@ -42,35 +43,96 @@ export default function ProcessingPage() {
   const [progress, setProgress] = useState(0);
   const [logIndex, setLogIndex] = useState(0);
   const [currentLog, setCurrentLog] = useState(LOG_MESSAGES[0]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const progressTimer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(progressTimer);
-          setTimeout(() => router.push("/score/result"), 800);
-          return 100;
-        }
-        return prev + 1.2;
-      });
-    }, 60);
-
+    // Animation log tuần tự
     const logTimer = setInterval(() => {
       setLogIndex((prev) => {
         const next = (prev + 1) % LOG_MESSAGES.length;
         setCurrentLog(LOG_MESSAGES[next]);
         return next;
       });
-    }, 2000);
+    }, 2500);
 
+    // Animate progress chậm (tối đa 85% trước khi có kết quả)
+    const progressTimer = setInterval(() => {
+      setProgress((p) => Math.min(p + 0.3, 85));
+    }, 150);
+
+    // Poll Supabase chờ worker xử lý xong
+    async function pollJob() {
+      const jobId = sessionStorage.getItem("cf_job_id");
+      if (!jobId) {
+        setError("Không tìm thấy job ID. Vui lòng quay lại và thử lại.");
+        clearInterval(progressTimer);
+        return;
+      }
+
+      const supabase = createClient();
+      let attempts = 0;
+      const maxAttempts = 120; // 10 phút (120 × 5s)
+
+      const poll = setInterval(async () => {
+        attempts++;
+        if (attempts > maxAttempts) {
+          clearInterval(poll);
+          setError("Hết thời gian chờ. Worker có thể đang offline.");
+          clearInterval(progressTimer);
+          return;
+        }
+
+        const { data, error: dbErr } = await supabase
+          .from("analysis_jobs")
+          .select("status, result, error_msg")
+          .eq("id", jobId)
+          .single();
+
+        if (dbErr) return; // Bỏ qua lỗi mạng tạm thời
+
+        if (data?.status === "done" && data.result) {
+          clearInterval(poll);
+          clearInterval(progressTimer);
+          // Lưu kết quả vào sessionStorage để result page dùng
+          sessionStorage.setItem("cf_result", JSON.stringify(data.result));
+          setProgress(100);
+          setTimeout(() => router.push("/score/result"), 800);
+        } else if (data?.status === "error") {
+          clearInterval(poll);
+          clearInterval(progressTimer);
+          setError("Worker báo lỗi: " + (data.error_msg || "Lỗi không xác định"));
+          setProgress(100);
+        }
+        // status === "pending" hoặc "processing" → tiếp tục poll
+      }, 5000); // poll mỗi 5 giây
+
+      return () => clearInterval(poll);
+    }
+
+    pollJob();
     return () => {
-      clearInterval(progressTimer);
       clearInterval(logTimer);
+      clearInterval(progressTimer);
     };
   }, [router]);
 
   const clampedProgress = Math.min(Math.round(progress), 100);
   const isDone = clampedProgress >= 100;
+
+  if (error) {
+    return (
+      <div className="bg-[#f8f9ff] min-h-screen flex flex-col items-center justify-center gap-4">
+        <span className="material-symbols-outlined text-red-500 text-5xl">error</span>
+        <h2 className="text-xl font-bold text-red-600">Lỗi phân tích</h2>
+        <p className="text-gray-600 max-w-md text-center">{error}</p>
+        <p className="text-sm text-gray-400">Kiểm tra FastAPI server đang chạy tại localhost:8000</p>
+        <button onClick={() => window.history.back()}
+          className="px-6 py-2 bg-[#1d4ed8] text-white rounded-xl hover:bg-blue-700 transition">
+          ← Quay lại
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#f8f9ff] min-h-screen flex flex-col">

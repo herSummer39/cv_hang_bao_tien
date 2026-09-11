@@ -73,6 +73,13 @@ def train(mode: str = "dev"):
         BATCH_SIZE  = 8
         BASE_MODEL  = "bkai-foundation-models/vietnamese-bi-encoder"
         logger.info("MODE: DEV (CPU, 50 samples, 1 epoch) — dung de kiem tra code")
+    elif mode == "quick":
+        # Train nhanh tren CPU — 500 samples, 2 epochs, batch 8
+        N_SAMPLES   = 500
+        EPOCHS      = 2
+        BATCH_SIZE  = 8
+        BASE_MODEL  = "bkai-foundation-models/vietnamese-bi-encoder"
+        logger.info("MODE: QUICK (CPU, 500 samples, 2 epochs) — train nhanh bang CPU")
     else:
         # Train thật trên GPU T4 (Kaggle/Colab)
         N_SAMPLES   = None  # Dùng hết
@@ -82,10 +89,18 @@ def train(mode: str = "dev"):
         logger.info("MODE: FULL (GPU, all samples, 5 epochs) — train that")
 
     # ── Load data ─────────────────────────────────────────────────
-    data_path = Path(__file__).parent.parent / "data" / "processed" / "embedding_pairs.json"
-    if not data_path.exists():
+    # Uu tien data that, fallback sang data tong hop neu chua co
+    data_path_real = Path(__file__).parent.parent / "data" / "processed" / "embedding_pairs_real.json"
+    data_path_synth = Path(__file__).parent.parent / "data" / "processed" / "embedding_pairs.json"
+    if data_path_real.exists():
+        data_path = data_path_real
+        logger.info("Dung DATA THAT: embedding_pairs_real.json (6000 cap tu timviec365 + VietJobs)")
+    elif data_path_synth.exists():
+        data_path = data_path_synth
+        logger.info("Dung data tong hop: embedding_pairs.json")
+    else:
         raise FileNotFoundError(
-            f"Chua co data! Chay truoc: python scripts/generate_training_data.py"
+            "Chua co data! Chay truoc: python scripts/build_real_embedding_pairs.py"
         )
 
     train_pairs, val_pairs, eval_pairs = load_data(data_path)
@@ -186,9 +201,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["dev", "full"],
+        choices=["dev", "quick", "full"],
         default="dev",
-        help="dev=CPU test nhanh | full=GPU train that",
+        help="dev=CPU 50 mau | quick=CPU 500 mau | full=GPU train that",
     )
     args = parser.parse_args()
     train(mode=args.mode)
