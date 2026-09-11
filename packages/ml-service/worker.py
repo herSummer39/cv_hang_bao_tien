@@ -82,23 +82,48 @@ def extract_text_from_pdf_b64(b64_str: str) -> str:
 
 # ─── Pipeline AI ─────────────────────────────────────────────────────────────
 
+# Keyword fallback — luôn tìm được skill dù NER thất bại
+TECH_KEYWORDS = [
+    "react", "reactjs", "typescript", "javascript", "next.js", "nextjs", "vue",
+    "angular", "html", "css", "tailwind", "redux", "graphql", "webpack", "vite",
+    "sass", "jquery", "bootstrap", "svelte", "nuxt",
+    "python", "java", "node.js", "nodejs", "fastapi", "django", "flask", "spring",
+    "express", "nestjs", "laravel", "php", "ruby", "golang", "rust", "c++", "c#",
+    "sql", "mysql", "postgresql", "mongodb", "redis", "elasticsearch", "sqlite",
+    "docker", "kubernetes", "aws", "gcp", "azure", "ci/cd", "jenkins", "terraform",
+    "flutter", "react native", "kotlin", "swift", "android", "ios",
+    "machine learning", "deep learning", "tensorflow", "pytorch", "scikit-learn",
+    "pandas", "numpy", "nlp", "git", "rest api", "microservices", "agile", "scrum",
+    "playwright", "jest", "selenium", "figma", "linux", "nginx",
+]
+
+def keyword_extract_skills(text: str) -> list:
+    text_lower = text.lower()
+    return [kw for kw in TECH_KEYWORDS if kw in text_lower]
+
 def extract_skills(text: str) -> list[str]:
-    """M1: trích xuất SKILL entities từ text."""
+    """M1 NER + keyword fallback để đảm bảo luôn lấy được skill."""
     if not text.strip():
         return []
+    # NER
+    ner_skills = []
     try:
-        entities = m1_ner(text[:2000])  # giới hạn 2000 ký tự cho NER
-        return list({e["word"].strip() for e in entities
-                     if e.get("entity_group") in ("SKILL", "B-SKILL", "I-SKILL")
-                     and len(e["word"].strip()) > 1})
+        entities = m1_ner(text[:3000])
+        ner_skills = list({e["word"].replace("##","").replace("@@","").strip()
+                           for e in entities
+                           if e.get("entity_group") in ("SKILL", "B-SKILL", "I-SKILL")
+                           and len(e["word"].strip()) > 1})
     except Exception:
-        return []
+        pass
+    # Keyword fallback
+    kw_skills = keyword_extract_skills(text)
+    return list(set(ner_skills) | set(kw_skills))
 
 def compute_similarity(text_a: str, text_b: str) -> float:
-    """M2: tính cosine similarity giữa 2 đoạn text."""
+    """M2: tính cosine similarity giữa 2 đoạn text đầy đủ."""
     try:
-        emb_a = m2_model.encode(text_a[:512], convert_to_tensor=True)
-        emb_b = m2_model.encode(text_b[:512], convert_to_tensor=True)
+        emb_a = m2_model.encode(text_a[:800], convert_to_tensor=True)
+        emb_b = m2_model.encode(text_b[:800], convert_to_tensor=True)
         return float(util.cos_sim(emb_a, emb_b)[0][0])
     except Exception:
         return 0.0

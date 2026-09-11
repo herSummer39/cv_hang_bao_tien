@@ -90,23 +90,63 @@ def extract_exp_from_jd(text: str):
     if m: y = int(m.group(1)); return y, y + 3
     return 1, 5
 
+# Keyword fallback — đảm bảo luôn extract được skill dù NER thất bại
+TECH_KEYWORDS = [
+    # Frontend
+    "react", "reactjs", "typescript", "javascript", "next.js", "nextjs", "vue",
+    "angular", "html", "css", "tailwind", "redux", "graphql", "webpack", "vite",
+    "sass", "jquery", "bootstrap", "svelte", "nuxt",
+    # Backend
+    "python", "java", "node.js", "nodejs", "fastapi", "django", "flask", "spring",
+    "express", "nestjs", "laravel", "php", "ruby", "golang", "rust", "c++", "c#",
+    # Database
+    "sql", "mysql", "postgresql", "mongodb", "redis", "elasticsearch", "sqlite",
+    "oracle", "dynamodb", "firebase",
+    # DevOps / Cloud
+    "docker", "kubernetes", "aws", "gcp", "azure", "ci/cd", "jenkins", "github actions",
+    "terraform", "ansible", "nginx", "linux",
+    # Mobile
+    "flutter", "react native", "kotlin", "swift", "android", "ios",
+    # AI/ML
+    "machine learning", "deep learning", "tensorflow", "pytorch", "scikit-learn",
+    "pandas", "numpy", "nlp", "computer vision", "llm",
+    # Other
+    "git", "rest api", "microservices", "agile", "scrum", "jira", "figma",
+    "playwright", "jest", "unittest", "selenium",
+    # Vietnamese tech terms
+    "lập trình", "phát triển web", "kiểm thử", "tối ưu",
+]
+
+def keyword_extract_skills(text: str) -> list:
+    """Fallback: tìm tech keyword trong text bất kể ngữ cảnh."""
+    text_lower = text.lower()
+    found = []
+    for kw in TECH_KEYWORDS:
+        if kw in text_lower:
+            # Chuẩn hóa tên hiển thị
+            found.append(kw.title() if kw[0].isupper() or kw in ("react","vue","html","css","sql","aws","gcp","nlp") else kw)
+    return found
+
 def run_ner(text: str) -> dict:
     ner = get_m1()
-    chunks = [text[i:i+400] for i in range(0, min(len(text), 3000), 400)]
+    chunks = [text[i:i+400] for i in range(0, min(len(text), 4000), 400)]
     skills, exps, edus, orgs = [], [], [], []
     for chunk in chunks:
         if not chunk.strip(): continue
         try:
             for e in ner(chunk):
-                word = e["word"].replace("@@", "").strip()
+                word = e["word"].replace("##", "").replace("@@", "").strip()
                 if len(word) < 2: continue
                 eg = e["entity_group"]
                 if eg == "SKILL": skills.append(word)
-                elif eg == "EXP": exps.append(word)
-                elif eg == "EDU": edus.append(word)
-                elif eg == "ORG": orgs.append(word)
+                elif eg == "EXP":  exps.append(word)
+                elif eg == "EDU":  edus.append(word)
+                elif eg == "ORG":  orgs.append(word)
         except Exception: pass
-    return {"skills": list(set(skills)), "experiences": list(set(exps)),
+    # Kết hợp NER + keyword fallback để đảm bảo không bỏ sót
+    kw_skills = keyword_extract_skills(text)
+    all_skills = list(set(skills) | set(kw_skills))
+    return {"skills": all_skills, "experiences": list(set(exps)),
             "educations": list(set(edus)), "organizations": list(set(orgs))}
 
 @app.post("/api/analyze")
@@ -129,9 +169,9 @@ async def analyze(
 
     m2 = get_m2()
     from sentence_transformers.util import cos_sim
-    cv_txt = " ".join(cv_ents["skills"])[:400] or raw_cv[:200]
-    cv_emb = m2.encode(cv_txt)
-    jd_emb = m2.encode(jd_text[:400])
+    # So sánh toàn bộ CV text với JD text (không chỉ skills)
+    cv_emb = m2.encode(raw_cv[:800])
+    jd_emb = m2.encode(jd_text[:800])
     similarity = float(cos_sim(cv_emb, jd_emb).item())
 
     cv_set = set(s.lower() for s in cv_ents["skills"])
