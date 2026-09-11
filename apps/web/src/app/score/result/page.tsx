@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 const STRENGTHS = [
   {
@@ -107,6 +108,8 @@ export default function ResultPage() {
   const [exportDone, setExportDone] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [candidateName, setCandidateName] = useState("");
 
   // Đọc kết quả thật từ API (lưu trong sessionStorage)
   const [apiResult, setApiResult] = useState<{
@@ -119,6 +122,7 @@ export default function ResultPage() {
     matched_skills?: string[];
     missing_skills?: string[];
     cv_exp_years?: number;
+    features?: { skill_ratio?: number; exp_ratio?: number; [key: string]: number | undefined };
   } | null>(null);
 
   useEffect(() => {
@@ -127,13 +131,41 @@ export default function ResultPage() {
     if (raw) {
       try { setApiResult(JSON.parse(raw)); } catch (e) { console.error("Parse error:", e); }
     }
+    setLoaded(true);
   }, []);
 
-  // Dùng data thật nếu có, fallback về mock data
-  const strengths = apiResult?.strengths || STRENGTHS;
-  const gaps      = apiResult?.gaps      || GAPS;
-  const questions = apiResult?.questions || QUESTIONS;
-  const finalScore = apiResult?.score ?? 82;
+  // Lấy tên thật của người dùng đang đăng nhập từ Supabase — không bịa tên ứng viên
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      setCandidateName(data?.full_name ?? user.email?.split("@")[0] ?? "");
+    });
+  }, []);
+
+  // Chỉ dùng data thật từ apiResult — không còn fallback về mock data cố định
+  const strengths = apiResult?.strengths ?? [];
+  const gaps      = apiResult?.gaps      ?? [];
+  const questions = apiResult?.questions ?? [];
+  const finalScore = apiResult?.score ?? 0;
+  const matchedCount = apiResult?.matched_skills?.length ?? 0;
+  const missingCount = apiResult?.missing_skills?.length ?? 0;
+  const totalSkillCount = matchedCount + missingCount;
+  const skillRatioPct = Math.round((apiResult?.features?.skill_ratio ?? 0) * 100);
+  const expFitPct = Math.round(Math.min(apiResult?.features?.exp_ratio ?? 0, 1) * 100);
+  const similarityPct = Math.round((apiResult?.similarity ?? 0) * 100);
+
+  function scoreTier(score: number) {
+    if (score >= 70) return { label: "Độ tương thích cao", badge: "bg-[#85f8c4] text-[#002114]", heading: "Đạt chuẩn năng lực", risk: "Thấp" };
+    if (score >= 40) return { label: "Độ tương thích trung bình", badge: "bg-[#ffe8b8] text-[#5c3b00]", heading: "Cần cải thiện thêm", risk: "Trung bình" };
+    return { label: "Độ tương thích thấp", badge: "bg-[#ffdad6] text-[#93000a]", heading: "Chưa đạt chuẩn", risk: "Cao" };
+  }
+  const tier = scoreTier(finalScore);
 
   function handleExport() {
     setExportLoading(true);
@@ -176,14 +208,13 @@ export default function ResultPage() {
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] font-bold text-[#0b1c30] tracking-tight">
-                      Nguyễn Văn An
+                      {candidateName || "Ứng viên"}
                     </h1>
-                    <span className="px-2 py-0.5 rounded-full bg-[#dce1ff] text-[#001551] text-[11px] font-semibold">
-                      Senior L6 Track
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#d3e4fe] text-[#434655] text-[11px]">
-                      8.5 năm kinh nghiệm
-                    </span>
+                    {typeof apiResult?.cv_exp_years === "number" && (
+                      <span className="px-2 py-0.5 rounded-full bg-[#d3e4fe] text-[#434655] text-[11px]">
+                        {apiResult.cv_exp_years} năm kinh nghiệm (theo CV)
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-[#434655] text-[14px] flex-wrap">
                     <span className="flex items-center gap-1 text-[#0037b0] font-medium">
@@ -191,10 +222,8 @@ export default function ResultPage() {
                       Vị trí tuyển chọn:
                     </span>
                     <span className="font-semibold text-[#0b1c30]">
-                      {apiResult?.job_title || "Kiến trúc sư Frontend Cấp cao (Lead Frontend Architect L6)"}
+                      {apiResult?.job_title || "Chưa xác định"}
                     </span>
-                    <span className="text-[#c4c5d7]">•</span>
-                    <span className="text-[#565e74] text-[13px]">Khối Kỹ nghệ Nền tảng Core Banking</span>
                   </div>
                 </div>
               </div>
@@ -247,6 +276,22 @@ export default function ResultPage() {
           </div>
         </section>
 
+        {loaded && !apiResult && (
+          <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-6">
+            <div className="bg-[#fff4e5] border border-[#ffd9a0] text-[#7a4b00] rounded-xl p-4 text-[13px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span>
+                Không tìm thấy kết quả phân tích thật cho phiên này (worker có thể chưa xử lý xong, hoặc đây là trang cũ). Các số liệu dưới đây sẽ trống cho tới khi có kết quả thật từ hệ thống.
+              </span>
+              <Link
+                href="/score"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-[#0037b0] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors"
+              >
+                Thực hiện đánh giá mới
+              </Link>
+            </div>
+          </section>
+        )}
+
         {/* Metric Tri-Core Bento */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -257,9 +302,9 @@ export default function ResultPage() {
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-[#565e74]">
                     Chỉ số đối soát tổng thể
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#85f8c4] text-[#002114] text-[11px] font-semibold flex items-center gap-1">
+                  <span className={`px-2 py-0.5 rounded-full ${tier.badge} text-[11px] font-semibold flex items-center gap-1`}>
                     <span className="material-symbols-outlined text-[14px]">bolt</span>
-                    Độ tương thích cao
+                    {tier.label}
                   </span>
                 </div>
 
@@ -274,7 +319,7 @@ export default function ResultPage() {
                         fill="transparent"
                         r="40"
                         stroke="#004F35"
-                        strokeDasharray="221.16 251.32"
+                        strokeDasharray={`${((Math.max(0, Math.min(finalScore, 100)) / 100) * 251.33).toFixed(2)} 251.33`}
                         strokeLinecap="round"
                         strokeWidth="10"
                         className="transition-all duration-1000"
@@ -289,10 +334,12 @@ export default function ResultPage() {
                   </div>
                   <div className="flex flex-col min-w-0">
                     <p className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30]">
-                      Đạt chuẩn năng lực
+                      {tier.heading}
                     </p>
                     <p className="text-[13px] text-[#434655] mt-1">
-                      Hồ sơ thỏa mãn 14/16 tiêu chí then chốt của vị trí L6 Frontend Architect.
+                      {totalSkillCount > 0
+                        ? `Hồ sơ khớp ${matchedCount}/${totalSkillCount} kỹ năng trọng yếu của vị trí ${apiResult?.job_title || "này"}.`
+                        : "Chưa có dữ liệu phân tích kỹ năng."}
                     </p>
                   </div>
                 </div>
@@ -301,9 +348,9 @@ export default function ResultPage() {
               {/* Pillar scores */}
               <div className="mt-6 pt-4 bg-[#eff4ff] p-4 rounded-xl space-y-3">
                 {[
-                  { label: "Kỹ thuật chuyên sâu", icon: "terminal", pct: 92, color: "#0037b0", bar: "bg-[#0037b0]" },
-                  { label: "Thâm niên & Dự án thực tế", icon: "history_edu", pct: 85, color: "#004f35", bar: "bg-[#004f35]" },
-                  { label: "Văn hóa & Lối tư duy kỹ nghệ", icon: "groups", pct: 86, color: "#565e74", bar: "bg-[#565e74]" },
+                  { label: "Kỹ năng khớp JD", icon: "terminal", pct: skillRatioPct, color: "#0037b0", bar: "bg-[#0037b0]" },
+                  { label: "Đáp ứng yêu cầu kinh nghiệm", icon: "history_edu", pct: expFitPct, color: "#004f35", bar: "bg-[#004f35]" },
+                  { label: "Tương đồng ngữ nghĩa CV ↔ JD", icon: "psychology", pct: similarityPct, color: "#565e74", bar: "bg-[#565e74]" },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between text-[13px] mb-1">
@@ -332,7 +379,7 @@ export default function ResultPage() {
                     Thế mạnh vượt trội (Strengths)
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-[#85f8c4]/40 text-[#002114] text-[12px] font-semibold">
-                    4 Trụ cột
+                    {strengths.length} Trụ cột
                   </span>
                 </div>
                 <p className="text-[13px] text-[#434655] mb-4">
@@ -351,8 +398,8 @@ export default function ResultPage() {
                 </div>
               </div>
               <div className="mt-4 pt-2 flex items-center justify-between text-[11px] text-[#004f35] bg-[#85f8c4]/20 px-3 py-2 rounded-lg font-semibold">
-                <span>Mức độ tự tin phân tích:</span>
-                <span>96% (Xác thực chéo 4 dự án)</span>
+                <span>Độ tương đồng ngữ nghĩa CV ↔ JD:</span>
+                <span>{similarityPct}%</span>
               </div>
             </div>
 
@@ -365,7 +412,7 @@ export default function ResultPage() {
                     Khoảng trống & Điểm cần xác thực
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-[#ffdad6] text-[#93000a] text-[12px] font-semibold">
-                    3 Điểm chú ý
+                    {gaps.length} Điểm chú ý
                   </span>
                 </div>
                 <p className="text-[13px] text-[#434655] mb-4">
@@ -385,7 +432,7 @@ export default function ResultPage() {
               </div>
               <div className="mt-4 pt-2 flex items-center justify-between text-[11px] text-[#93000a] bg-[#ffdad6]/40 px-3 py-2 rounded-lg font-semibold">
                 <span>Mức độ rủi ro tuyển dụng:</span>
-                <span>Thấp - Trung bình (Có thể đào tạo)</span>
+                <span>{tier.risk}</span>
               </div>
             </div>
           </div>
@@ -403,7 +450,7 @@ export default function ResultPage() {
                   </h2>
                 </div>
                 <p className="text-[14px] text-[#434655] mt-1">
-                  Được cấu trúc hoá tự động dựa trên phân tích ma trận đối soát giữa CV của Nguyễn Văn An và bản mô tả vị trí L6 Frontend Architect.
+                  Được cấu trúc hoá tự động dựa trên phân tích ma trận đối soát giữa CV của {candidateName || "ứng viên"} và bản mô tả vị trí {apiResult?.job_title || "chưa xác định"}.
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
