@@ -1,0 +1,2757 @@
+[
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 1,
+      "jd_exp_min": 4,
+      "jd_exp_max": 9,
+      "exp_ok": 0,
+      "exp_gap": 3,
+      "exp_ratio": 0.25,
+      "m2_similarity": 0.4158913397408918
+    },
+    "score": 54.29,
+    "cv_skills": [
+      "Vue",
+      "Next.js",
+      "CSS",
+      "Angular"
+    ],
+    "jd_skills": [
+      "Next.js",
+      "CSS"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 2,
+      "jd_exp_min": 5,
+      "jd_exp_max": 10,
+      "exp_ok": 0,
+      "exp_gap": 3,
+      "exp_ratio": 0.4,
+      "m2_similarity": 0.570125258258996
+    },
+    "score": 44.98,
+    "cv_skills": [
+      "KPI doanh số",
+      "Quản lý kênh",
+      "B2B Sales"
+    ],
+    "jd_skills": [
+      "KPI doanh số",
+      "CRM",
+      "B2B Sales"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 2,
+      "cv_exp_years": 0,
+      "jd_exp_min": 5,
+      "jd_exp_max": 10,
+      "exp_ok": 0,
+      "exp_gap": 5,
+      "exp_ratio": 0.0,
+      "m2_similarity": 0.16811404572735036
+    },
+    "score": 7.93,
+    "cv_skills": [
+      "Content Marketing",
+      "SEO"
+    ],
+    "jd_skills": [
+      "Java",
+      "Django",
+      "Spring Boot"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 1,
+      "jd_exp_min": 1,
+      "jd_exp_max": 3,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.5900631125195831
+    },
+    "score": 87.21,
+    "cv_skills": [
+      "Excel",
+      "SAP",
+      "Kế toán tổng hợp",
+      "MISA"
+    ],
+    "jd_skills": [
+      "SAP",
+      "Kế toán tổng hợp"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 8,
+      "jd_exp_min": 5,
+      "jd_exp_max": 8,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.6,
+      "m2_similarity": 0.4817012468809642
+    },
+    "score": 67.87,
+    "cv_skills": [
+      "Facebook Ads",
+      "CRM",
+      "SEO"
+    ],
+    "jd_skills": [
+      "Facebook Ads",
+      "SEO",
+      "CRM",
+      "Content Marketing"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 3,
+      "cv_exp_years": 4,
+      "jd_exp_min": 0,
+      "jd_exp_max": 3,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.8565680620927725
+    },
+    "score": 100,
+    "cv_skills": [
+      "CRM",
+      "B2B Sales",
+      "Quản lý kênh"
+    ],
+    "jd_skills": [
+      "CRM",
+      "Quản lý kênh"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.3333333333333333,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 3,
+      "jd_exp_min": 5,
+      "jd_exp_max": 9,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.6,
+      "m2_similarity": 0.773506905826129
+    },
+    "score": 32.96,
+    "cv_skills": [
+      "Content Marketing",
+      "CRM",
+      "Facebook Ads"
+    ],
+    "jd_skills": [
+      "Google Ads",
+      "Facebook Ads",
+      "SEO"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 9,
+      "jd_exp_min": 3,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.38553918880680904
+    },
+    "score": 43.29,
+    "cv_skills": [
+      "SQL",
+      "PostgreSQL",
+      "Redis",
+      "MongoDB",
+      "Spark"
+    ],
+    "jd_skills": [
+      "Báo cáo tài chính",
+      "MISA",
+      "SAP",
+      "Kế toán tổng hợp"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.3333333333333333,
+      "jd_skill_count": 3,
+      "cv_skill_count": 2,
+      "cv_exp_years": 4,
+      "jd_exp_min": 3,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.3333333333333333,
+      "m2_similarity": 0.6268618531646033
+    },
+    "score": 68.01,
+    "cv_skills": [
+      "Next.js",
+      "CSS"
+    ],
+    "jd_skills": [
+      "Next.js",
+      "Angular",
+      "React"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 8,
+      "jd_exp_min": 4,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.1994722922301145
+    },
+    "score": 34.23,
+    "cv_skills": [
+      "CRM",
+      "Đàm phán"
+    ],
+    "jd_skills": [
+      "Spark",
+      "Pandas"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 8,
+      "jd_exp_min": 1,
+      "jd_exp_max": 4,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.7298754113736837
+    },
+    "score": 58.6,
+    "cv_skills": [
+      "Java",
+      "Node.js",
+      "Python",
+      "FastAPI"
+    ],
+    "jd_skills": [
+      "Python",
+      "Spring Boot",
+      "FastAPI",
+      "Django"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 4,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 1,
+      "jd_exp_min": 1,
+      "jd_exp_max": 4,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.4320129481631725
+    },
+    "score": 82.37,
+    "cv_skills": [
+      "SAP",
+      "Excel",
+      "Kế toán tổng hợp",
+      "Báo cáo tài chính",
+      "MISA"
+    ],
+    "jd_skills": [
+      "Kế toán tổng hợp",
+      "Báo cáo tài chính",
+      "Excel",
+      "SAP"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 5,
+      "jd_exp_min": 0,
+      "jd_exp_max": 3,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.03923863198227348
+    },
+    "score": 27.46,
+    "cv_skills": [
+      "B2B Sales",
+      "KPI doanh số",
+      "CRM"
+    ],
+    "jd_skills": [
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "GCP"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 6,
+      "jd_exp_min": 3,
+      "jd_exp_max": 8,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.8319183741848016
+    },
+    "score": 95.3,
+    "cv_skills": [
+      "SAP",
+      "Báo cáo tài chính",
+      "Excel",
+      "MISA",
+      "Kế toán tổng hợp"
+    ],
+    "jd_skills": [
+      "Báo cáo tài chính",
+      "Kế toán tổng hợp"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 2,
+      "jd_exp_min": 3,
+      "jd_exp_max": 6,
+      "exp_ok": 0,
+      "exp_gap": 1,
+      "exp_ratio": 0.6666666666666666,
+      "m2_similarity": 0.03927257233347023
+    },
+    "score": 8.19,
+    "cv_skills": [
+      "Spring Boot",
+      "Java",
+      "Python",
+      "FastAPI",
+      "Django"
+    ],
+    "jd_skills": [
+      "CSS",
+      "TypeScript"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 6,
+      "jd_exp_min": 3,
+      "jd_exp_max": 8,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.5068736495995909
+    },
+    "score": 72.0,
+    "cv_skills": [
+      "B2B Sales",
+      "KPI doanh số"
+    ],
+    "jd_skills": [
+      "Đàm phán",
+      "KPI doanh số"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 8,
+      "jd_exp_min": 5,
+      "jd_exp_max": 10,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.6,
+      "m2_similarity": 0.4773984126370321
+    },
+    "score": 68.7,
+    "cv_skills": [
+      "TypeScript",
+      "React",
+      "Next.js"
+    ],
+    "jd_skills": [
+      "TypeScript",
+      "Angular",
+      "Next.js"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 8,
+      "jd_exp_min": 4,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.4284397898643423
+    },
+    "score": 50.41,
+    "cv_skills": [
+      "CRM",
+      "B2B Sales"
+    ],
+    "jd_skills": [
+      "KPI doanh số",
+      "Quản lý kênh"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.25,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 3,
+      "jd_exp_min": 4,
+      "jd_exp_max": 6,
+      "exp_ok": 0,
+      "exp_gap": 1,
+      "exp_ratio": 0.75,
+      "m2_similarity": 0.7096907551660516
+    },
+    "score": 34.82,
+    "cv_skills": [
+      "Redis",
+      "SQL"
+    ],
+    "jd_skills": [
+      "Pandas",
+      "MongoDB",
+      "SQL",
+      "Spark"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 5,
+      "jd_exp_min": 0,
+      "jd_exp_max": 2,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.629142761309293
+    },
+    "score": 62.47,
+    "cv_skills": [
+      "XGBoost",
+      "PyTorch",
+      "Scikit-learn"
+    ],
+    "jd_skills": [
+      "PyTorch",
+      "XGBoost",
+      "PhoBERT"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.25,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 3,
+      "jd_exp_min": 2,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.5,
+      "m2_similarity": 0.478873416178616
+    },
+    "score": 56.72,
+    "cv_skills": [
+      "Django",
+      "Node.js"
+    ],
+    "jd_skills": [
+      "Java",
+      "Node.js",
+      "Spring Boot",
+      "Python"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.25,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 1,
+      "jd_exp_min": 5,
+      "jd_exp_max": 8,
+      "exp_ok": 0,
+      "exp_gap": 4,
+      "exp_ratio": 0.2,
+      "m2_similarity": 0.5361741061574081
+    },
+    "score": 22.04,
+    "cv_skills": [
+      "KPI doanh số",
+      "CRM"
+    ],
+    "jd_skills": [
+      "B2B Sales",
+      "Đàm phán",
+      "Quản lý kênh",
+      "KPI doanh số"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 2,
+      "cv_skill_count": 3,
+      "cv_exp_years": 4,
+      "jd_exp_min": 0,
+      "jd_exp_max": 2,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.566778269302544
+    },
+    "score": 72.71,
+    "cv_skills": [
+      "Facebook Ads",
+      "Content Marketing",
+      "Google Ads"
+    ],
+    "jd_skills": [
+      "SEO",
+      "Content Marketing"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 6,
+      "jd_exp_min": 1,
+      "jd_exp_max": 3,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.054129174965066834
+    },
+    "score": 22.76,
+    "cv_skills": [
+      "Adobe XD",
+      "Figma",
+      "UI/UX",
+      "Illustrator",
+      "Photoshop"
+    ],
+    "jd_skills": [
+      "MISA",
+      "Kế toán tổng hợp",
+      "Báo cáo tài chính",
+      "Excel"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 2,
+      "jd_exp_min": 1,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.4123931809490944
+    },
+    "score": 72.14,
+    "cv_skills": [
+      "Vue",
+      "Next.js",
+      "React",
+      "CSS"
+    ],
+    "jd_skills": [
+      "TypeScript",
+      "CSS",
+      "Vue",
+      "React"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 5,
+      "jd_exp_min": 2,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.5114617736029046
+    },
+    "score": 69.32,
+    "cv_skills": [
+      "Kubernetes",
+      "Docker",
+      "GCP",
+      "Linux"
+    ],
+    "jd_skills": [
+      "Kubernetes",
+      "CI/CD",
+      "GCP"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 0,
+      "jd_exp_min": 0,
+      "jd_exp_max": 4,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 0.0,
+      "m2_similarity": 0.48928390808623184
+    },
+    "score": 76.97,
+    "cv_skills": [
+      "HRIS",
+      "Tuyển dụng",
+      "C&B",
+      "KPI"
+    ],
+    "jd_skills": [
+      "KPI",
+      "Onboarding",
+      "HRIS",
+      "C&B"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 8,
+      "jd_exp_min": 4,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.08211073589063209
+    },
+    "score": 31.91,
+    "cv_skills": [
+      "Onboarding",
+      "Tuyển dụng",
+      "C&B",
+      "KPI"
+    ],
+    "jd_skills": [
+      "SEO",
+      "Content Marketing",
+      "CRM"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 8,
+      "jd_exp_min": 1,
+      "jd_exp_max": 4,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.11022316688645414
+    },
+    "score": 22.51,
+    "cv_skills": [
+      "Facebook Ads",
+      "CRM"
+    ],
+    "jd_skills": [
+      "Onboarding",
+      "HRIS",
+      "C&B",
+      "KPI"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 7,
+      "jd_exp_min": 3,
+      "jd_exp_max": 8,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.73781361659505
+    },
+    "score": 90.48,
+    "cv_skills": [
+      "Báo cáo tài chính",
+      "MISA",
+      "SAP",
+      "Kế toán tổng hợp"
+    ],
+    "jd_skills": [
+      "Báo cáo tài chính",
+      "Kế toán tổng hợp"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 3,
+      "jd_exp_min": 5,
+      "jd_exp_max": 9,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.6,
+      "m2_similarity": 0.5123203329986441
+    },
+    "score": 35.58,
+    "cv_skills": [
+      "Spark",
+      "Redis"
+    ],
+    "jd_skills": [
+      "PostgreSQL",
+      "Redis",
+      "Spark",
+      "SQL"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 5,
+      "cv_exp_years": 1,
+      "jd_exp_min": 3,
+      "jd_exp_max": 6,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.3333333333333333,
+      "m2_similarity": -0.012056659146734178
+    },
+    "score": 0.63,
+    "cv_skills": [
+      "UI/UX",
+      "Photoshop",
+      "Illustrator",
+      "Adobe XD",
+      "Figma"
+    ],
+    "jd_skills": [
+      "Node.js",
+      "Spring Boot",
+      "Python"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 5,
+      "cv_exp_years": 9,
+      "jd_exp_min": 5,
+      "jd_exp_max": 10,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.8,
+      "m2_similarity": 0.8152845848607075
+    },
+    "score": 88.35,
+    "cv_skills": [
+      "B2B Sales",
+      "Đàm phán",
+      "KPI doanh số",
+      "Quản lý kênh",
+      "CRM"
+    ],
+    "jd_skills": [
+      "KPI doanh số",
+      "CRM",
+      "Đàm phán"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 4,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 4,
+      "jd_exp_min": 1,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.567923768310657
+    },
+    "score": 85.14,
+    "cv_skills": [
+      "Illustrator",
+      "Photoshop",
+      "Adobe XD",
+      "UI/UX",
+      "Figma"
+    ],
+    "jd_skills": [
+      "Photoshop",
+      "Illustrator",
+      "Adobe XD",
+      "Figma"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 6,
+      "jd_exp_min": 2,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.607887117051578
+    },
+    "score": 69.08,
+    "cv_skills": [
+      "Node.js",
+      "Spring Boot",
+      "FastAPI"
+    ],
+    "jd_skills": [
+      "Node.js",
+      "Spring Boot",
+      "Python",
+      "Django"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 2,
+      "cv_exp_years": 6,
+      "jd_exp_min": 3,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.6441147387751253
+    },
+    "score": 52.34,
+    "cv_skills": [
+      "Excel",
+      "Báo cáo tài chính"
+    ],
+    "jd_skills": [
+      "MISA",
+      "Kế toán tổng hợp",
+      "SAP"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 0,
+      "jd_exp_min": 3,
+      "jd_exp_max": 5,
+      "exp_ok": 0,
+      "exp_gap": 3,
+      "exp_ratio": 0.0,
+      "m2_similarity": -0.058026268918999896
+    },
+    "score": 0,
+    "cv_skills": [
+      "Illustrator",
+      "UI/UX",
+      "Adobe XD",
+      "Figma",
+      "Photoshop"
+    ],
+    "jd_skills": [
+      "CSS",
+      "Next.js"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 1,
+      "jd_exp_min": 3,
+      "jd_exp_max": 5,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.3333333333333333,
+      "m2_similarity": 0.2745121305414253
+    },
+    "score": 10.85,
+    "cv_skills": [
+      "PyTorch",
+      "Scikit-learn",
+      "PhoBERT",
+      "XGBoost"
+    ],
+    "jd_skills": [
+      "Illustrator",
+      "UI/UX",
+      "Photoshop"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 9,
+      "jd_exp_min": 1,
+      "jd_exp_max": 4,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": -0.03688951256289688
+    },
+    "score": 13.13,
+    "cv_skills": [
+      "SEO",
+      "CRM"
+    ],
+    "jd_skills": [
+      "Kubernetes",
+      "Docker"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 9,
+      "jd_exp_min": 5,
+      "jd_exp_max": 10,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.8,
+      "m2_similarity": 0.09832722075831365
+    },
+    "score": 29.57,
+    "cv_skills": [
+      "PhoBERT",
+      "TensorFlow",
+      "Scikit-learn"
+    ],
+    "jd_skills": [
+      "Tuyển dụng",
+      "KPI",
+      "C&B"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 5,
+      "jd_exp_min": 0,
+      "jd_exp_max": 4,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.40632607508292656
+    },
+    "score": 59.14,
+    "cv_skills": [
+      "Python",
+      "Java",
+      "Spring Boot"
+    ],
+    "jd_skills": [
+      "Python",
+      "Java",
+      "FastAPI",
+      "Django"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 5,
+      "cv_exp_years": 3,
+      "jd_exp_min": 0,
+      "jd_exp_max": 4,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.840815592001386
+    },
+    "score": 96.9,
+    "cv_skills": [
+      "Google Ads",
+      "Content Marketing",
+      "SEO",
+      "CRM",
+      "Facebook Ads"
+    ],
+    "jd_skills": [
+      "Content Marketing",
+      "Facebook Ads",
+      "Google Ads"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 5,
+      "jd_exp_min": 2,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.1778955139597919
+    },
+    "score": 33.39,
+    "cv_skills": [
+      "Figma",
+      "UI/UX",
+      "Photoshop",
+      "Adobe XD"
+    ],
+    "jd_skills": [
+      "C&B",
+      "HRIS",
+      "KPI"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 3,
+      "cv_exp_years": 3,
+      "jd_exp_min": 3,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.053103015065044196
+    },
+    "score": 31.39,
+    "cv_skills": [
+      "Onboarding",
+      "KPI",
+      "C&B"
+    ],
+    "jd_skills": [
+      "B2B Sales",
+      "CRM"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 1,
+      "jd_exp_min": 5,
+      "jd_exp_max": 8,
+      "exp_ok": 0,
+      "exp_gap": 4,
+      "exp_ratio": 0.2,
+      "m2_similarity": 0.5577739720029933
+    },
+    "score": 43.07,
+    "cv_skills": [
+      "UI/UX",
+      "Illustrator",
+      "Photoshop",
+      "Adobe XD"
+    ],
+    "jd_skills": [
+      "Illustrator",
+      "Adobe XD",
+      "Figma"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 3,
+      "jd_exp_min": 2,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.5,
+      "m2_similarity": 0.5804405345746932
+    },
+    "score": 60.06,
+    "cv_skills": [
+      "CI/CD",
+      "GCP",
+      "AWS"
+    ],
+    "jd_skills": [
+      "Linux",
+      "CI/CD",
+      "AWS",
+      "Docker"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 9,
+      "jd_exp_min": 2,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.139357104303199
+    },
+    "score": 29.98,
+    "cv_skills": [
+      "B2B Sales",
+      "KPI doanh số",
+      "CRM",
+      "Đàm phán"
+    ],
+    "jd_skills": [
+      "Pandas",
+      "MongoDB",
+      "SQL",
+      "Redis"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 2,
+      "jd_exp_min": 1,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": -0.05740954580188498
+    },
+    "score": 36.55,
+    "cv_skills": [
+      "UI/UX",
+      "Adobe XD"
+    ],
+    "jd_skills": [
+      "Django",
+      "Python"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 9,
+      "jd_exp_min": 4,
+      "jd_exp_max": 6,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.20481545612256516
+    },
+    "score": 20.69,
+    "cv_skills": [
+      "KPI doanh số",
+      "Quản lý kênh",
+      "Đàm phán"
+    ],
+    "jd_skills": [
+      "HRIS",
+      "Onboarding",
+      "C&B"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 2,
+      "jd_exp_min": 0,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.1252518523088512
+    },
+    "score": 26.49,
+    "cv_skills": [
+      "Kubernetes",
+      "CI/CD"
+    ],
+    "jd_skills": [
+      "CRM",
+      "SEO"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.25,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 4,
+      "jd_exp_min": 5,
+      "jd_exp_max": 8,
+      "exp_ok": 0,
+      "exp_gap": 1,
+      "exp_ratio": 0.8,
+      "m2_similarity": 0.6125694830521058
+    },
+    "score": 31.21,
+    "cv_skills": [
+      "PyTorch",
+      "XGBoost"
+    ],
+    "jd_skills": [
+      "XGBoost",
+      "Scikit-learn",
+      "TensorFlow",
+      "PhoBERT"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 2,
+      "cv_exp_years": 7,
+      "jd_exp_min": 0,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.7443389956060469
+    },
+    "score": 51.13,
+    "cv_skills": [
+      "SQL",
+      "Pandas"
+    ],
+    "jd_skills": [
+      "Redis",
+      "PostgreSQL",
+      "Spark"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 4,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 3,
+      "jd_exp_min": 5,
+      "jd_exp_max": 7,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.6,
+      "m2_similarity": 0.8997862084387257
+    },
+    "score": 65.88,
+    "cv_skills": [
+      "Scikit-learn",
+      "TensorFlow",
+      "XGBoost",
+      "PhoBERT",
+      "PyTorch"
+    ],
+    "jd_skills": [
+      "XGBoost",
+      "PhoBERT",
+      "TensorFlow",
+      "Scikit-learn"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 6,
+      "jd_exp_min": 2,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.23506675476059272
+    },
+    "score": 34.95,
+    "cv_skills": [
+      "Spark",
+      "Pandas",
+      "MongoDB",
+      "PostgreSQL",
+      "Redis"
+    ],
+    "jd_skills": [
+      "Quản lý kênh",
+      "CRM"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 5,
+      "cv_exp_years": 5,
+      "jd_exp_min": 0,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.8324552920259396
+    },
+    "score": 95.04,
+    "cv_skills": [
+      "Content Marketing",
+      "Facebook Ads",
+      "CRM",
+      "Google Ads",
+      "SEO"
+    ],
+    "jd_skills": [
+      "SEO",
+      "Facebook Ads",
+      "Google Ads"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 4,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 8,
+      "jd_exp_min": 1,
+      "jd_exp_max": 5,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.6190580475361891
+    },
+    "score": 73.44,
+    "cv_skills": [
+      "Figma",
+      "Photoshop",
+      "Illustrator",
+      "UI/UX",
+      "Adobe XD"
+    ],
+    "jd_skills": [
+      "UI/UX",
+      "Figma",
+      "Adobe XD",
+      "Photoshop"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 4,
+      "jd_exp_min": 4,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.6761257045268665
+    },
+    "score": 78.08,
+    "cv_skills": [
+      "Spring Boot",
+      "Django"
+    ],
+    "jd_skills": [
+      "Spring Boot",
+      "Node.js"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 7,
+      "jd_exp_min": 1,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.6756325384402349
+    },
+    "score": 75.44,
+    "cv_skills": [
+      "Photoshop",
+      "UI/UX"
+    ],
+    "jd_skills": [
+      "Illustrator",
+      "Adobe XD",
+      "Photoshop",
+      "UI/UX"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 4,
+      "jd_exp_min": 5,
+      "jd_exp_max": 9,
+      "exp_ok": 0,
+      "exp_gap": 1,
+      "exp_ratio": 0.8,
+      "m2_similarity": 0.31873796130321064
+    },
+    "score": 12.7,
+    "cv_skills": [
+      "MISA",
+      "Kế toán tổng hợp",
+      "SAP"
+    ],
+    "jd_skills": [
+      "KPI doanh số",
+      "CRM",
+      "B2B Sales"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 5,
+      "cv_exp_years": 6,
+      "jd_exp_min": 1,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.421823649548651
+    },
+    "score": 80.53,
+    "cv_skills": [
+      "Illustrator",
+      "Adobe XD",
+      "UI/UX",
+      "Photoshop",
+      "Figma"
+    ],
+    "jd_skills": [
+      "Photoshop",
+      "Adobe XD",
+      "Illustrator"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 8,
+      "jd_exp_min": 3,
+      "jd_exp_max": 5,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.7612219137853213
+    },
+    "score": 74.14,
+    "cv_skills": [
+      "C&B",
+      "Onboarding",
+      "Tuyển dụng",
+      "HRIS",
+      "KPI"
+    ],
+    "jd_skills": [
+      "Onboarding",
+      "Tuyển dụng"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 10,
+      "jd_exp_min": 5,
+      "jd_exp_max": 10,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.33619150869926817
+    },
+    "score": 42.43,
+    "cv_skills": [
+      "Adobe XD",
+      "UI/UX",
+      "Illustrator",
+      "Figma"
+    ],
+    "jd_skills": [
+      "PhoBERT",
+      "Scikit-learn",
+      "PyTorch"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 0,
+      "jd_exp_min": 0,
+      "jd_exp_max": 4,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 0.0,
+      "m2_similarity": 0.29807173258110586
+    },
+    "score": 38.16,
+    "cv_skills": [
+      "Node.js",
+      "Python",
+      "FastAPI",
+      "Django"
+    ],
+    "jd_skills": [
+      "TensorFlow",
+      "Scikit-learn",
+      "PhoBERT",
+      "PyTorch"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 3,
+      "jd_exp_min": 3,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.1297852495883655
+    },
+    "score": 36.69,
+    "cv_skills": [
+      "Đàm phán",
+      "KPI doanh số",
+      "B2B Sales"
+    ],
+    "jd_skills": [
+      "Onboarding",
+      "C&B",
+      "KPI",
+      "Tuyển dụng"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 6,
+      "jd_exp_min": 5,
+      "jd_exp_max": 9,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.2,
+      "m2_similarity": 0.6284179063338933
+    },
+    "score": 71.81,
+    "cv_skills": [
+      "Adobe XD",
+      "Photoshop",
+      "Figma",
+      "UI/UX"
+    ],
+    "jd_skills": [
+      "Adobe XD",
+      "Illustrator",
+      "UI/UX"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 6,
+      "jd_exp_min": 2,
+      "jd_exp_max": 4,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.6829645084778495
+    },
+    "score": 81.4,
+    "cv_skills": [
+      "FastAPI",
+      "Django",
+      "Java"
+    ],
+    "jd_skills": [
+      "Java",
+      "Spring Boot",
+      "Python",
+      "Django"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 4,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 10,
+      "jd_exp_min": 0,
+      "jd_exp_max": 4,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.7943052420050769
+    },
+    "score": 81.62,
+    "cv_skills": [
+      "Angular",
+      "Vue",
+      "Next.js",
+      "React",
+      "TypeScript"
+    ],
+    "jd_skills": [
+      "Angular",
+      "Vue",
+      "React",
+      "Next.js"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 4,
+      "jd_exp_min": 5,
+      "jd_exp_max": 9,
+      "exp_ok": 0,
+      "exp_gap": 1,
+      "exp_ratio": 0.8,
+      "m2_similarity": 0.3021162693022553
+    },
+    "score": 16.66,
+    "cv_skills": [
+      "PyTorch",
+      "PhoBERT",
+      "TensorFlow",
+      "Scikit-learn",
+      "XGBoost"
+    ],
+    "jd_skills": [
+      "HRIS",
+      "Onboarding"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 2,
+      "cv_skill_count": 3,
+      "cv_exp_years": 4,
+      "jd_exp_min": 4,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.6273930138669374
+    },
+    "score": 66.73,
+    "cv_skills": [
+      "Node.js",
+      "FastAPI",
+      "Java"
+    ],
+    "jd_skills": [
+      "FastAPI",
+      "Python"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 9,
+      "jd_exp_min": 1,
+      "jd_exp_max": 3,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.7177019611889696
+    },
+    "score": 32.57,
+    "cv_skills": [
+      "Google Ads",
+      "Content Marketing"
+    ],
+    "jd_skills": [
+      "CRM",
+      "Facebook Ads"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 5,
+      "cv_exp_years": 8,
+      "jd_exp_min": 1,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.6268218784444464
+    },
+    "score": 86.44,
+    "cv_skills": [
+      "TensorFlow",
+      "PyTorch",
+      "PhoBERT",
+      "XGBoost",
+      "Scikit-learn"
+    ],
+    "jd_skills": [
+      "TensorFlow",
+      "PhoBERT",
+      "Scikit-learn"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 3,
+      "jd_exp_min": 3,
+      "jd_exp_max": 8,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.8752775849257135
+    },
+    "score": 81.92,
+    "cv_skills": [
+      "Onboarding",
+      "Tuyển dụng",
+      "C&B"
+    ],
+    "jd_skills": [
+      "Onboarding",
+      "HRIS",
+      "Tuyển dụng",
+      "C&B"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 4,
+      "cv_exp_years": 1,
+      "jd_exp_min": 5,
+      "jd_exp_max": 8,
+      "exp_ok": 0,
+      "exp_gap": 4,
+      "exp_ratio": 0.2,
+      "m2_similarity": 0.7208522336166088
+    },
+    "score": 47.78,
+    "cv_skills": [
+      "Django",
+      "Java",
+      "Python",
+      "Node.js"
+    ],
+    "jd_skills": [
+      "Node.js",
+      "Python",
+      "FastAPI"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 3,
+      "cv_exp_years": 5,
+      "jd_exp_min": 1,
+      "jd_exp_max": 3,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.5386374229878415
+    },
+    "score": 75.8,
+    "cv_skills": [
+      "Linux",
+      "Kubernetes",
+      "Docker"
+    ],
+    "jd_skills": [
+      "Kubernetes",
+      "Linux",
+      "CI/CD",
+      "Docker"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 9,
+      "jd_exp_min": 2,
+      "jd_exp_max": 4,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.4871231007030886
+    },
+    "score": 54.28,
+    "cv_skills": [
+      "Pandas",
+      "SQL",
+      "Redis",
+      "MongoDB"
+    ],
+    "jd_skills": [
+      "Spark",
+      "Pandas"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 10,
+      "jd_exp_min": 0,
+      "jd_exp_max": 2,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.8992933775446634
+    },
+    "score": 73.57,
+    "cv_skills": [
+      "FastAPI",
+      "Java",
+      "Python",
+      "Node.js",
+      "Spring Boot"
+    ],
+    "jd_skills": [
+      "Python",
+      "Django",
+      "Java",
+      "Node.js"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 9,
+      "jd_exp_min": 1,
+      "jd_exp_max": 3,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.46309579415252805
+    },
+    "score": 26.07,
+    "cv_skills": [
+      "Onboarding",
+      "KPI"
+    ],
+    "jd_skills": [
+      "Tuyển dụng",
+      "HRIS"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 3,
+      "jd_exp_min": 3,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.0,
+      "m2_similarity": 0.8137096123900224
+    },
+    "score": 81.61,
+    "cv_skills": [
+      "Onboarding",
+      "KPI",
+      "Tuyển dụng",
+      "HRIS"
+    ],
+    "jd_skills": [
+      "KPI",
+      "C&B",
+      "Onboarding",
+      "HRIS"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 1,
+      "jd_exp_min": 3,
+      "jd_exp_max": 5,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.3333333333333333,
+      "m2_similarity": 0.2722944845959395
+    },
+    "score": 7.07,
+    "cv_skills": [
+      "Java",
+      "Spring Boot",
+      "Django",
+      "Python",
+      "Node.js"
+    ],
+    "jd_skills": [
+      "Tuyển dụng",
+      "KPI"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 5,
+      "jd_exp_min": 0,
+      "jd_exp_max": 3,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": -0.02263491207086929
+    },
+    "score": 31.14,
+    "cv_skills": [
+      "B2B Sales",
+      "Quản lý kênh",
+      "Đàm phán",
+      "CRM"
+    ],
+    "jd_skills": [
+      "MISA",
+      "Kế toán tổng hợp",
+      "Báo cáo tài chính",
+      "SAP"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 0.75,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 10,
+      "jd_exp_min": 5,
+      "jd_exp_max": 9,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.4144765905306342
+    },
+    "score": 71.69,
+    "cv_skills": [
+      "Django",
+      "Java",
+      "Python",
+      "Node.js"
+    ],
+    "jd_skills": [
+      "Node.js",
+      "FastAPI",
+      "Python",
+      "Java"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.25,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 1,
+      "jd_exp_min": 5,
+      "jd_exp_max": 8,
+      "exp_ok": 0,
+      "exp_gap": 4,
+      "exp_ratio": 0.2,
+      "m2_similarity": 0.5880972028517444
+    },
+    "score": 32.67,
+    "cv_skills": [
+      "Google Ads",
+      "CRM"
+    ],
+    "jd_skills": [
+      "Content Marketing",
+      "SEO",
+      "CRM",
+      "Facebook Ads"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 0,
+      "jd_exp_min": 5,
+      "jd_exp_max": 7,
+      "exp_ok": 0,
+      "exp_gap": 5,
+      "exp_ratio": 0.0,
+      "m2_similarity": 0.5360514217731095
+    },
+    "score": 14.26,
+    "cv_skills": [
+      "Spark",
+      "PostgreSQL",
+      "SQL",
+      "MongoDB"
+    ],
+    "jd_skills": [
+      "Pandas",
+      "Redis"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.3333333333333333,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 10,
+      "jd_exp_min": 4,
+      "jd_exp_max": 9,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.6634670535740724
+    },
+    "score": 60.29,
+    "cv_skills": [
+      "PhoBERT",
+      "TensorFlow",
+      "PyTorch"
+    ],
+    "jd_skills": [
+      "TensorFlow",
+      "XGBoost",
+      "Scikit-learn"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 2,
+      "cv_exp_years": 4,
+      "jd_exp_min": 2,
+      "jd_exp_max": 4,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": -0.09613504671534404
+    },
+    "score": 29.97,
+    "cv_skills": [
+      "Docker",
+      "Kubernetes"
+    ],
+    "jd_skills": [
+      "Photoshop",
+      "Adobe XD",
+      "UI/UX"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 5,
+      "jd_exp_min": 4,
+      "jd_exp_max": 9,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.25,
+      "m2_similarity": 0.1866998404429215
+    },
+    "score": 33.74,
+    "cv_skills": [
+      "Docker",
+      "GCP",
+      "CI/CD",
+      "Kubernetes"
+    ],
+    "jd_skills": [
+      "Báo cáo tài chính",
+      "MISA"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 5,
+      "jd_exp_min": 0,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.8222421799073485
+    },
+    "score": 94.84,
+    "cv_skills": [
+      "Tuyển dụng",
+      "Onboarding",
+      "KPI",
+      "C&B"
+    ],
+    "jd_skills": [
+      "KPI",
+      "Onboarding"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 2,
+      "cv_skill_count": 4,
+      "cv_exp_years": 8,
+      "jd_exp_min": 4,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.8529613657900252
+    },
+    "score": 79.59,
+    "cv_skills": [
+      "HRIS",
+      "C&B",
+      "Onboarding",
+      "Tuyển dụng"
+    ],
+    "jd_skills": [
+      "KPI",
+      "Tuyển dụng"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 10,
+      "jd_exp_min": 0,
+      "jd_exp_max": 3,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.3756460702897909
+    },
+    "score": 23.94,
+    "cv_skills": [
+      "Pandas",
+      "Spark"
+    ],
+    "jd_skills": [
+      "PyTorch",
+      "PhoBERT"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 3,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 5,
+      "cv_exp_years": 10,
+      "jd_exp_min": 2,
+      "jd_exp_max": 6,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.6957098784155105
+    },
+    "score": 73.46,
+    "cv_skills": [
+      "Excel",
+      "Kế toán tổng hợp",
+      "Báo cáo tài chính",
+      "SAP",
+      "MISA"
+    ],
+    "jd_skills": [
+      "MISA",
+      "Báo cáo tài chính",
+      "SAP"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 7,
+      "jd_exp_min": 4,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.75,
+      "m2_similarity": 0.12486685182545312
+    },
+    "score": 35.35,
+    "cv_skills": [
+      "FastAPI",
+      "Python",
+      "Django",
+      "Node.js",
+      "Java"
+    ],
+    "jd_skills": [
+      "SEO",
+      "Content Marketing"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 3,
+      "jd_exp_min": 5,
+      "jd_exp_max": 10,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.6,
+      "m2_similarity": 0.3954930113234437
+    },
+    "score": 7.81,
+    "cv_skills": [
+      "Figma",
+      "UI/UX",
+      "Adobe XD"
+    ],
+    "jd_skills": [
+      "MISA",
+      "SAP",
+      "Excel"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 0.6666666666666666,
+      "jd_skill_count": 3,
+      "cv_skill_count": 3,
+      "cv_exp_years": 9,
+      "jd_exp_min": 0,
+      "jd_exp_max": 4,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.43295592713985875
+    },
+    "score": 58.4,
+    "cv_skills": [
+      "Kế toán tổng hợp",
+      "Excel",
+      "SAP"
+    ],
+    "jd_skills": [
+      "Báo cáo tài chính",
+      "Kế toán tổng hợp",
+      "Excel"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 4,
+      "cv_exp_years": 1,
+      "jd_exp_min": 2,
+      "jd_exp_max": 7,
+      "exp_ok": 0,
+      "exp_gap": 1,
+      "exp_ratio": 0.5,
+      "m2_similarity": 0.22174663168065975
+    },
+    "score": 16.18,
+    "cv_skills": [
+      "MISA",
+      "SAP",
+      "Báo cáo tài chính",
+      "Kế toán tổng hợp"
+    ],
+    "jd_skills": [
+      "PostgreSQL",
+      "MongoDB",
+      "Pandas",
+      "Spark"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 2,
+      "jd_exp_min": 1,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.37383413376717345
+    },
+    "score": 39.07,
+    "cv_skills": [
+      "PostgreSQL",
+      "MongoDB"
+    ],
+    "jd_skills": [
+      "Kế toán tổng hợp",
+      "MISA",
+      "SAP",
+      "Excel"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 2,
+      "cv_exp_years": 9,
+      "jd_exp_min": 1,
+      "jd_exp_max": 6,
+      "exp_ok": 0,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": -0.02287361933943924
+    },
+    "score": 15.19,
+    "cv_skills": [
+      "Django",
+      "Spring Boot"
+    ],
+    "jd_skills": [
+      "CRM",
+      "SEO",
+      "Facebook Ads",
+      "Google Ads"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 0,
+      "skill_ratio": 0.0,
+      "jd_skill_count": 4,
+      "cv_skill_count": 5,
+      "cv_exp_years": 3,
+      "jd_exp_min": 2,
+      "jd_exp_max": 7,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 1.5,
+      "m2_similarity": 0.35198716906872907
+    },
+    "score": 42.12,
+    "cv_skills": [
+      "MISA",
+      "Báo cáo tài chính",
+      "SAP",
+      "Excel",
+      "Kế toán tổng hợp"
+    ],
+    "jd_skills": [
+      "Spark",
+      "MongoDB",
+      "Pandas",
+      "PostgreSQL"
+    ],
+    "same_group": false
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 4,
+      "jd_exp_min": 0,
+      "jd_exp_max": 5,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.8370584725261185
+    },
+    "score": 99.35,
+    "cv_skills": [
+      "Illustrator",
+      "UI/UX",
+      "Adobe XD",
+      "Photoshop",
+      "Figma"
+    ],
+    "jd_skills": [
+      "Adobe XD",
+      "Photoshop"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 1,
+      "skill_ratio": 0.5,
+      "jd_skill_count": 2,
+      "cv_skill_count": 2,
+      "cv_exp_years": 8,
+      "jd_exp_min": 1,
+      "jd_exp_max": 6,
+      "exp_ok": 1,
+      "exp_gap": 0,
+      "exp_ratio": 2.0,
+      "m2_similarity": 0.4458567848295467
+    },
+    "score": 68.05,
+    "cv_skills": [
+      "Java",
+      "Python"
+    ],
+    "jd_skills": [
+      "Java",
+      "FastAPI"
+    ],
+    "same_group": true
+  },
+  {
+    "features": {
+      "skill_overlap_count": 2,
+      "skill_ratio": 1.0,
+      "jd_skill_count": 2,
+      "cv_skill_count": 5,
+      "cv_exp_years": 0,
+      "jd_exp_min": 2,
+      "jd_exp_max": 4,
+      "exp_ok": 0,
+      "exp_gap": 2,
+      "exp_ratio": 0.0,
+      "m2_similarity": 0.8195881438058028
+    },
+    "score": 61.64,
+    "cv_skills": [
+      "React",
+      "TypeScript",
+      "Angular",
+      "Next.js",
+      "Vue"
+    ],
+    "jd_skills": [
+      "Angular",
+      "Vue"
+    ],
+    "same_group": true
+  }
+]
