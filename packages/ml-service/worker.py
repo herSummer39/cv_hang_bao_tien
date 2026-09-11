@@ -57,8 +57,10 @@ log.info("  ✅ M2 Embedding loaded")
 # M3 — XGBoost Scorer
 import pickle, numpy as np
 with open(M3_PATH, "rb") as f:
-    m3_model = pickle.load(f)
-log.info("  ✅ M3 XGBoost loaded")
+    _m3_data = pickle.load(f)
+m3_model = _m3_data["model"]
+m3_keys  = _m3_data["feature_keys"]  # thu tu feature luc train - PHAI dung dung thu tu nay khi predict
+log.info(f"  ok M3 XGBoost loaded (features: {m3_keys})")
 
 log.info("✅ Tất cả models sẵn sàng!\n")
 
@@ -128,12 +130,19 @@ def compute_similarity(text_a: str, text_b: str) -> float:
     except Exception:
         return 0.0
 
-def compute_score(skill_overlap: float, exp_ok: int, exp_gap: float, similarity: float) -> float:
-    """M3: tính điểm tổng thể."""
+def compute_score(features: dict, similarity: float) -> float:
+    """M3: tinh diem tong the.
+
+    QUAN TRONG: model M3 duoc train (xem scripts/train_m3_xgboost.py) voi dung 11 feature
+    theo thu tu luu trong m3_keys. Neu build sai so luong/thu tu feature, XGBoost se raise
+    loi shape-mismatch va bi nuot boi except o duoi -> diem luon roi ve similarity*100,
+    bo qua hoan toan skill/kinh nghiem. Day chinh la loi cu da fix o day.
+    """
     try:
-        features = np.array([[skill_overlap, exp_ok, exp_gap, similarity]])
-        return float(m3_model.predict(features)[0])
-    except Exception:
+        x = np.array([[features[k] for k in m3_keys]])
+        return float(m3_model.predict(x)[0])
+    except Exception as e:
+        log.warning(f"M3 predict loi, fallback ve similarity*100: {e}")
         return similarity * 100
 
 def extract_exp_years(text: str) -> float:
@@ -147,39 +156,68 @@ def extract_exp_years(text: str) -> float:
             return float(m.group(1))
     return 0.0
 
-def extract_required_exp(jd_text: str) -> float:
-    """Trích xuất số năm kinh nghiệm yêu cầu từ JD."""
+def extract_exp_range_from_jd(jd_text: str) -> tuple[float, float]:
+    """Trich xuat khoang so nam kinh nghiem yeu cau tu JD -> (jd_exp_min, jd_exp_max).
+
+    Model M3 train tren 2 feature rieng jd_exp_min / jd_exp_max (khong phai 1 so duy nhat),
+    nen ham nay phai tra ve ca khoang, khong chi 1 gia tri nhu ban cu.
+    """
     import re
-    patterns = [r"(?:ít nhất|tối thiểu|minimum|at least)[^\d]*(\d+)\s*(?:năm|years?)",
-                r"(\d+)\+?\s*(?:năm|years?)\s*(?:kinh nghiệm|experience)"]
-    for pat in patterns:
-        m = re.search(pat, jd_text, re.IGNORECASE)
-        if m:
-            return float(m.group(1))
-    return 2.0
+    m = re.search(r"(\d+)\s*[-–]\s*(\d+)\s*(?:năm|years?)", jd_text, re.IGNORECASE)
+    if m:
+        return float(m.group(1)), float(m.group(2))
+    m = re.search(r"(\d+)\+?\s*năm\s*(?:trở lên|trở đi)", jd_text, re.IGNORECASE)
+    if m:
+        y = float(m.group(1))
+        return y, y + 5
+    m = re.search(r"(?:ít nhất|tối thiểu|minimum|at least)[^\d]*(\d+)\s*(?:năm|years?)", jd_text, re.IGNORECASE)
+    if m:
+        y = float(m.group(1))
+        return y, y + 3
+    m = re.search(r"(\d+)\+?\s*(?:năm|years?)\s*(?:kinh nghiệm|experience)", jd_text, re.IGNORECASE)
+    if m:
+        y = float(m.group(1))
+        return y, y + 3
+    return 2.0, 5.0
 
 def analyze(cv_text: str, jd_text: str, job_title: str) -> dict:
-    """Chạy toàn bộ pipeline M1→M2→M3 và trả về kết quả."""
-    # Trích xuất skills
+    """Chay toan bo pipeline M1->M2->M3 va tra ve ket qua."""
+    # Trich xuat skills
     cv_skills  = set(extract_skills(cv_text))
     jd_skills  = set(extract_skills(jd_text))
 
     # Overlap
-    matched    = list(cv_skills & jd_skills)
-    missing    = list(jd_skills - cv_skills)
-    skill_overlap = len(matched) / max(len(jd_skills), 1)
+    matched = list(cv_skills & jd_skills)
+    missing = list(jd_skills - cv_skills)
+    skill_overlap_count = len(matched)
+    skill_ratio          = skill_overlap_count / max(len(jd_skills), 1)
 
-    # Kinh nghiệm
-    cv_exp  = extract_exp_years(cv_text)
-    req_exp = extract_required_exp(jd_text)
-    exp_ok  = 1 if cv_exp >= req_exp else 0
-    exp_gap = max(0.0, req_exp - cv_exp)
+    # Kinh nghiem
+    cv_exp = extract_exp_years(cv_text)
+    jd_exp_min, jd_exp_max = extract_exp_range_from_jd(jd_text)
+    req_exp = jd_exp_min  # giu lai ten cu cho phan build strengths/gaps/questions phia duoi
+    exp_ok  = 1 if jd_exp_min <= cv_exp <= jd_exp_max + 2 else 0
+    exp_gap = max(0.0, jd_exp_min - cv_exp)
+    exp_ratio = min(cv_exp / max(jd_exp_min, 1), 2.0)
 
     # M2 similarity
     similarity = compute_similarity(cv_text[:512], jd_text[:512])
 
-    # M3 score (0–100)
-    raw_score = compute_score(skill_overlap, exp_ok, exp_gap, similarity)
+    # M3 score (0-100) - feature vector day du 11 chieu, dung thu tu luc train
+    features = {
+        "skill_overlap_count": skill_overlap_count,
+        "skill_ratio": skill_ratio,
+        "jd_skill_count": len(jd_skills),
+        "cv_skill_count": len(cv_skills),
+        "cv_exp_years": cv_exp,
+        "jd_exp_min": jd_exp_min,
+        "jd_exp_max": jd_exp_max,
+        "exp_ok": exp_ok,
+        "exp_gap": exp_gap,
+        "exp_ratio": exp_ratio,
+        "m2_similarity": similarity,
+    }
+    raw_score = compute_score(features, similarity)
     score = max(0.0, min(100.0, raw_score))
 
     # Build strengths / gaps / questions
@@ -267,6 +305,7 @@ def analyze(cv_text: str, jd_text: str, job_title: str) -> dict:
         "strengths": strengths or [{"title": "Đang phân tích...", "desc": "Cần thêm thông tin trong CV."}],
         "gaps": gaps or [{"title": "Không phát hiện khoảng trống rõ ràng", "desc": "CV khá phù hợp với JD."}],
         "questions": questions,
+        "features": features,
     }
 
 # ─── Main Loop ───────────────────────────────────────────────────────────────

@@ -339,7 +339,7 @@ export default function ResultPage() {
                   Các năng lực được minh chứng rõ ràng thông qua sản phẩm quy mô lớn trong CV:
                 </p>
                 <div className="space-y-2">
-                  {STRENGTHS.map((s) => (
+                  {strengths.map((s) => (
                     <div key={s.title} className="p-3 rounded-lg bg-[#eff4ff] flex items-start gap-2">
                       <span className="material-symbols-outlined text-[#004f35] text-[18px] shrink-0 mt-0.5">verified</span>
                       <div className="min-w-0">
@@ -372,7 +372,7 @@ export default function ResultPage() {
                   Những vùng thông tin thiếu hụt hoặc cần đối thoại làm rõ ở vòng Phỏng vấn Chuyên sâu:
                 </p>
                 <div className="space-y-2">
-                  {GAPS.map((g) => (
+                  {gaps.map((g) => (
                     <div key={g.title} className="p-3 rounded-lg bg-[#ffdad6]/20 flex items-start gap-2">
                       <span className="material-symbols-outlined text-[#ba1a1a] text-[18px] shrink-0 mt-0.5">pending_actions</span>
                       <div className="min-w-0">
@@ -419,7 +419,7 @@ export default function ResultPage() {
             </div>
 
             <div className="space-y-6">
-              {QUESTIONS.map((q) => (
+              {questions.map((q) => (
                 <div key={q.id} className="bg-[#eff4ff] rounded-xl p-6 transition-all hover:shadow-md">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2">
