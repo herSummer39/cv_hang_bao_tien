@@ -82,26 +82,85 @@ def extract_text_from_pdf_b64(b64_str: str) -> str:
         log.warning(f"PDF extract error: {e}")
         return ""
 
-# ─── Pipeline AI ─────────────────────────────────────────────────────────────
-
-# Keyword fallback — luôn tìm được skill dù NER thất bại
-TECH_KEYWORDS = [
+# Keyword fallback đa ngành — luôn tìm được skill dù NER thất bại
+# ~25 từ/ngành, 11 ngành — cân bằng với SKILLS_BY_INDUSTRY trong generate_ner_data.py
+ALL_DOMAIN_KEYWORDS = [
+    # IT
     "react", "reactjs", "typescript", "javascript", "next.js", "nextjs", "vue",
     "angular", "html", "css", "tailwind", "redux", "graphql", "webpack", "vite",
-    "sass", "jquery", "bootstrap", "svelte", "nuxt",
     "python", "java", "node.js", "nodejs", "fastapi", "django", "flask", "spring",
-    "express", "nestjs", "laravel", "php", "ruby", "golang", "rust", "c++", "c#",
-    "sql", "mysql", "postgresql", "mongodb", "redis", "elasticsearch", "sqlite",
+    "express", "nestjs", "laravel", "php", "golang", "rust", "c++", "c#",
+    "sql", "mysql", "postgresql", "mongodb", "redis", "elasticsearch",
     "docker", "kubernetes", "aws", "gcp", "azure", "ci/cd", "jenkins", "terraform",
-    "flutter", "react native", "kotlin", "swift", "android", "ios",
-    "machine learning", "deep learning", "tensorflow", "pytorch", "scikit-learn",
-    "pandas", "numpy", "nlp", "git", "rest api", "microservices", "agile", "scrum",
-    "playwright", "jest", "selenium", "figma", "linux", "nginx",
+    "flutter", "react native", "kotlin", "swift", "machine learning", "deep learning",
+    "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy", "git", "rest api",
+    "microservices", "agile", "scrum", "linux", "nginx", "figma",
+    # Marketing
+    "seo", "google ads", "facebook ads", "tiktok ads", "content marketing",
+    "email marketing", "google analytics", "canva", "copywriting",
+    "social media marketing", "influencer marketing", "brand management",
+    "media planning", "market research", "a/b testing", "hubspot",
+    "mailchimp", "youtube ads", "affiliate marketing", "landing page",
+    "kpi marketing", "adobe premiere", "digital marketing", "pr",
+    # Kế toán / Tài chính
+    "misa", "sap", "excel", "kế toán tổng hợp", "báo cáo tài chính",
+    "kế toán thuế", "kiểm toán", "phân tích tài chính", "lập ngân sách",
+    "ifrs", "vas", "kế toán kho", "kế toán công nợ", "kế toán lương",
+    "hóa đơn điện tử", "quyết toán thuế", "oracle finance", "quickbooks",
+    "tài chính doanh nghiệp", "dòng tiền", "kế toán ngân hàng",
+    "balance sheet", "p&l", "định giá tài sản",
+    # Nhân sự / HR
+    "tuyển dụng", "c&b", "onboarding", "hris", "đào tạo phát triển",
+    "lương thưởng", "kpi", "okr", "đánh giá hiệu suất", "phúc lợi nhân viên",
+    "quan hệ lao động", "hợp đồng lao động", "headhunting", "linkedin recruiter",
+    "bhxh", "talent management", "hr analytics", "employee engagement",
+    "succession planning", "job description", "quản trị nhân sự",
+    # Kinh doanh / Sales
+    "b2b sales", "đàm phán hợp đồng", "quản lý kênh phân phối",
+    "salesforce", "pipeline sales", "cold calling", "telesales",
+    "account management", "business development", "proposal", "báo giá",
+    "hợp đồng thương mại", "upselling", "cross-selling", "b2c sales",
+    "retail sales", "quản lý đại lý", "crm", "target doanh số",
+    # Thiết kế
+    "adobe xd", "photoshop", "illustrator", "indesign",
+    "ui/ux", "wireframing", "prototyping", "user research", "typography",
+    "brand identity", "visual design", "motion graphics", "after effects",
+    "logo design", "packaging design", "web design", "design system",
+    "color theory", "sketch", "zeplin", "framer",
+    # Logistics / Xuất nhập khẩu
+    "xuất nhập khẩu", "hải quan", "incoterms", "vận tải biển", "vận tải hàng không",
+    "quản lý kho", "wms", "customs clearance", "bill of lading",
+    "freight forwarding", "supply chain", "procurement",
+    "last mile delivery", "3pl", "sap mm", "quản lý nhà cung cấp",
+    "transport management", "logistics planning", "erp logistics",
+    # Kỹ thuật / Xây dựng
+    "autocad", "revit", "solidworks", "matlab", "plc", "scada",
+    "dự toán công trình", "thiết kế kết cấu", "cơ khí chế tạo",
+    "điện công nghiệp", "hệ thống hvac", "an toàn lao động",
+    "iso 14001", "qa/qc", "hàn", "bim", "thi công",
+    "giám sát công trình", "kỹ thuật điện", "kỹ thuật cơ khí", "mep",
+    # Y tế
+    "dược lâm sàng", "điều dưỡng", "chẩn đoán hình ảnh", "y học cổ truyền",
+    "xét nghiệm y khoa", "gmp", "gdp", "dược phẩm",
+    "quản lý phòng khám", "vật lý trị liệu", "emr", "quản lý bệnh viện",
+    "kiểm soát nhiễm khuẩn", "nghiên cứu lâm sàng", "dược điển",
+    "y học dự phòng", "tư vấn dinh dưỡng", "chăm sóc bệnh nhân",
+    # Giáo dục
+    "giáo án", "quản lý lớp học", "phương pháp giảng dạy", "chương trình học",
+    "e-learning", "lms", "moodle", "google classroom", "thiết kế khóa học",
+    "đào tạo doanh nghiệp", "huấn luyện viên", "mentor",
+    "kỹ năng mềm", "stem", "ielts teaching", "blended learning",
+    # Nhà hàng / Khách sạn
+    "quản lý nhà hàng", "phục vụ bàn", "quản lý khách sạn", "lễ tân",
+    "housekeeping", "f&b", "bartending", "barista", "quản lý bếp",
+    "pms hotel", "tour guide", "event management",
+    "revenue management", "ota", "du lịch lữ hành",
+    "hội nghị hội thảo", "nghiệp vụ lưu trú", "vệ sinh an toàn thực phẩm",
 ]
 
 def keyword_extract_skills(text: str) -> list:
     text_lower = text.lower()
-    return [kw for kw in TECH_KEYWORDS if kw in text_lower]
+    return [kw for kw in ALL_DOMAIN_KEYWORDS if kw in text_lower]
 
 def extract_skills(text: str) -> list[str]:
     """M1 NER + keyword fallback để đảm bảo luôn lấy được skill."""

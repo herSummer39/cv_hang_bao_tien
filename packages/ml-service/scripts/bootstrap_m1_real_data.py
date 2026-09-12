@@ -22,13 +22,91 @@ from transformers import pipeline
 
 random.seed(42)
 
-# -- Duong dan ---------------------------------------------------------------
+# ─ Đư᨝ng dẫn ───────────────────────────────────────────────────────────────
 KAGGLE_CSV = Path("E:/datasets/kaggle/phamtheds/job-dataset-for-recommendation/versions/1/USER_DATA_FINAL.csv")
 M1_MODEL   = Path(__file__).parent.parent / "models" / "m1_ner" / "final"
 OUT_DIR    = Path(__file__).parent.parent / "data" / "ner"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-CONFIDENCE_THRESHOLD = 0.80  # Chi giu du doan tu tin >= 80%
+CONFIDENCE_THRESHOLD = 0.80  # Chỉ giữ dự đoán tự tin >= 80%
+
+# ─ Từ điển skill đa ngành để gán nhãn trực tiếp (bypass bias) ──────────────────
+DOMAIN_SKILL_DICT = {
+    # Marketing
+    "seo", "google ads", "facebook ads", "tiktok ads", "content marketing",
+    "email marketing", "google analytics", "canva", "copywriting",
+    "social media marketing", "brand management", "media planning", "market research",
+    "hubspot", "mailchimp", "digital marketing", "affiliate marketing",
+    # Kế toán / Tài chính
+    "misa", "kế toán tổng hợp", "báo cáo tài chính", "kế toán thuế",
+    "kiểm toán", "phân tích tài chính", "lập ngân sách",
+    "ifrs", "vas", "kế toán kho", "kế toán công nợ", "kế toán lương",
+    "hóa đơn điện tử", "quyết toán thuế", "tài chính doanh nghiệp",
+    # Nhân sự / HR
+    "tuyển dụng", "c&b", "onboarding", "hris", "đào tạo phát triển",
+    "lương thưởng", "okr", "đánh giá hiệu suất", "phúc lợi nhân viên",
+    "quan hệ lao động", "hợp đồng lao động", "headhunting", "bhxh",
+    "talent management", "hr analytics", "employee engagement",
+    # Kinh doanh / Sales
+    "b2b sales", "đàm phán hợp đồng", "quản lý kênh phân phối",
+    "pipeline sales", "cold calling", "telesales", "account management",
+    "business development", "upselling", "cross-selling", "b2c sales", "retail sales",
+    # Thiết kế
+    "wireframing", "prototyping", "user research",
+    "brand identity", "visual design", "motion graphics", "logo design",
+    "design system", "color theory", "indesign",
+    # Logistics
+    "xuất nhập khẩu", "hải quan", "incoterms", "vận tải biển",
+    "quản lý kho", "wms", "customs clearance", "bill of lading",
+    "freight forwarding", "supply chain", "procurement",
+    "last mile delivery", "3pl", "transport management",
+    # Kỹ thuật / Xây dựng
+    "autocad", "revit", "solidworks", "matlab", "plc", "scada",
+    "dự toán công trình", "thiết kế kết cấu", "điện công nghiệp",
+    "hệ thống hvac", "an toàn lao động", "iso 14001", "qa/qc",
+    "hàn", "bim", "thi công", "giám sát công trình",
+    # Y tế
+    "dược lâm sàng", "điều dưỡng", "chẩn đoán hình ảnh",
+    "xét nghiệm y khoa", "gmp", "gdp", "dược phẩm",
+    "quản lý phòng khám", "vật lý trị liệu", "nghiên cứu lâm sàng",
+    "dược điển", "y học dự phòng", "tư vấn dinh dưỡng",
+    # Giáo dục
+    "giáo án", "quản lý lớp học", "phương pháp giảng dạy",
+    "e-learning", "lms", "moodle", "thiết kế khóa học",
+    "đào tạo doanh nghiệp", "kỹ năng mềm", "stem", "blended learning",
+    # Nhà hàng / Khách sạn
+    "quản lý nhà hàng", "quản lý khách sạn", "lễ tân",
+    "housekeeping", "f&b", "bartending", "barista", "quản lý bếp",
+    "pms hotel", "tour guide", "event management",
+    "revenue management", "ota", "du lịch lữ hành",
+}
+
+def dict_label_sentence(sent: str) -> list[tuple[str, str]] | None:
+    """
+    Gán nhãn bằng từ điển cho các câu chứa kỹ năng ngành ít dữ liệu.
+    Trả về list (word, label) nếu tìm thấy ít nhất 1 keyword, None nếu không.
+    """
+    sent_lower = sent.lower()
+    found_skills = [kw for kw in DOMAIN_SKILL_DICT if kw in sent_lower]
+    if not found_skills:
+        return None
+
+    words = sent.split()
+    labels = ["O"] * len(words)
+
+    for skill_kw in found_skills:
+        skill_tokens = skill_kw.split()
+        n = len(skill_tokens)
+        words_lower = [w.lower() for w in words]
+        for i in range(len(words_lower) - n + 1):
+            if words_lower[i:i+n] == skill_tokens:
+                labels[i] = "B-SKILL"
+                for j in range(1, n):
+                    labels[i+j] = "I-SKILL"
+                break
+
+    return list(zip(words, labels))
+
 
 # -- Buoc 1: Load M1 model ---------------------------------------------------
 print("=" * 60)
@@ -137,12 +215,31 @@ for i in range(0, len(all_sentences), BATCH_SIZE):
         conll_records.append((sent, list(zip(words, labels))))
         kept += 1
 
-    if (i // BATCH_SIZE) % 10 == 0:
-        pct = min(100, int(i / len(all_sentences) * 100))
-        print(f"  [{pct}%] Xu ly {i}/{len(all_sentences)} cau | Giu: {kept} | Bo: {skipped}")
+        if (i // BATCH_SIZE) % 10 == 0:
+            pct = min(100, int(i / len(all_sentences) * 100))
+            print(f"  [{pct}%] Xu ly {i}/{len(all_sentences)} cau | Giu: {kept} | Bo: {skipped}")
 
-print(f"\n  -> Tong cau giu lai: {kept}")
+print(f"\n  -> Tong cau giu lai (model): {kept}")
 print(f"  -> Tong cau bo (confidence thap): {skipped}")
+
+# -- Buoc 3b: Gap nhan bang tu dien cho nganh it du lieu ----------------------
+print("\n" + "=" * 60)
+print("BUOC 3b: Gap nhan tu dien (bypass bias cho nganh khong phai IT)...")
+print("=" * 60)
+
+existing_sents = {s for s, _ in conll_records}
+dict_kept = 0
+for sent in all_sentences:
+    if sent in existing_sents:      # Bo qua cau model da xu ly
+        continue
+    result = dict_label_sentence(sent)
+    if result is not None:
+        conll_records.append((sent, result))
+        existing_sents.add(sent)
+        dict_kept += 1
+
+print(f"  -> Tu dien them vao: {dict_kept} cau")
+print(f"  -> Tong cau sau 2 buoc: {len(conll_records)}")
 
 # -- Buoc 4: Luu ra format CoNLL --------------------------------------------
 print("\n" + "=" * 60)

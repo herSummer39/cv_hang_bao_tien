@@ -15,6 +15,78 @@ from fastapi.middleware.cors import CORSMiddleware
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
 
+# ─── Keyword fallback đa ngành (~25 từ/ngành) ───────────────────────────────────
+ALL_DOMAIN_KEYWORDS = [
+    # IT
+    "react", "reactjs", "typescript", "javascript", "next.js", "vue",
+    "angular", "html", "css", "tailwind", "graphql", "webpack",
+    "python", "java", "node.js", "fastapi", "django", "flask", "spring",
+    "laravel", "php", "golang", "rust", "c++", "c#",
+    "mysql", "postgresql", "mongodb", "redis", "elasticsearch",
+    "docker", "kubernetes", "aws", "gcp", "azure", "ci/cd", "jenkins",
+    "flutter", "kotlin", "swift", "machine learning", "deep learning",
+    "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy", "git", "rest api",
+    "microservices", "agile", "scrum", "linux", "nginx", "figma",
+    # Marketing
+    "seo", "google ads", "facebook ads", "tiktok ads", "content marketing",
+    "email marketing", "google analytics", "canva", "copywriting",
+    "social media marketing", "influencer marketing", "brand management",
+    "media planning", "market research", "a/b testing", "hubspot",
+    "mailchimp", "youtube ads", "affiliate marketing", "landing page",
+    "kpi marketing", "digital marketing", "pr",
+    # Kế toán / Tài chính
+    "misa", "sap", "excel", "kế toán tổng hợp", "báo cáo tài chính",
+    "kế toán thuế", "kiểm toán", "phân tích tài chính", "lập ngân sách",
+    "ifrs", "vas", "kế toán kho", "kế toán công nợ", "kế toán lương",
+    "hóa đơn điện tử", "quyết toán thuế", "oracle finance", "quickbooks",
+    "tài chính doanh nghiệp", "dòng tiền", "balance sheet", "p&l",
+    # Nhân sự / HR
+    "tuyển dụng", "c&b", "onboarding", "hris", "đào tạo phát triển",
+    "lương thưởng", "kpi", "okr", "đánh giá hiệu suất", "phúc lợi nhân viên",
+    "quan hệ lao động", "hợp đồng lao động", "headhunting", "linkedin recruiter",
+    "bhxh", "talent management", "hr analytics", "employee engagement",
+    "job description", "quản trị nhân sự",
+    # Kinh doanh / Sales
+    "b2b sales", "đàm phán hợp đồng", "quản lý kênh phân phối",
+    "salesforce", "pipeline sales", "cold calling", "telesales",
+    "account management", "business development", "proposal", "báo giá",
+    "upselling", "cross-selling", "b2c sales", "retail sales", "crm",
+    # Thiết kế
+    "adobe xd", "photoshop", "illustrator", "indesign",
+    "ui/ux", "wireframing", "prototyping", "user research", "typography",
+    "brand identity", "visual design", "motion graphics", "after effects",
+    "logo design", "design system", "color theory", "sketch", "zeplin",
+    # Logistics
+    "xuất nhập khẩu", "hải quan", "incoterms", "vận tải biển",
+    "quản lý kho", "wms", "customs clearance", "bill of lading",
+    "freight forwarding", "supply chain", "procurement",
+    "last mile delivery", "3pl", "sap mm", "transport management",
+    # Kỹ thuật / Xây dựng
+    "autocad", "revit", "solidworks", "matlab", "plc", "scada",
+    "dự toán công trình", "thiết kế kết cấu", "điện công nghiệp",
+    "hệ thống hvac", "an toàn lao động", "iso 14001", "qa/qc",
+    "hàn", "bim", "thi công", "giám sát công trình", "mep",
+    # Y tế
+    "dược lâm sàng", "điều dưỡng", "chẩn đoán hình ảnh",
+    "xét nghiệm y khoa", "gmp", "gdp", "dược phẩm",
+    "quản lý phòng khám", "vật lý trị liệu", "emr", "nghiên cứu lâm sàng",
+    "dược điển", "y học dự phòng", "tư vấn dinh dưỡng",
+    # Giáo dục
+    "giáo án", "quản lý lớp học", "phương pháp giảng dạy",
+    "e-learning", "lms", "moodle", "google classroom", "thiết kế khóa học",
+    "đào tạo doanh nghiệp", "kỹ năng mềm", "stem", "blended learning",
+    # Nhà hàng / Khách sạn
+    "quản lý nhà hàng", "quản lý khách sạn", "lễ tân",
+    "housekeeping", "f&b", "bartending", "barista", "quản lý bếp",
+    "pms hotel", "tour guide", "event management",
+    "revenue management", "ota", "du lịch lữ hành", "vệ sinh an toàn thực phẩm",
+]
+
+def keyword_extract_skills(text: str) -> list[str]:
+    """Trích xuất kỹ năng bằng keyword matching đa ngành."""
+    text_lower = text.lower()
+    return [kw for kw in ALL_DOMAIN_KEYWORDS if kw in text_lower]
+
 BASE = Path(__file__).parent
 M1_DIR = BASE / "models" / "m1_ner" / "final"
 M2_DIR = BASE / "models" / "m2_embedding_quick" / "final"
@@ -129,24 +201,24 @@ def keyword_extract_skills(text: str) -> list:
 
 def run_ner(text: str) -> dict:
     ner = get_m1()
-    chunks = [text[i:i+400] for i in range(0, min(len(text), 4000), 400)]
+    chunks = [text[i:i+400] for i in range(0, min(len(text), 3000), 400)]
     skills, exps, edus, orgs = [], [], [], []
     for chunk in chunks:
         if not chunk.strip(): continue
         try:
             for e in ner(chunk):
-                word = e["word"].replace("##", "").replace("@@", "").strip()
+                word = e["word"].replace("@@", "").strip()
                 if len(word) < 2: continue
                 eg = e["entity_group"]
                 if eg == "SKILL": skills.append(word)
-                elif eg == "EXP":  exps.append(word)
-                elif eg == "EDU":  edus.append(word)
-                elif eg == "ORG":  orgs.append(word)
+                elif eg == "EXP": exps.append(word)
+                elif eg == "EDU": edus.append(word)
+                elif eg == "ORG": orgs.append(word)
         except Exception: pass
-    # Kết hợp NER + keyword fallback để đảm bảo không bỏ sót
+    # Fallback đa ngành: bổ sung keyword nếu NER bỏ sót
     kw_skills = keyword_extract_skills(text)
-    all_skills = list(set(skills) | set(kw_skills))
-    return {"skills": all_skills, "experiences": list(set(exps)),
+    skills = list(set(skills) | set(kw_skills))
+    return {"skills": skills, "experiences": list(set(exps)),
             "educations": list(set(edus)), "organizations": list(set(orgs))}
 
 @app.post("/api/analyze")

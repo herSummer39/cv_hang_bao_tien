@@ -9,28 +9,107 @@ from pathlib import Path
 
 random.seed(42)
 
-# ─── Từ điển kỹ năng theo ngành ──────────────────────────────────────────────
-SKILLS = [
-    # IT
-    "React", "ReactJS", "Vue", "Angular", "TypeScript", "JavaScript",
-    "Next.js", "Node.js", "Python", "FastAPI", "Django", "Flask",
-    "Java", "Spring Boot", "MySQL", "PostgreSQL", "MongoDB", "Redis",
-    "Docker", "Kubernetes", "AWS", "GCP", "Azure", "Git", "GitHub",
-    "CI/CD", "Jenkins", "Linux", "REST API", "GraphQL",
-    "TensorFlow", "PyTorch", "Scikit-learn", "XGBoost", "PhoBERT",
-    "Pandas", "NumPy", "Spark", "Kafka",
-    # Marketing
-    "SEO", "Google Ads", "Facebook Ads", "TikTok Ads", "Content Marketing",
-    "Email Marketing", "CRM", "Google Analytics", "Canva",
-    # Kế toán
-    "MISA", "SAP", "Excel", "Kế toán tổng hợp", "Báo cáo tài chính",
-    # Sales
-    "B2B Sales", "CRM", "Đàm phán hợp đồng", "Quản lý kênh phân phối",
-    # HR
-    "Tuyển dụng", "C&B", "Onboarding", "HRIS", "Đào tạo phát triển",
-    # Design
-    "Figma", "Adobe XD", "Photoshop", "Illustrator", "UI/UX",
-]
+# ─── Từ điển kỹ năng theo ngành (cân bằng ~25-30 từ/ngành) ────────────────────
+# Tên ngành khớp với INDUSTRY_MAP trong build_real_embedding_pairs.py
+SKILLS_BY_INDUSTRY = {
+    "it": [
+        "React", "ReactJS", "Vue", "Angular", "TypeScript", "JavaScript",
+        "Next.js", "Node.js", "Python", "FastAPI", "Django", "Flask",
+        "Java", "Spring Boot", "MySQL", "PostgreSQL", "MongoDB", "Redis",
+        "Docker", "Kubernetes", "AWS", "GCP", "Azure", "Git", "CI/CD",
+        "Jenkins", "Linux", "REST API", "GraphQL", "TensorFlow",
+    ],  # 30 từ
+    "marketing": [
+        "SEO", "Google Ads", "Facebook Ads", "TikTok Ads", "Content Marketing",
+        "Email Marketing", "Google Analytics", "Canva", "Copywriting",
+        "Social Media Marketing", "Influencer Marketing", "Brand Management",
+        "Media Planning", "Market Research", "A/B Testing", "HubSpot",
+        "Mailchimp", "YouTube Ads", "Affiliate Marketing", "Landing Page",
+        "KPI Marketing", "Adobe Premiere", "Conversion Optimization",
+        "Digital Marketing", "PR",
+    ],  # 25 từ
+    "accounting": [
+        "MISA", "SAP", "Excel", "Kế toán tổng hợp", "Báo cáo tài chính",
+        "Kế toán thuế", "Kiểm toán", "Phân tích tài chính", "Lập ngân sách",
+        "IFRS", "VAS", "Kế toán kho", "Kế toán công nợ", "Kế toán lương",
+        "Hóa đơn điện tử", "Quyết toán thuế", "Oracle Finance", "QuickBooks",
+        "Tài chính doanh nghiệp", "Dòng tiền", "Kế toán ngân hàng",
+        "Balance Sheet", "P&L", "Định giá tài sản", "Phần mềm kế toán",
+    ],  # 25 từ
+    "hr": [
+        "Tuyển dụng", "C&B", "Onboarding", "HRIS", "Đào tạo phát triển",
+        "Lương thưởng", "KPI", "OKR", "Đánh giá hiệu suất", "Phúc lợi nhân viên",
+        "Quan hệ lao động", "Hợp đồng lao động", "Headhunting", "LinkedIn Recruiter",
+        "BHXH", "Kế hoạch nhân lực", "Văn hóa doanh nghiệp", "Employee Engagement",
+        "Talent Management", "HR Analytics", "Succession Planning",
+        "Job Description", "Phỏng vấn", "Nội quy công ty", "Quản trị nhân sự",
+    ],  # 25 từ
+    "sales": [
+        "B2B Sales", "Đàm phán hợp đồng", "Quản lý kênh phân phối",
+        "Chăm sóc khách hàng", "Salesforce", "Pipeline Sales", "Cold Calling",
+        "Telesales", "Account Management", "Business Development", "Proposal",
+        "Báo giá", "Hợp đồng thương mại", "Phân tích thị trường",
+        "Chiến lược bán hàng", "KPI doanh số", "Upselling", "Cross-selling",
+        "B2C Sales", "Retail Sales", "Quản lý đại lý", "Mở rộng thị trường",
+        "CRM", "Target doanh số", "Doanh số bán hàng",
+    ],  # 25 từ
+    "design": [
+        "Figma", "Adobe XD", "Photoshop", "Illustrator", "InDesign",
+        "UI/UX", "Wireframing", "Prototyping", "User Research", "Typography",
+        "Brand Identity", "Visual Design", "Motion Graphics", "After Effects",
+        "Premiere Pro", "Logo Design", "Packaging Design", "Web Design",
+        "Mobile Design", "Design System", "Color Theory", "Sketch",
+        "Zeplin", "Framer", "Print Design",
+    ],  # 25 từ
+    "logistics": [
+        "Xuất nhập khẩu", "Hải quan", "Incoterms", "Vận tải biển", "Vận tải hàng không",
+        "Quản lý kho", "WMS", "Customs Clearance", "Bill of Lading",
+        "Freight Forwarding", "Supply Chain", "Procurement", "Kiểm kê hàng hóa",
+        "Last Mile Delivery", "3PL", "SAP MM", "Quản lý nhà cung cấp",
+        "Transport Management", "Phân phối hàng hóa", "Nhập kho xuất kho",
+        "LC", "ISO 9001", "Kho vận", "Logistics Planning", "ERP Logistics",
+    ],  # 25 từ
+    "engineering": [
+        "AutoCAD", "Revit", "SolidWorks", "MATLAB", "PLC", "SCADA",
+        "Quản lý dự án xây dựng", "Dự toán công trình", "Thiết kế kết cấu",
+        "Cơ khí chế tạo", "Điện công nghiệp", "Hệ thống HVAC",
+        "An toàn lao động", "ISO 14001", "QA/QC", "Hàn", "BIM",
+        "Thi công", "Giám sát công trình", "Kỹ thuật điện",
+        "Kỹ thuật cơ khí", "Tiêu chuẩn xây dựng", "MEP",
+        "Gia công cơ khí", "Điện tử công nghiệp",
+    ],  # 25 từ
+    "healthcare": [
+        "Dược lâm sàng", "Điều dưỡng", "Chẩn đoán hình ảnh", "Y học cổ truyền",
+        "Xét nghiệm y khoa", "Hồ sơ bệnh án", "GMP", "GDP", "Dược phẩm",
+        "Quản lý phòng khám", "Chăm sóc sức khỏe", "Điều trị bệnh",
+        "Vật lý trị liệu", "EMR", "Quản lý bệnh viện", "Kiểm soát nhiễm khuẩn",
+        "Nghiên cứu lâm sàng", "Dược điển", "Y học dự phòng",
+        "Sức khỏe nghề nghiệp", "Tư vấn dinh dưỡng", "Kỹ thuật viên xét nghiệm",
+        "Phẫu thuật", "Y tế cộng đồng", "Chăm sóc bệnh nhân",
+    ],  # 25 từ
+    "education": [
+        "Giáo án", "Quản lý lớp học", "Phương pháp giảng dạy", "Chương trình học",
+        "Đánh giá học sinh", "E-learning", "LMS", "Moodle", "Google Classroom",
+        "Thiết kế khóa học", "Tư vấn học sinh", "Kỹ năng trình bày",
+        "Giáo dục mầm non", "Đào tạo doanh nghiệp", "Huấn luyện viên",
+        "Mentor", "Nghiên cứu giáo dục", "Thực tập sư phạm",
+        "Kỹ năng mềm", "STEM", "IELTS Teaching", "Soạn đề thi",
+        "Quản lý học viên", "Học liệu số", "Blended Learning",
+    ],  # 25 từ
+    "hospitality": [
+        "Quản lý nhà hàng", "Phục vụ bàn", "Quản lý khách sạn", "Lễ tân",
+        "Housekeeping", "F&B", "Bartending", "Barista", "Quản lý bếp",
+        "Thực đơn", "PMS Hotel", "Tour Guide", "Event Management",
+        "Revenue Management", "OTA", "Đặt phòng trực tuyến", "Booking.com",
+        "Dịch vụ khách hàng VIP", "Tiêu chuẩn phục vụ", "Du lịch lữ hành",
+        "Hội nghị hội thảo", "Nghiệp vụ lưu trú", "Chế biến món ăn",
+        "Kiểm soát chất lượng F&B", "Vệ sinh an toàn thực phẩm",
+    ],  # 25 từ
+}
+
+# Danh sách phẳng để tương thích ngược (nếu cần)
+SKILLS = [s for skills in SKILLS_BY_INDUSTRY.values() for s in skills]
+INDUSTRIES = list(SKILLS_BY_INDUSTRY.keys())
 
 # ─── Cấu trúc câu mô tả kỹ năng ─────────────────────────────────────────────
 SKILL_TEMPLATES = [
@@ -184,9 +263,12 @@ def bio_tag_edu(text: str, degree: str, school: str) -> list[tuple[str, str]]:
 
 
 def gen_skill_sample() -> list[tuple[str, str]]:
-    """Tạo 1 câu mô tả kỹ năng có tag."""
-    n_skills = random.randint(2, 5)
-    skills_used = random.sample(SKILLS, n_skills)
+    """Tạo 1 câu mô tả kỹ năng có tag — sampling theo ngành để cân bằng."""
+    # Chọn ngành ngẫu nhiên đều (uniform) trước
+    industry = random.choice(INDUSTRIES)
+    industry_skills = SKILLS_BY_INDUSTRY[industry]
+    n_skills = random.randint(2, min(5, len(industry_skills)))
+    skills_used = random.sample(industry_skills, n_skills)
     skills_str = ", ".join(skills_used)
     template = random.choice(SKILL_TEMPLATES)
     text = template.format(skills=skills_str)
