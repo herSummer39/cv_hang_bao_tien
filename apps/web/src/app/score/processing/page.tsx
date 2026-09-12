@@ -10,7 +10,7 @@ const STAGES = [
   {
     id: 1,
     label: "Trích xuất ma trận năng lực kỹ thuật",
-    sublabel: "Hoàn tất ✓ • 18 Kỹ năng khớp định danh",
+    sublabel: "Hoàn tất ✓",
     status: "done",
   },
   {
@@ -28,14 +28,14 @@ const STAGES = [
 ];
 
 const LOG_MESSAGES = [
-  "Word-segment tiếng Việt (VnCoreNLP)... ✓ 1.247 từ đã tách",
-  "NER PhoBERT đang trích xuất entity: kỹ năng, kinh nghiệm, học vấn...",
-  "BKAI bi-encoder: embedding CV chunks vào pgvector không gian 768 chiều...",
-  "Top-20 JD chunks retrieved · Cross-encoder re-rank top-5...",
-  "Feature engineering: tính 35 features từ entity + vector similarity...",
-  "Đối sánh từ khóa: 'Performance Budget' ↔ 'Core Web Vitals INP/LCP': Trùng khớp 94%",
-  "XGBoost (M3) đang tính điểm tổng thể + SHAP values...",
-  "Lưu kết quả vào Supabase (bảng score_results)...",
+  "Đang trích xuất văn bản từ CV...",
+  "NER PhoBERT (M1) đang trích xuất kỹ năng, kinh nghiệm, học vấn từ CV và JD...",
+  "SentenceTransformer (M2) đang tính độ tương đồng ngữ nghĩa giữa CV và JD...",
+  "Đối chiếu danh sách kỹ năng trong CV với yêu cầu trong JD...",
+  "Tính số năm kinh nghiệm thực tế và so với yêu cầu tối thiểu của JD...",
+  "XGBoost (M3) đang tính điểm tương thích tổng thể từ các đặc trưng đã trích xuất...",
+  "Tổng hợp điểm mạnh, điểm cần cải thiện và câu hỏi phỏng vấn gợi ý...",
+  "Lưu kết quả vào Supabase (bảng analysis_jobs)...",
 ];
 
 export default function ProcessingPage() {
@@ -44,6 +44,11 @@ export default function ProcessingPage() {
   const [logIndex, setLogIndex] = useState(0);
   const [currentLog, setCurrentLog] = useState(LOG_MESSAGES[0]);
   const [error, setError] = useState("");
+  const [jobId, setJobId] = useState("");
+  const [cvFilename, setCvFilename] = useState("");
+  const [cvText, setCvText] = useState("");
+  const [jdText, setJdText] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
 
   useEffect(() => {
     // Animation log tuần tự
@@ -68,6 +73,7 @@ export default function ProcessingPage() {
         clearInterval(progressTimer);
         return;
       }
+      setJobId(jobId);
 
       const supabase = createClient();
       let attempts = 0;
@@ -84,11 +90,18 @@ export default function ProcessingPage() {
 
         const { data, error: dbErr } = await supabase
           .from("analysis_jobs")
-          .select("status, result, error_msg")
+          .select("status, result, error_msg, cv_filename, cv_text, jd_text, job_title")
           .eq("id", jobId)
           .single();
 
         if (dbErr) return; // Bỏ qua lỗi mạng tạm thời
+
+        if (data) {
+          if (data.cv_filename) setCvFilename(data.cv_filename);
+          if (data.cv_text) setCvText(data.cv_text);
+          if (data.jd_text) setJdText(data.jd_text);
+          if (data.job_title) setJobTitle(data.job_title);
+        }
 
         if (data?.status === "done" && data.result) {
           clearInterval(poll);
@@ -118,6 +131,10 @@ export default function ProcessingPage() {
 
   const clampedProgress = Math.min(Math.round(progress), 100);
   const isDone = clampedProgress >= 100;
+  const jdWordCount = jdText ? jdText.trim().split(/\s+/).filter(Boolean).length : 0;
+  const cvExcerpt = cvText ? cvText.trim().slice(0, 280) + (cvText.trim().length > 280 ? "..." : "") : "";
+  const displayFilename = cvFilename || "Văn bản CV đã dán (không có file đính kèm)";
+  const shortSessionCode = jobId ? jobId.replace(/-/g, "").slice(0, 8).toUpperCase() : "—";
 
   if (error) {
     return (
@@ -139,7 +156,7 @@ export default function ProcessingPage() {
       <Header />
 
       <main className="flex-1 pt-16 flex flex-col">
-        <ProgressStepper activeStep={2} sessionId="EVAL-2026-0849-VN" />
+        <ProgressStepper activeStep={2} sessionId={shortSessionCode} />
 
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-6 flex flex-col gap-6">
           {/* Header block */}
@@ -162,12 +179,12 @@ export default function ProcessingPage() {
                   : "Đang phân tích và đối soát hồ sơ ứng viên..."}
               </h1>
               <p className="text-[14px] text-[#434655] mt-1">
-                Hệ thống đang bóc tách cú pháp kinh nghiệm thực chiến từ CV so với bảng tiêu chuẩn năng lực L6.
+                Hệ thống đang trích xuất kỹ năng, kinh nghiệm từ CV và đối chiếu với yêu cầu trong JD bạn đã cung cấp.
               </p>
             </div>
             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm">
               <span className="w-2 h-2 rounded-full bg-[#004f35] animate-pulse" />
-              <span className="text-[12px] font-medium text-[#0b1c30]">Phiên làm việc #CF-8942-ARCH</span>
+              <span className="text-[12px] font-medium text-[#0b1c30]">Phiên làm việc #{shortSessionCode}</span>
             </div>
           </div>
 
@@ -198,14 +215,12 @@ export default function ProcessingPage() {
                     </div>
                     <div className="min-w-0">
                       <span className="font-semibold text-[16px] text-[#0b1c30] truncate block">
-                        Nguyen_Van_An_Senior_Frontend_Architect.pdf
+                        {displayFilename}
                       </span>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[#434655] text-[13px]">
-                        <span>2.8 MB</span>
-                        <span>•</span>
-                        <span>1.620 từ khóa đã quét</span>
-                        <span>•</span>
-                        <span className="text-[#004f35] font-medium">Cấu trúc AST hợp lệ</span>
+                        <span className="text-[#004f35] font-medium">
+                          {isDone ? "Đã xử lý xong" : "Đang chờ worker xử lý"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -213,35 +228,19 @@ export default function ProcessingPage() {
 
                 <div className="bg-[#eff4ff] rounded-lg p-3 flex flex-col gap-2">
                   <div className="flex items-center justify-between text-[#434655] text-[11px]">
-                    <span className="uppercase tracking-wide font-medium">Thực thể chính trích xuất</span>
-                    <span>Độ tin cậy ngữ nghĩa: 98.4%</span>
+                    <span className="uppercase tracking-wide font-medium">Trích xuất kỹ năng &amp; kinh nghiệm</span>
                   </div>
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {[
-                      "Frontend System Design",
-                      "React 19 & Next.js SSR",
-                      "Micro-frontends",
-                      "TypeScript Strict Mode",
-                      "L6 Tech Lead (8+ năm)",
-                      "Core Web Vitals",
-                    ].map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-0.5 rounded bg-white text-[#0b1c30] text-[11px] font-semibold shadow-sm"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="text-[12px] text-[#565e74]">
+                    Danh sách kỹ năng, số năm kinh nghiệm thực tế sẽ hiển thị đầy đủ ở trang kết quả sau khi worker xử lý xong — trang này chỉ hiển thị trạng thái xử lý.
+                  </p>
                 </div>
 
                 <div className="mt-3 p-3 rounded-lg bg-white border border-[#e5eeff]">
                   <div className="flex items-center justify-between text-[#565e74] text-[11px] mb-1">
-                    <span>ĐOẠN TRÍCH YẾU TỐ KINH NGHIỆM</span>
-                    <span>Trang 1 / 4</span>
+                    <span>ĐOẠN TRÍCH TỪ CV ĐÃ NHẬN</span>
                   </div>
                   <p className="text-[13px] text-[#0b1c30] italic leading-relaxed">
-                    "Chủ trì tái thiết kế kiến trúc phân tán nền tảng E-commerce phục vụ 4.2 triệu người dùng thường nhật. Chuẩn hóa Design Tokens, áp dụng Module Federation giảm 42% thời gian biên dịch CI/CD và nâng chỉ số LCP từ 3.8s xuống còn 1.1s..."
+                    {cvExcerpt ? `"${cvExcerpt}"` : "Đang chờ dữ liệu CV từ hệ thống..."}
                   </p>
                 </div>
               </div>
@@ -255,39 +254,22 @@ export default function ProcessingPage() {
                     2. Bản mô tả công việc &amp; Yêu cầu
                   </span>
                   <span className="text-[12px] px-1.5 py-0.5 rounded bg-[#d3e4fe] text-[#0037b0] font-semibold">
-                    156 từ • L6 Standard
+                    {jdWordCount > 0 ? `${jdWordCount} từ` : "Đang tải..."}
                   </span>
                 </div>
-                <span className="text-[13px] text-[#565e74] font-medium">Phòng Ban Kỹ Thuật Lõi</span>
               </div>
 
               <div className="bg-white rounded-xl p-4 shadow-sm flex flex-col gap-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-semibold text-[#0b1c30] block">
-                      Kiến trúc sư Frontend Cấp cao (L6)
-                    </span>
-                    <span className="text-[13px] text-[#434655]">
-                      Tiêu chuẩn tuyển trạch kỹ thuật: Q3/2025 • Mã vị trí: ARCH-FE-L6
+                      {jobTitle || "Đang tải vị trí ứng tuyển..."}
                     </span>
                   </div>
-                  <span className="px-2 py-1 rounded bg-[#e5eeff] text-[#0037b0] text-[11px] font-semibold">
-                    Toàn thời gian
-                  </span>
                 </div>
 
-                <div className="bg-[#eff4ff] rounded-lg p-4 text-[#0b1c30] text-[13px] flex flex-col gap-2 leading-relaxed max-h-[260px] overflow-y-auto">
-                  <p className="font-semibold">Mục tiêu vai trò:</p>
-                  <p>
-                    Chịu trách nhiệm toàn diện về cấu trúc nền tảng giao diện, chiến lược triển khai micro-frontends quy mô lớn và duy trì trải nghiệm chuẩn mực cho toàn bộ hệ sinh thái sản phẩm.
-                  </p>
-                  <p className="font-semibold pt-1">Yêu cầu cốt lõi &amp; Năng lực bắt buộc:</p>
-                  <ul className="list-disc list-inside space-y-1 text-[#434655]">
-                    <li>Ít nhất 7+ năm phát triển giao diện hiện đại, trong đó có tối thiểu 2 năm dẫn dắt cấu trúc hệ thống cấp L6.</li>
-                    <li>Làm chủ chuyên sâu hệ sinh thái React, Next.js (App Router, Server Actions) và TypeScript.</li>
-                    <li>Thấu suốt tiêu chuẩn khả năng tiếp cận WCAG 2.1 Cấp AA.</li>
-                    <li>Kiểm soát nghiêm ngặt hiệu năng render dưới 100ms.</li>
-                  </ul>
+                <div className="bg-[#eff4ff] rounded-lg p-4 text-[#0b1c30] text-[13px] flex flex-col gap-2 leading-relaxed max-h-[260px] overflow-y-auto whitespace-pre-line">
+                  {jdText || "Đang tải nội dung mô tả công việc..."}
                 </div>
               </div>
             </div>
