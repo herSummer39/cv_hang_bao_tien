@@ -166,6 +166,8 @@ def extract_skills(text: str) -> list[str]:
     """M1 NER + keyword fallback để đảm bảo luôn lấy được skill."""
     if not text.strip():
         return []
+    import unicodedata
+    text = unicodedata.normalize("NFC", text)
     # NER
     ner_skills = []
     try:

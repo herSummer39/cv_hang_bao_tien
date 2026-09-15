@@ -200,6 +200,8 @@ def keyword_extract_skills(text: str) -> list:
     return found
 
 def run_ner(text: str) -> dict:
+    import unicodedata
+    text = unicodedata.normalize("NFC", text)
     ner = get_m1()
     chunks = [text[i:i+400] for i in range(0, min(len(text), 3000), 400)]
     skills, exps, edus, orgs = [], [], [], []
