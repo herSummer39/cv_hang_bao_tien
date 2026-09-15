@@ -140,7 +140,7 @@ class NERDataset(Dataset):
         return {k: torch.tensor(v) for k, v in encoding.items()}
 
 
-# ─── Metrics ─────────────────────────────────────────────────────────────────
+# ─── Metrics ─────────────────────────────────────────────────────────────
 def compute_metrics(pred):
     predictions, labels = pred
     predictions = np.argmax(predictions, axis=2)
@@ -152,7 +152,7 @@ def compute_metrics(pred):
                 true_labels.append(ID2LABEL[l])
                 true_preds.append(ID2LABEL[p])
 
-    # Tính F1 đơn giản
+    # F1 tổng (entity-level)
     correct = sum(1 for p, l in zip(true_preds, true_labels) if p == l and l != "O")
     total_pred = sum(1 for p in true_preds if p != "O")
     total_true = sum(1 for l in true_labels if l != "O")
@@ -160,6 +160,22 @@ def compute_metrics(pred):
     precision = correct / total_pred if total_pred > 0 else 0
     recall    = correct / total_true if total_true > 0 else 0
     f1        = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+
+    # Per-label F1 (in ra console để theo dõi cân bằng ngành)
+    try:
+        from sklearn.metrics import classification_report
+        # Chỉ xét các nhãn khác O
+        entity_labels = [l for l in LABEL_LIST if l != "O"]
+        report = classification_report(
+            true_labels, true_preds,
+            labels=entity_labels,
+            zero_division=0,
+            digits=3,
+        )
+        print("\n=== Per-label F1 (entity-level) ===")
+        print(report)
+    except ImportError:
+        pass  # sklearn chưa cài
 
     return {"precision": round(precision, 4), "recall": round(recall, 4), "f1": round(f1, 4)}
 
