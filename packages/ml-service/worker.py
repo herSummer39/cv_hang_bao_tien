@@ -34,7 +34,7 @@ POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "5"))  # giây
 
 BASE_DIR     = Path(__file__).parent
 M1_PATH      = BASE_DIR / "models" / "m1_ner" / "final"
-M2_PATH      = BASE_DIR / "models" / "m2_embedding_quick" / "final"
+M2_PATH      = BASE_DIR / "models" / "m2_embedding_full" / "final"
 M3_PATH      = BASE_DIR / "models" / "m3_xgboost" / "xgboost_scorer.pkl"
 
 # ─── Load Models (một lần khi khởi động) ────────────────────────────────────

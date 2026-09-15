@@ -89,7 +89,7 @@ def keyword_extract_skills(text: str) -> list[str]:
 
 BASE = Path(__file__).parent
 M1_DIR = BASE / "models" / "m1_ner" / "final"
-M2_DIR = BASE / "models" / "m2_embedding_quick" / "final"
+M2_DIR = BASE / "models" / "m2_embedding_full" / "final"
 M3_PKL = BASE / "models" / "m3_xgboost" / "xgboost_scorer.pkl"
 
 _m1 = None
