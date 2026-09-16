@@ -5,6 +5,18 @@ import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import jsPDF from "jspdf";
+
+// Chuyển ArrayBuffer (font tải bằng fetch) sang base64 để nạp vào jsPDF VFS
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
 
 const STRENGTHS = [
   {
@@ -110,6 +122,7 @@ export default function ResultPage() {
   const [saveDone, setSaveDone] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [candidateName, setCandidateName] = useState("");
+  const [showInterviewPrep, setShowInterviewPrep] = useState(false);
 
   // Đọc kết quả thật từ API (lưu trong sessionStorage)
   const [apiResult, setApiResult] = useState<{
@@ -167,14 +180,120 @@ export default function ResultPage() {
   }
   const tier = scoreTier(finalScore);
 
-  function handleExport() {
+  async function handleExport() {
+    if (!apiResult) {
+      alert("Chưa có dữ liệu phân tích để xuất báo cáo.");
+      return;
+    }
     setExportLoading(true);
     setExportDone(false);
-    setTimeout(() => {
+
+    try {
+      const doc = new jsPDF();
+
+      // Nạp font Noto Sans (đủ dấu tiếng Việt) — font mặc định của jsPDF không có dấu
+      const [regularBuf, boldBuf] = await Promise.all([
+        fetch("/fonts/NotoSans-Regular.ttf").then((r) => r.arrayBuffer()),
+        fetch("/fonts/NotoSans-Bold.ttf").then((r) => r.arrayBuffer()),
+      ]);
+      doc.addFileToVFS("NotoSans-Regular.ttf", arrayBufferToBase64(regularBuf));
+      doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
+      doc.addFileToVFS("NotoSans-Bold.ttf", arrayBufferToBase64(boldBuf));
+      doc.addFont("NotoSans-Bold.ttf", "NotoSans", "bold");
+      doc.setFont("NotoSans", "normal");
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginX = 15;
+      const maxWidth = pageWidth - marginX * 2;
+      let y = 20;
+
+      const ensureSpace = (lines: number, lineHeight = 6) => {
+        if (y + lines * lineHeight > pageHeight - 20) {
+          doc.addPage();
+          y = 20;
+        }
+      };
+
+      const addTitle = (text: string, size = 14) => {
+        ensureSpace(2, 10);
+        doc.setFontSize(size);
+        doc.setFont("NotoSans", "bold");
+        doc.text(text, marginX, y);
+        y += size >= 16 ? 10 : 8;
+        doc.setFont("NotoSans", "normal");
+      };
+
+      const addBody = (text: string, size = 11) => {
+        doc.setFontSize(size);
+        doc.setFont("NotoSans", "normal");
+        const lines = doc.splitTextToSize(text, maxWidth);
+        ensureSpace(lines.length);
+        doc.text(lines, marginX, y);
+        y += lines.length * 6;
+      };
+
+      const addSpacer = (h = 4) => { y += h; };
+
+      // 1. Tiêu đề
+      addTitle("CareerFit — Báo cáo đánh giá độ phù hợp", 17);
+      addBody(
+        `Ứng viên: ${candidateName || "Chưa xác định"}   |   Vị trí: ${apiResult.job_title || "Chưa xác định"}   |   Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`,
+        10
+      );
+      addSpacer(4);
+
+      // 2. Điểm tổng thể
+      addTitle(`Điểm tổng thể: ${finalScore}/100 — ${tier.heading}`, 14);
+      addSpacer(2);
+
+      // 3. Ba chỉ số trụ cột
+      addBody(`Kỹ năng khớp JD: ${skillRatioPct}%`);
+      addBody(`Đáp ứng yêu cầu kinh nghiệm: ${expFitPct}%`);
+      addBody(`Tương đồng ngữ nghĩa CV ↔ JD: ${similarityPct}%`);
+      addSpacer(4);
+
+      // 4. Thế mạnh
+      addTitle("Thế mạnh", 13);
+      if (strengths.length === 0) addBody("Không có dữ liệu.");
+      strengths.forEach((s) => addBody(`• ${s.title}: ${s.desc}`));
+      addSpacer(4);
+
+      // 5. Khoảng trống
+      addTitle("Khoảng trống cần lưu ý", 13);
+      if (gaps.length === 0) addBody("Không có dữ liệu.");
+      gaps.forEach((g) => addBody(`• ${g.title}: ${g.desc}`));
+      addSpacer(4);
+
+      // 6. Kỹ năng khớp / thiếu
+      addTitle("Kỹ năng", 13);
+      addBody(`Khớp (${matchedCount}): ${apiResult.matched_skills?.join(", ") || "Không có"}`);
+      addBody(`Thiếu (${missingCount}): ${apiResult.missing_skills?.join(", ") || "Không có"}`);
+      addSpacer(4);
+
+      // 7. Câu hỏi phỏng vấn đề xuất
+      addTitle("Câu hỏi phỏng vấn đề xuất", 13);
+      if (questions.length === 0) {
+        addBody("Không có dữ liệu.");
+      } else {
+        questions.forEach((q) => addBody(`${q.id}. ${q.question}`));
+      }
+
+      const safeName = (candidateName || "UngVien")
+        .replace(/đ/g, "d").replace(/Đ/g, "D")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "");
+      const dateStr = new Date().toISOString().slice(0, 10);
+      doc.save(`CareerFit_BaoCao_${safeName}_${dateStr}.pdf`);
+
       setExportLoading(false);
       setExportDone(true);
       setTimeout(() => setExportDone(false), 2500);
-    }, 1200);
+    } catch (e) {
+      console.error("Lỗi xuất PDF:", e);
+      setExportLoading(false);
+      alert("Có lỗi khi xuất PDF, vui lòng thử lại.");
+    }
   }
 
   function handleSave() {
@@ -438,8 +557,37 @@ export default function ResultPage() {
           </div>
         </section>
 
-        {/* Interview Questions */}
+        {/* Interview Questions — ẩn mặc định, chỉ hiện khi người dùng chủ động mở */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-12">
+          {!showInterviewPrep ? (
+            <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#0037b0]/10 flex items-center justify-center text-[#0037b0] shrink-0">
+                  <span className="material-symbols-outlined">psychology_alt</span>
+                </div>
+                <div>
+                  <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
+                    Bộ câu hỏi phỏng vấn đề xuất theo khoảng trống năng lực
+                  </h2>
+                  <p className="text-[13px] text-[#434655] mt-1">
+                    Hệ thống đã chuẩn bị sẵn bộ câu hỏi dựa trên khoảng trống năng lực — bấm để xem.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInterviewPrep(true)}
+                disabled={questions.length === 0}
+                className={`shrink-0 px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 transition-colors ${
+                  questions.length === 0
+                    ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
+                    : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] shadow-sm"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">visibility</span>
+                Xem bộ câu hỏi phỏng vấn đề xuất
+              </button>
+            </div>
+          ) : (
           <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
               <div>
@@ -461,6 +609,13 @@ export default function ResultPage() {
                 <button className="px-3 py-2 rounded-xl bg-[#0037b0]/10 text-[#0037b0] text-[13px] font-medium hover:bg-[#0037b0]/20 transition-colors flex items-center gap-1">
                   <span className="material-symbols-outlined text-[16px]">tune</span>
                   Tinh chỉnh tiêu chí
+                </button>
+                <button
+                  onClick={() => setShowInterviewPrep(false)}
+                  className="px-3 py-2 rounded-xl bg-[#f0f0f0] text-[#565e74] text-[13px] font-medium hover:bg-[#e5e5e5] transition-colors flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[16px]">expand_less</span>
+                  Thu gọn
                 </button>
               </div>
             </div>
@@ -543,6 +698,7 @@ export default function ResultPage() {
               </div>
             </div>
           </div>
+          )}
         </section>
       </main>
 

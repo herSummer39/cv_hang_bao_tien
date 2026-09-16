@@ -101,9 +101,12 @@ export default function ScorePage() {
     if (!formReady) return;
 
     const supabase = createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+
     let cvB64: string | null = null;
     let cvText: string | null = null;
     let cvFilename: string | null = null;
+    let cvStoragePath: string | null = null;
 
     // Encode PDF → base64 hoặc dùng raw text
     if (hasFile && fileInputRef.current?.files?.[0]) {
@@ -114,6 +117,26 @@ export default function ScorePage() {
       let binary = "";
       bytes.forEach((b) => (binary += String.fromCharCode(b)));
       cvB64 = btoa(binary);
+
+      // Lưu file CV gốc vào Storage (bucket user-cvs) nếu đã đăng nhập.
+      // Không chặn luồng phân tích chính nếu upload lỗi — cv_b64 vẫn đủ để worker xử lý.
+      if (currentUser) {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+        const MIME: Record<string, string> = {
+          pdf: "application/pdf",
+          docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          doc: "application/msword",
+        };
+        const path = `${currentUser.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("user-cvs")
+          .upload(path, file, { contentType: file.type || MIME[ext] || "application/octet-stream" });
+        if (uploadError) {
+          console.warn("Không lưu được CV vào Storage (không ảnh hưởng phân tích):", uploadError.message);
+        } else {
+          cvStoragePath = path;
+        }
+      }
     } else if (rawCV.trim()) {
       cvText = rawCV.trim();
     }
@@ -125,6 +148,8 @@ export default function ScorePage() {
         cv_text: cvText,
         cv_b64: cvB64,
         cv_filename: cvFilename,
+        cv_storage_path: cvStoragePath,
+        user_id: currentUser?.id ?? null,
         jd_text: jdContent,
         job_title: jobTitle,
         status: "pending",
@@ -139,14 +164,11 @@ export default function ScorePage() {
     }
 
     // Upsert preferred_industry_id vào profiles nếu user đã đăng nhập + đã chọn ngành
-    if (selectedIndustryId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({ preferred_industry_id: selectedIndustryId } as Record<string, unknown>)
-          .eq("id", user.id);
-      }
+    if (selectedIndustryId && currentUser) {
+      await supabase
+        .from("profiles")
+        .update({ preferred_industry_id: selectedIndustryId } as Record<string, unknown>)
+        .eq("id", currentUser.id);
     }
 
     // Lưu jobId để processing page dùng
