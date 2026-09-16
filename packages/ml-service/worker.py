@@ -63,6 +63,11 @@ m3_model = _m3_data["model"]
 m3_keys  = _m3_data["feature_keys"]  # thu tu feature luc train - PHAI dung dung thu tu nay khi predict
 log.info(f"  ok M3 XGBoost loaded (features: {m3_keys})")
 
+# OCR — EasyOCR (khởi tạo 1 lần)
+import easyocr
+ocr_reader = easyocr.Reader(['vi', 'en'], gpu=False)
+log.info("  ✅ EasyOCR loaded")
+
 log.info("✅ Tất cả models sẵn sàng!\n")
 
 # ─── Hàm trích xuất CV text từ PDF ──────────────────────────────────────────
@@ -81,6 +86,30 @@ def extract_text_from_pdf_b64(b64_str: str) -> str:
         return text.strip()
     except Exception as e:
         log.warning(f"PDF extract error: {e}")
+        return ""
+
+def detect_file_type(b64_str: str) -> str:
+    """Xác định loại file dựa trên magic bytes của base64 string."""
+    try:
+        header = base64.b64decode(b64_str[:24])  # 24 chia hết cho 4 → decode an toàn, đủ ~18 byte để check magic bytes
+        if header.startswith(b"%PDF"):
+            return "pdf"
+        elif header.startswith(b"\xff\xd8"):
+            return "jpg"
+        elif header.startswith(b"\x89PNG"):
+            return "png"
+    except Exception:
+        pass
+    return "unknown"
+
+def extract_text_from_image_b64(b64_str: str) -> str:
+    """Decode base64 Image → extract text bằng EasyOCR."""
+    try:
+        img_bytes = base64.b64decode(b64_str)
+        results = ocr_reader.readtext(img_bytes, detail=0)
+        return "\n".join(results)
+    except Exception as e:
+        log.warning(f"Lỗi khi trích xuất text từ ảnh bằng OCR: {e}")
         return ""
 
 # Keyword fallback đa ngành — luôn tìm được skill dù NER thất bại
@@ -429,9 +458,18 @@ def main():
             # Lấy CV text
             cv_text = job.get("cv_text") or ""
             if not cv_text and job.get("cv_b64"):
-                log.info("  📄 Đang extract text từ PDF...")
-                cv_text = extract_text_from_pdf_b64(job["cv_b64"])
-                log.info(f"  ✅ Extracted {len(cv_text)} ký tự từ PDF")
+                file_type = detect_file_type(job["cv_b64"])
+                if file_type == "pdf":
+                    log.info("  📄 Đang extract text từ PDF...")
+                    cv_text = extract_text_from_pdf_b64(job["cv_b64"])
+                    log.info(f"  ✅ Extracted {len(cv_text)} ký tự từ PDF")
+                elif file_type in ("jpg", "png"):
+                    log.info("  🖼️ Đang OCR ảnh CV...")
+                    cv_text = extract_text_from_image_b64(job["cv_b64"])
+                    log.info(f"  ✅ OCR được {len(cv_text)} ký tự từ ảnh")
+                else:
+                    log.warning("  ⚠️ File type không xác định, bỏ qua extract")
+                    cv_text = ""
 
             # ── Industry-aware: tự detect ngành nếu job.industry_id == NULL ──
             jd_text   = job.get("jd_text", "")
