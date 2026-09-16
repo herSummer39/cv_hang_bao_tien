@@ -2,28 +2,44 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+type AnalysisResult = { score?: number };
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
-  // Lấy profile + sessions
+  // Lấy profile + lịch sử — dùng analysis_jobs (luồng thật đang chạy), không
+  // còn dùng cv_sessions (kiến trúc cũ, không được ghi dữ liệu nữa).
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
 
-  const { data: sessions } = await supabase
-    .from("cv_sessions")
-    .select("id, cv_filename, jd_title, score, status, created_at")
+  const { data: jobs } = await supabase
+    .from("analysis_jobs")
+    .select("id, cv_filename, job_title, status, result, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
 
-  const avgScore = sessions && sessions.length > 0
-    ? Math.round(sessions.filter(s => s.score).reduce((a, s) => a + (s.score ?? 0), 0) / sessions.filter(s => s.score).length)
+  const { count: analysisCount } = await supabase
+    .from("analysis_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const { data: interviews } = await supabase
+    .from("interview_sessions")
+    .select("id, job_title, total_score, status, completed_at, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const doneJobs = (jobs ?? []).filter((j) => (j.result as AnalysisResult | null)?.score != null);
+  const avgScore = doneJobs.length > 0
+    ? Math.round(doneJobs.reduce((a, j) => a + ((j.result as AnalysisResult).score ?? 0), 0) / doneJobs.length)
     : null;
 
   const displayName = profile?.full_name ?? user.email?.split("@")[0] ?? "Bạn";
@@ -70,7 +86,7 @@ export default async function DashboardPage() {
             {
               icon: "description",
               label: "Lần phân tích",
-              value: profile?.cv_count ?? 0,
+              value: analysisCount ?? 0,
               color: "text-[#0037b0]",
               bg: "bg-[#dce1ff]/60",
             },
@@ -110,7 +126,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
-          {!sessions || sessions.length === 0 ? (
+          {!jobs || jobs.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl bg-[#dce1ff]/60 flex items-center justify-center mx-auto mb-4">
                 <span className="material-symbols-outlined text-[32px] text-[#0037b0]">upload_file</span>
@@ -125,28 +141,79 @@ export default async function DashboardPage() {
             </div>
           ) : (
             <div className="divide-y divide-[#f0f4ff]">
-              {sessions.map((s) => (
-                <div key={s.id} className="px-6 py-4 flex items-center gap-4 hover:bg-[#f8faff] transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-[#dce1ff]/60 flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-[18px] text-[#0037b0]">description</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-[#0b1c30] text-[14px] truncate">{s.cv_filename}</div>
-                    <div className="text-[12px] text-[#8fa5c0] truncate">{s.jd_title ?? "JD chưa rõ tên"}</div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    {s.score != null ? (
-                      <div className={`text-[22px] font-bold ${s.score >= 70 ? "text-[#004f35]" : s.score >= 50 ? "text-[#b45309]" : "text-red-500"}`}>
-                        {Math.round(s.score)}
+              {jobs.map((j) => {
+                const score = (j.result as AnalysisResult | null)?.score;
+                return (
+                  <div key={j.id} className="px-6 py-4 flex items-center gap-4 hover:bg-[#f8faff] transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-[#dce1ff]/60 flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-[18px] text-[#0037b0]">description</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-[#0b1c30] text-[14px] truncate">{j.cv_filename || "CV dán trực tiếp"}</div>
+                      <div className="text-[12px] text-[#8fa5c0] truncate">{j.job_title ?? "Vị trí chưa rõ tên"}</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {score != null ? (
+                        <div className={`text-[22px] font-bold ${score >= 70 ? "text-[#004f35]" : score >= 50 ? "text-[#b45309]" : "text-red-500"}`}>
+                          {Math.round(score)}
+                        </div>
+                      ) : (
+                        <div className="text-[13px] text-[#8fa5c0]">{j.status === "processing" || j.status === "pending" ? "⏳" : j.status === "error" ? "⚠️" : "–"}</div>
+                      )}
+                      <div className="text-[11px] text-[#c4c5d7]">
+                        {new Date(j.created_at).toLocaleDateString("vi-VN")}
                       </div>
-                    ) : (
-                      <div className="text-[13px] text-[#8fa5c0]">{s.status === "processing" ? "⏳" : "–"}</div>
-                    )}
-                    <div className="text-[11px] text-[#c4c5d7]">
-                      {new Date(s.created_at).toLocaleDateString("vi-VN")}
                     </div>
                   </div>
-                </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Interview history */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#e5eeff] overflow-hidden mt-6">
+          <div className="px-6 py-4 border-b border-[#f0f4ff] flex items-center justify-between">
+            <h2 className="font-bold text-[18px] text-[#0b1c30]">Lịch sử phỏng vấn giả lập</h2>
+          </div>
+
+          {!interviews || interviews.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-[#ede9fe]/60 flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-[32px] text-[#7c3aed]">quiz</span>
+              </div>
+              <p className="text-[#565e74] font-medium mb-2">Chưa có phiên phỏng vấn giả lập nào</p>
+              <p className="text-[#8fa5c0] text-[13px]">Mở "Phiếu Phỏng Vấn Số Hóa" từ trang kết quả phân tích để bắt đầu</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#f0f4ff]">
+              {interviews.map((it) => (
+                <Link
+                  key={it.id}
+                  href={`/dashboard/interview/${it.id}`}
+                  className="px-6 py-4 flex items-center gap-4 hover:bg-[#f8faff] transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#ede9fe]/60 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-[18px] text-[#7c3aed]">quiz</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-[#0b1c30] text-[14px] truncate">{it.job_title || "Vị trí chưa xác định"}</div>
+                    <div className="text-[12px] text-[#8fa5c0] truncate">{it.status === "completed" ? "Đã hoàn thành" : "Đang thực hiện"}</div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {it.total_score != null ? (
+                      <div className={`text-[22px] font-bold ${it.total_score >= 70 ? "text-[#004f35]" : it.total_score >= 50 ? "text-[#b45309]" : "text-red-500"}`}>
+                        {Math.round(it.total_score)}
+                      </div>
+                    ) : (
+                      <div className="text-[13px] text-[#8fa5c0]">–</div>
+                    )}
+                    <div className="text-[11px] text-[#c4c5d7]">
+                      {new Date(it.completed_at ?? it.created_at).toLocaleDateString("vi-VN")}
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-[18px] text-[#c4c5d7]">chevron_right</span>
+                </Link>
               ))}
             </div>
           )}

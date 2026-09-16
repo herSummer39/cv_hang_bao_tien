@@ -135,22 +135,37 @@ export interface Database {
           id: string;
           user_id: string;
           cv_session_id: string | null;
+          analysis_job_id: string | null;
+          job_title: string | null;
+          candidate_name: string | null;
           questions: Json;
+          answers: Json;
+          status: "in_progress" | "completed" | "abandoned";
           total_score: number | null;
           summary: string | null;
+          completed_at: string | null;
           created_at: string;
         };
         Insert: {
           user_id: string;
           cv_session_id?: string | null;
+          analysis_job_id?: string | null;
+          job_title?: string | null;
+          candidate_name?: string | null;
           questions: Json;
+          answers?: Json;
+          status?: "in_progress" | "completed" | "abandoned";
           total_score?: number | null;
           summary?: string | null;
+          completed_at?: string | null;
         };
         Update: {
           questions?: Json;
+          answers?: Json;
+          status?: "in_progress" | "completed" | "abandoned";
           total_score?: number | null;
           summary?: string | null;
+          completed_at?: string | null;
         };
       };
     };

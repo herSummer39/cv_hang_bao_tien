@@ -26,7 +26,10 @@ export default function LoginPage() {
         : error.message);
       setLoading(false);
     } else {
-      router.push("/dashboard");
+      // Đọc query param "next" thủ công qua window.location (tránh phải bọc
+      // Suspense cho useSearchParams chỉ vì 1 redirect nhỏ sau khi đăng nhập).
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next && next.startsWith("/") ? next : "/dashboard");
       router.refresh();
     }
   };
