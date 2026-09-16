@@ -10,6 +10,7 @@ Worker tự poll Supabase mỗi 5 giây, lấy job pending → M1+M2+M3 → lưu
 import os, time, json, logging, base64, tempfile, traceback
 from pathlib import Path
 from dotenv import load_dotenv
+import industry_lookup
 
 # Load env từ file .env.worker (cùng thư mục với worker.py)
 load_dotenv(Path(__file__).parent / ".env.worker")
@@ -158,12 +159,20 @@ ALL_DOMAIN_KEYWORDS = [
     "hội nghị hội thảo", "nghiệp vụ lưu trú", "vệ sinh an toàn thực phẩm",
 ]
 
-def keyword_extract_skills(text: str) -> list:
+def keyword_extract_skills(text: str, domain_keywords: list | None = None) -> list:
+    """Keyword fallback. Dùng domain_keywords nếu có, ngược lại dùng ALL_DOMAIN_KEYWORDS."""
+    pool = domain_keywords if domain_keywords is not None else ALL_DOMAIN_KEYWORDS
     text_lower = text.lower()
-    return [kw for kw in ALL_DOMAIN_KEYWORDS if kw in text_lower]
+    return [kw for kw in pool if kw in text_lower]
 
-def extract_skills(text: str) -> list[str]:
-    """M1 NER + keyword fallback để đảm bảo luôn lấy được skill."""
+def extract_skills(text: str, domain_keywords: list | None = None) -> list[str]:
+    """M1 NER + keyword fallback để đảm bảo luôn lấy được skill.
+
+    Args:
+        text: CV hoặc JD text
+        domain_keywords: danh sách keyword đặc thù ngành từ industry_lookup.
+            Nếu None → fallback về ALL_DOMAIN_KEYWORDS (hành vi cũ).
+    """
     if not text.strip():
         return []
     import unicodedata
@@ -178,8 +187,8 @@ def extract_skills(text: str) -> list[str]:
                            and len(e["word"].strip()) > 1})
     except Exception:
         pass
-    # Keyword fallback
-    kw_skills = keyword_extract_skills(text)
+    # Keyword fallback — industry-aware nếu có, ngược lại dùng ALL_DOMAIN_KEYWORDS
+    kw_skills = keyword_extract_skills(text, domain_keywords)
     return list(set(ner_skills) | set(kw_skills))
 
 def compute_similarity(text_a: str, text_b: str) -> float:
@@ -241,11 +250,17 @@ def extract_exp_range_from_jd(jd_text: str) -> tuple[float, float]:
         return y, y + 3
     return 2.0, 5.0
 
-def analyze(cv_text: str, jd_text: str, job_title: str) -> dict:
-    """Chay toan bo pipeline M1->M2->M3 va tra ve ket qua."""
-    # Trich xuat skills
-    cv_skills  = set(extract_skills(cv_text))
-    jd_skills  = set(extract_skills(jd_text))
+def analyze(cv_text: str, jd_text: str, job_title: str,
+            domain_keywords: list | None = None) -> dict:
+    """Chay toan bo pipeline M1->M2->M3 va tra ve ket qua.
+
+    Args:
+        domain_keywords: keyword đặc thù ngành (từ industry_lookup).
+            None → dùng ALL_DOMAIN_KEYWORDS (tương thích ngược).
+    """
+    # Trich xuat skills (industry-aware nếu có domain_keywords)
+    cv_skills  = set(extract_skills(cv_text, domain_keywords))
+    jd_skills  = set(extract_skills(jd_text, domain_keywords))
 
     # Overlap
     matched = list(cv_skills & jd_skills)
@@ -379,14 +394,18 @@ def main():
 
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     log.info(f"🚀 Worker khởi động! Poll mỗi {POLL_INTERVAL}s")
-    log.info(f"   Supabase: {SUPABASE_URL[:40]}...\n")
+    log.info(f"   Supabase: {SUPABASE_URL[:40]}...")
+
+    # Khởi tạo industry cache — dùng đúng supabase client này
+    industry_lookup.init_cache(supabase)
+    log.info("   Industry cache đã load xong.\n")
 
     while True:
         try:
-            # Lấy 1 job pending cũ nhất
+            # Lấy 1 job pending cũ nhất — bao gồm cả industry_id (có thể NULL)
             resp = (
                 supabase.table("analysis_jobs")
-                .select("id, cv_text, cv_b64, cv_filename, jd_text, job_title")
+                .select("id, cv_text, cv_b64, cv_filename, jd_text, job_title, industry_id")
                 .eq("status", "pending")
                 .order("created_at", desc=False)
                 .limit(1)
@@ -414,12 +433,63 @@ def main():
                 cv_text = extract_text_from_pdf_b64(job["cv_b64"])
                 log.info(f"  ✅ Extracted {len(cv_text)} ký tự từ PDF")
 
-            # Chạy AI pipeline
+            # ── Industry-aware: tự detect ngành nếu job.industry_id == NULL ──
+            jd_text   = job.get("jd_text", "")
+            job_title = job.get("job_title", "Vị trí không xác định")
+            industry_id = job.get("industry_id")  # có thể None
+
+            domain_keywords: list | None = None  # None = dùng ALL_DOMAIN_KEYWORDS cũ
+
+            if industry_id is None:
+                detect = industry_lookup.detect_industry(job_title, jd_text)
+                if detect is not None:
+                    industry_id = industry_lookup.resolve_best_industry_id(detect)
+                    # UPDATE lại DB để lưu kết quả đoán (trace + UI dùng sau)
+                    if industry_id:
+                        try:
+                            supabase.table("analysis_jobs").update(
+                                {"industry_id": industry_id}
+                            ).eq("id", job_id).execute()
+                            log.info(f"  🏭 Auto-detect ngành: {detect['nhom_lon']} "
+                                     f"→ {detect['nhanh_nho']} "
+                                     f"(slug={detect.get('branch_slug') or detect['group_slug']})")
+                        except Exception as e:
+                            log.warning(f"  ⚠️  Không UPDATE industry_id được: {e}")
+                else:
+                    log.info("  🏭 Auto-detect ngành: không match — dùng ALL_DOMAIN_KEYWORDS")
+
+            # Lấy bộ skill đúng ngành (hoặc rỗng nếu không detect được)
+            if industry_id is not None:
+                skills_dict = industry_lookup.get_skills_for_industry(industry_id)
+                hard_kws = skills_dict["hard"]
+                soft_kws = skills_dict["soft"]
+                if hard_kws:
+                    # Gộp hard + soft → domain_keywords cho extract_skills
+                    domain_keywords = list(set(hard_kws + soft_kws))
+                    log.info(f"  📚 Industry skills: {len(hard_kws)} hard + "
+                             f"{len(soft_kws)} soft = {len(domain_keywords)} keywords")
+                else:
+                    # Branch/group không có skill trong DB → fallback
+                    log.info("  📚 Không có skill trong DB cho ngành này — dùng ALL_DOMAIN_KEYWORDS")
+                    domain_keywords = None
+
+            # Chạy AI pipeline — truyền domain_keywords (None = hành vi cũ)
             log.info("  🤖 Đang phân tích M1 → M2 → M3...")
             result = analyze(
                 cv_text=cv_text,
-                jd_text=job.get("jd_text", ""),
-                job_title=job.get("job_title", "Vị trí không xác định"),
+                jd_text=jd_text,
+                job_title=job_title,
+                domain_keywords=domain_keywords,
+            )
+
+            # Ghi thêm industry metadata vào result để FE có thể hiển thị
+            result["detected_industry"] = (
+                {"group_slug": detect.get("group_slug"),
+                 "branch_slug": detect.get("branch_slug"),
+                 "nhom_lon": detect.get("nhom_lon"),
+                 "nhanh_nho": detect.get("nhanh_nho")}
+                if industry_id and 'detect' in dir() and detect
+                else None
             )
 
             # Lưu kết quả

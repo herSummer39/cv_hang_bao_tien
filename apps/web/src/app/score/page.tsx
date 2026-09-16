@@ -1,9 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
+import IndustrySelect from "@/components/IndustrySelect";
 import { createClient } from "@/lib/supabase/client";
 
 type Preset = "frontend" | "pm" | "sales";
@@ -53,6 +54,26 @@ export default function ScorePage() {
   const jdReady = jdContent.trim().length > 30;
   const formReady = cvReady && jdReady;
 
+  // ── State chọn ngành ─────────────────────────────────────────────────────
+  const [selectedIndustryId, setSelectedIndustryId] = useState<string | null>(null);
+
+  // ── Prefill preferred_industry_id từ profile (nếu đã đăng nhập) ──────────
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("preferred_industry_id")
+        .eq("id", user.id)
+        .single();
+      if (profile?.preferred_industry_id) {
+        setSelectedIndustryId(profile.preferred_industry_id);
+      }
+    })();
+  }, []);
+
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -97,7 +118,7 @@ export default function ScorePage() {
       cvText = rawCV.trim();
     }
 
-    // Tạo job trong Supabase
+    // Tạo job trong Supabase — ghi kèm industry_id (null nếu user chọn "tự đoán")
     const { data, error } = await supabase
       .from("analysis_jobs")
       .insert({
@@ -107,6 +128,7 @@ export default function ScorePage() {
         jd_text: jdContent,
         job_title: jobTitle,
         status: "pending",
+        industry_id: selectedIndustryId ?? null,
       })
       .select("id")
       .single();
@@ -114,6 +136,17 @@ export default function ScorePage() {
     if (error || !data?.id) {
       alert("Lỗi kết nối Supabase: " + (error?.message || "unknown"));
       return;
+    }
+
+    // Upsert preferred_industry_id vào profiles nếu user đã đăng nhập + đã chọn ngành
+    if (selectedIndustryId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ preferred_industry_id: selectedIndustryId } as Record<string, unknown>)
+          .eq("id", user.id);
+      }
     }
 
     // Lưu jobId để processing page dùng
@@ -347,7 +380,7 @@ export default function ScorePage() {
                 Cung cấp tiêu chí kỳ vọng, yêu cầu kỹ thuật và bối cảnh nhóm để thiết lập thang đo phù hợp.
               </p>
 
-              {/* Role + level */}
+              {/* Role + level + Industry */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 <div className="sm:col-span-2">
                   <label className="block text-[11px] font-semibold text-[#565e74] uppercase tracking-wider mb-1" htmlFor="job-title">
@@ -385,6 +418,13 @@ export default function ScorePage() {
                   </select>
                 </div>
               </div>
+
+              {/* Industry Select — 2-level dropdown */}
+              <IndustrySelect
+                value={selectedIndustryId}
+                onChange={setSelectedIndustryId}
+                className="mb-3"
+              />
 
               {/* JD Textarea */}
               <div className="flex-1 flex flex-col min-h-[280px]">

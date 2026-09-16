@@ -9,6 +9,29 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      industries: {
+        Row: {
+          id: string;
+          parent_id: string | null;
+          level: "group" | "branch";
+          name: string;
+          slug: string;
+          sort_order: number | null;
+          created_at: string;
+        };
+        Insert: {
+          parent_id?: string | null;
+          level: "group" | "branch";
+          name: string;
+          slug: string;
+          sort_order?: number | null;
+        };
+        Update: {
+          name?: string;
+          slug?: string;
+          sort_order?: number | null;
+        };
+      };
       profiles: {
         Row: {
           id: string;
@@ -16,6 +39,7 @@ export interface Database {
           avatar_url: string | null;
           plan: "free" | "pro";
           cv_count: number;
+          preferred_industry_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -25,11 +49,46 @@ export interface Database {
           avatar_url?: string | null;
           plan?: "free" | "pro";
           cv_count?: number;
+          preferred_industry_id?: string | null;
         };
         Update: {
           full_name?: string | null;
           avatar_url?: string | null;
           plan?: "free" | "pro";
+          preferred_industry_id?: string | null;
+        };
+      };
+      analysis_jobs: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          cv_text: string | null;
+          cv_b64: string | null;
+          cv_filename: string | null;
+          jd_text: string;
+          job_title: string | null;
+          industry_id: string | null;
+          status: "pending" | "processing" | "done" | "error";
+          result: Json | null;
+          error_msg: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string | null;
+          cv_text?: string | null;
+          cv_b64?: string | null;
+          cv_filename?: string | null;
+          jd_text: string;
+          job_title?: string | null;
+          industry_id?: string | null;
+          status?: "pending" | "processing" | "done" | "error";
+        };
+        Update: {
+          status?: "pending" | "processing" | "done" | "error";
+          result?: Json | null;
+          error_msg?: string | null;
+          industry_id?: string | null;
         };
       };
       cv_sessions: {

@@ -3,10 +3,14 @@ os.environ["USE_TF"] = "0"
 os.environ["USE_JAX"] = "0"
 os.environ["TRANSFORMERS_NO_TF"] = "1"
 
-import io, re, pickle, logging
+import io, re, pickle, logging, sys
 import numpy as np
 from pathlib import Path
 from typing import Optional
+
+# Đưa ml-service root vào path để import industry_lookup
+sys.path.insert(0, str(Path(__file__).parent))
+import industry_lookup
 
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -15,77 +19,116 @@ from fastapi.middleware.cors import CORSMiddleware
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# ─── Keyword fallback đa ngành (~25 từ/ngành) ───────────────────────────────────
-ALL_DOMAIN_KEYWORDS = [
-    # IT
-    "react", "reactjs", "typescript", "javascript", "next.js", "vue",
-    "angular", "html", "css", "tailwind", "graphql", "webpack",
-    "python", "java", "node.js", "fastapi", "django", "flask", "spring",
-    "laravel", "php", "golang", "rust", "c++", "c#",
-    "mysql", "postgresql", "mongodb", "redis", "elasticsearch",
-    "docker", "kubernetes", "aws", "gcp", "azure", "ci/cd", "jenkins",
-    "flutter", "kotlin", "swift", "machine learning", "deep learning",
-    "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy", "git", "rest api",
-    "microservices", "agile", "scrum", "linux", "nginx", "figma",
-    # Marketing
-    "seo", "google ads", "facebook ads", "tiktok ads", "content marketing",
-    "email marketing", "google analytics", "canva", "copywriting",
-    "social media marketing", "influencer marketing", "brand management",
-    "media planning", "market research", "a/b testing", "hubspot",
-    "mailchimp", "youtube ads", "affiliate marketing", "landing page",
-    "kpi marketing", "digital marketing", "pr",
-    # Kế toán / Tài chính
-    "misa", "sap", "excel", "kế toán tổng hợp", "báo cáo tài chính",
-    "kế toán thuế", "kiểm toán", "phân tích tài chính", "lập ngân sách",
-    "ifrs", "vas", "kế toán kho", "kế toán công nợ", "kế toán lương",
-    "hóa đơn điện tử", "quyết toán thuế", "oracle finance", "quickbooks",
-    "tài chính doanh nghiệp", "dòng tiền", "balance sheet", "p&l",
-    # Nhân sự / HR
-    "tuyển dụng", "c&b", "onboarding", "hris", "đào tạo phát triển",
-    "lương thưởng", "kpi", "okr", "đánh giá hiệu suất", "phúc lợi nhân viên",
-    "quan hệ lao động", "hợp đồng lao động", "headhunting", "linkedin recruiter",
-    "bhxh", "talent management", "hr analytics", "employee engagement",
-    "job description", "quản trị nhân sự",
-    # Kinh doanh / Sales
-    "b2b sales", "đàm phán hợp đồng", "quản lý kênh phân phối",
-    "salesforce", "pipeline sales", "cold calling", "telesales",
-    "account management", "business development", "proposal", "báo giá",
-    "upselling", "cross-selling", "b2c sales", "retail sales", "crm",
-    # Thiết kế
-    "adobe xd", "photoshop", "illustrator", "indesign",
-    "ui/ux", "wireframing", "prototyping", "user research", "typography",
-    "brand identity", "visual design", "motion graphics", "after effects",
-    "logo design", "design system", "color theory", "sketch", "zeplin",
-    # Logistics
-    "xuất nhập khẩu", "hải quan", "incoterms", "vận tải biển",
-    "quản lý kho", "wms", "customs clearance", "bill of lading",
-    "freight forwarding", "supply chain", "procurement",
-    "last mile delivery", "3pl", "sap mm", "transport management",
-    # Kỹ thuật / Xây dựng
-    "autocad", "revit", "solidworks", "matlab", "plc", "scada",
-    "dự toán công trình", "thiết kế kết cấu", "điện công nghiệp",
-    "hệ thống hvac", "an toàn lao động", "iso 14001", "qa/qc",
-    "hàn", "bim", "thi công", "giám sát công trình", "mep",
-    # Y tế
-    "dược lâm sàng", "điều dưỡng", "chẩn đoán hình ảnh",
-    "xét nghiệm y khoa", "gmp", "gdp", "dược phẩm",
-    "quản lý phòng khám", "vật lý trị liệu", "emr", "nghiên cứu lâm sàng",
-    "dược điển", "y học dự phòng", "tư vấn dinh dưỡng",
-    # Giáo dục
-    "giáo án", "quản lý lớp học", "phương pháp giảng dạy",
-    "e-learning", "lms", "moodle", "google classroom", "thiết kế khóa học",
-    "đào tạo doanh nghiệp", "kỹ năng mềm", "stem", "blended learning",
-    # Nhà hàng / Khách sạn
-    "quản lý nhà hàng", "quản lý khách sạn", "lễ tân",
-    "housekeeping", "f&b", "bartending", "barista", "quản lý bếp",
-    "pms hotel", "tour guide", "event management",
-    "revenue management", "ota", "du lịch lữ hành", "vệ sinh an toàn thực phẩm",
-]
+# ─── Keyword fallback chia theo nhóm ngành (dùng khi detect offline) ────────
+# Key = group slug, value = list keyword (subset của ALL_DOMAIN_KEYWORDS)
+DOMAIN_KEYWORDS_BY_GROUP: dict[str, list[str]] = {
+    "cntt": [
+        "react", "reactjs", "typescript", "javascript", "next.js", "vue",
+        "angular", "html", "css", "tailwind", "graphql", "webpack",
+        "python", "java", "node.js", "fastapi", "django", "flask", "spring",
+        "laravel", "php", "golang", "rust", "c++", "c#",
+        "mysql", "postgresql", "mongodb", "redis", "elasticsearch",
+        "docker", "kubernetes", "aws", "gcp", "azure", "ci/cd", "jenkins",
+        "flutter", "kotlin", "swift", "machine learning", "deep learning",
+        "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy",
+        "git", "rest api", "microservices", "agile", "scrum", "linux",
+    ],
+    "marketing-truyen-thong": [
+        "seo", "google ads", "facebook ads", "tiktok ads", "content marketing",
+        "email marketing", "google analytics", "canva", "copywriting",
+        "social media marketing", "influencer marketing", "brand management",
+        "media planning", "market research", "a/b testing", "hubspot",
+        "mailchimp", "youtube ads", "affiliate marketing", "digital marketing", "pr",
+    ],
+    "ke-toan-tai-chinh": [
+        "misa", "sap", "excel", "kế toán tổng hợp", "báo cáo tài chính",
+        "kế toán thuế", "kiểm toán", "phân tích tài chính", "lập ngân sách",
+        "ifrs", "vas", "kế toán kho", "kế toán công nợ", "kế toán lương",
+        "hóa đơn điện tử", "quyết toán thuế", "quickbooks",
+        "tài chính doanh nghiệp", "dòng tiền", "balance sheet", "p&l",
+    ],
+    "nhan-su-hanh-chinh": [
+        "tuyển dụng", "c&b", "onboarding", "hris", "đào tạo phát triển",
+        "lương thưởng", "kpi", "okr", "đánh giá hiệu suất",
+        "quan hệ lao động", "hợp đồng lao động", "headhunting", "linkedin recruiter",
+        "bhxh", "talent management", "hr analytics", "job description",
+    ],
+    "kinh-doanh-ban-hang": [
+        "b2b sales", "đàm phán hợp đồng", "quản lý kênh phân phối",
+        "salesforce", "pipeline sales", "cold calling", "telesales",
+        "account management", "business development", "proposal",
+        "upselling", "cross-selling", "b2c sales", "retail sales", "crm",
+    ],
+    "thiet-ke-kien-truc": [
+        "figma", "adobe xd", "photoshop", "illustrator", "indesign",
+        "ui/ux", "wireframing", "prototyping", "user research", "typography",
+        "brand identity", "visual design", "motion graphics", "after effects",
+        "logo design", "design system", "color theory", "sketch", "autocad", "revit",
+    ],
+    "van-tai-logistics": [
+        "xuất nhập khẩu", "hải quan", "incoterms", "vận tải biển",
+        "quản lý kho", "wms", "customs clearance", "bill of lading",
+        "freight forwarding", "supply chain", "last mile delivery", "3pl", "sap mm",
+    ],
+    "xay-dung": [
+        "autocad", "revit", "solidworks", "matlab", "plc", "scada",
+        "dự toán công trình", "thiết kế kết cấu", "an toàn lao động",
+        "iso 14001", "qa/qc", "hàn", "bim", "thi công", "giám sát công trình", "mep",
+    ],
+    "y-te-duoc": [
+        "dược lâm sàng", "điều dưỡng", "chẩn đoán hình ảnh",
+        "xét nghiệm y khoa", "gmp", "gdp", "dược phẩm",
+        "quản lý phòng khám", "vật lý trị liệu", "nghiên cứu lâm sàng",
+        "dược điển", "y học dự phòng", "chăm sóc bệnh nhân",
+    ],
+    "giao-duc-dao-tao": [
+        "giáo án", "quản lý lớp học", "phương pháp giảng dạy",
+        "e-learning", "lms", "moodle", "google classroom", "thiết kế khóa học",
+        "kỹ năng mềm", "stem", "blended learning",
+    ],
+    "khach-san-nha-hang-du-lich": [
+        "quản lý nhà hàng", "quản lý khách sạn", "lễ tân",
+        "housekeeping", "f&b", "bartending", "barista", "quản lý bếp",
+        "pms hotel", "tour guide", "event management",
+        "revenue management", "ota", "vệ sinh an toàn thực phẩm",
+    ],
+    "co-khi-che-tao": [
+        "autocad", "revit", "solidworks", "matlab", "plc", "scada",
+        "điện công nghiệp", "an toàn lao động", "hàn", "bim", "mep",
+    ],
+    "dien-dien-tu-vien-thong": [
+        "plc", "scada", "điện công nghiệp", "an toàn lao động", "hvac",
+        "điện lạnh", "viễn thông", "mạng di động",
+    ],
+    "san-xuat-qa-qc": [
+        "iso 9001", "qa/qc", "haccp", "gmp", "lean manufacturing",
+        "kaizen", "5s", "fmea", "spc", "aql",
+    ],
+    "bat-dong-san": [
+        "môi giới bất động sản", "pháp lý bất động sản", "định giá bất động sản",
+        "crm bất động sản",
+    ],
+    "dich-vu-khach-hang": [
+        "chăm sóc khách hàng", "xử lý khiếu nại", "zendesk", "crm",
+    ],
+    "lao-dong-pho-thong": [
+        "vận hành máy", "dây chuyền sản xuất", "bảo hộ lao động", "bằng lái xe",
+    ],
+}
 
-def keyword_extract_skills(text: str) -> list[str]:
-    """Trích xuất kỹ năng bằng keyword matching đa ngành."""
-    text_lower = text.lower()
-    return [kw for kw in ALL_DOMAIN_KEYWORDS if kw in text_lower]
+def _get_domain_keywords_offline(job_title: str, jd_text: str) -> list[str] | None:
+    """Detect ngành offline rồi trả về keyword list phù hợp.
+    Trả về None nếu không detect được (caller sẽ dùng ALL_DOMAIN_KEYWORDS)."""
+    detect = industry_lookup.detect_industry(job_title, jd_text)
+    if detect is None:
+        return None
+    group_slug = detect.get("group_slug")
+    kws = DOMAIN_KEYWORDS_BY_GROUP.get(group_slug)
+    if not kws:
+        # Fallback: dùng ALL_DOMAIN_KEYWORDS khi không có group-specific dict
+        return None
+    return kws
+
 
 BASE = Path(__file__).parent
 M1_DIR = BASE / "models" / "m1_ner" / "final"
@@ -199,7 +242,7 @@ def keyword_extract_skills(text: str) -> list:
             found.append(kw.title() if kw[0].isupper() or kw in ("react","vue","html","css","sql","aws","gcp","nlp") else kw)
     return found
 
-def run_ner(text: str) -> dict:
+def run_ner(text: str, domain_keywords: list | None = None) -> dict:
     import unicodedata
     text = unicodedata.normalize("NFC", text)
     ner = get_m1()
@@ -217,8 +260,9 @@ def run_ner(text: str) -> dict:
                 elif eg == "EDU": edus.append(word)
                 elif eg == "ORG": orgs.append(word)
         except Exception: pass
-    # Fallback đa ngành: bổ sung keyword nếu NER bỏ sót
-    kw_skills = keyword_extract_skills(text)
+    # Fallback: industry-aware nếu detect được, ngược lại dùng ALL_DOMAIN_KEYWORDS
+    pool = domain_keywords if domain_keywords is not None else ALL_DOMAIN_KEYWORDS
+    kw_skills = [kw for kw in pool if kw in text.lower()]
     skills = list(set(skills) | set(kw_skills))
     return {"skills": skills, "experiences": list(set(exps)),
             "educations": list(set(edus)), "organizations": list(set(orgs))}
@@ -238,8 +282,16 @@ async def analyze(
     else:
         raise HTTPException(status_code=400, detail="Can cung cap CV")
 
-    cv_ents = run_ner(raw_cv)
-    jd_ents = run_ner(jd_text)
+    # Detect ngành offline → chọn bộ keyword phù hợp (tương thích ngược nếu không detect)
+    domain_keywords = _get_domain_keywords_offline(job_title, jd_text)
+    detected_group = industry_lookup.detect_industry(job_title, jd_text)
+    if detected_group:
+        logger.info(f"Detected industry: {detected_group['nhom_lon']} / {detected_group['nhanh_nho']}")
+    else:
+        logger.info("Industry: không detect được — dùng ALL_DOMAIN_KEYWORDS")
+
+    cv_ents = run_ner(raw_cv, domain_keywords)
+    jd_ents = run_ner(jd_text, domain_keywords)
 
     m2 = get_m2()
     from sentence_transformers.util import cos_sim
