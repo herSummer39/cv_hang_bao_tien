@@ -6,6 +6,9 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-[#434655]">
         <span>© 2026 CareerFit. Nền tảng đánh giá CV & luyện phỏng vấn AI tiếng Việt.</span>
         <div className="flex items-center gap-6">
+          <Link href="/about" className="hover:text-[#0037b0] transition-colors font-medium text-[#0b1c30]">
+            Về nhóm
+          </Link>
           <Link href="#" className="hover:text-[#0037b0] transition-colors">
             Quy chế bảo mật
           </Link>

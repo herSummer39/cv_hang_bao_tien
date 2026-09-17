@@ -21,7 +21,9 @@ export default function Header() {
             <Link href="/score" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
               Đánh giá CV
             </Link>
-            <Link href="/advise" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
+            {/* /advise chưa có trang riêng — tạm trỏ vào /score (kết quả phân tích đã có phần
+                gợi ý cải thiện/gaps). Đổi lại link này khi trang /advise được xây xong. */}
+            <Link href="/score" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
               Tư vấn cải thiện
             </Link>
             <Link href="/interview" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
@@ -29,6 +31,9 @@ export default function Header() {
             </Link>
             <Link href="/batch" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
               So sánh CV
+            </Link>
+            <Link href="/explore" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
+              Khám phá
             </Link>
           </nav>
         </div>
