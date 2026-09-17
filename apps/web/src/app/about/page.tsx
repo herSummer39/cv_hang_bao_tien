@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Image from "next/image";
 
 export default function AboutPage() {
   return (
@@ -53,18 +54,20 @@ export default function AboutPage() {
           <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[32px] font-bold text-[#0b1c30] mb-12">
             Đội ngũ phát triển
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-            {/* Tên và thông tin để trống để chủ repo điền */}
-            {[1, 2, 3, 4].map((member) => (
-              <div key={member} className="bg-white rounded-2xl p-6 shadow-sm border border-[#e5eeff] hover:shadow-md transition-shadow">
-                <div className="w-24 h-24 rounded-full bg-[#dce1ff] mx-auto mb-4 flex items-center justify-center text-[#0037b0] overflow-hidden">
-                  <span className="material-symbols-outlined text-[48px]">person</span>
-                  {/* TODO: Add real image <Image src="..." alt="..." fill className="object-cover" /> */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {[
+              { name: "Tiến", role: "Thành viên", img: "/tienvip.jpg" },
+              { name: "Hằng", role: "Thành viên", img: "/hangg.jpg" },
+              { name: "Bảo", role: "Thành viên", img: "/bao.jpg" }
+            ].map((member, idx) => (
+              <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border border-[#e5eeff] hover:shadow-md transition-shadow">
+                <div className="w-24 h-24 rounded-full bg-[#dce1ff] mx-auto mb-4 flex items-center justify-center text-[#0037b0] overflow-hidden relative">
+                  <Image src={member.img} alt={member.name} fill className="object-cover" />
                 </div>
                 <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30] mb-1">
-                  Thành viên {member}
+                  {member.name}
                 </h3>
-                <p className="text-[14px] text-[#565e74] font-medium mb-3">Vai trò / Chức vụ</p>
+                <p className="text-[14px] text-[#565e74] font-medium mb-3">{member.role}</p>
                 <div className="text-[13px] text-[#8fa5c0] flex justify-center gap-2">
                   <span className="material-symbols-outlined text-[18px] hover:text-[#0037b0] cursor-pointer">link</span>
                   <span className="material-symbols-outlined text-[18px] hover:text-[#0037b0] cursor-pointer">mail</span>
