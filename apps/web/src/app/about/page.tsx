@@ -56,9 +56,9 @@ export default function AboutPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {[
-              { name: "Tiến", role: "Thành viên", img: "/tienvip.jpg" },
-              { name: "Hằng", role: "Thành viên", img: "/hangg.jpg" },
-              { name: "Bảo", role: "Thành viên", img: "/bao.jpg" }
+              { name: "Chí Tiền", role: "Thành viên", img: "/tienvip.jpg" },
+              { name: "Ngọc Hằng", role: "Thành viên", img: "/hangg.jpg" },
+              { name: "Gia Bảo", role: "Thành viên", img: "/bao.jpg" }
             ].map((member, idx) => (
               <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border border-[#e5eeff] hover:shadow-md transition-shadow">
                 <div className="w-24 h-24 rounded-full bg-[#dce1ff] mx-auto mb-4 flex items-center justify-center text-[#0037b0] overflow-hidden relative">
