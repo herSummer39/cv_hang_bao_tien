@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.0.0",
     "@supabase/ssr": "^0.12.7",
     "jspdf": "^2.5.2",
     "next": "16.3.4",

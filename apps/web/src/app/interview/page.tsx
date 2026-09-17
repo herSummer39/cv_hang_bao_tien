@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
+import { useVoiceToText } from "./useVoiceToText";
 
 const TIME_PER_QUESTION_SEC = 180; // 3 phút / câu
 const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ, không giảm
@@ -119,6 +120,24 @@ export default function InterviewPage() {
   const answerDraftRef = useRef(answerDraft);
   answerDraftRef.current = answerDraft;
 
+  // Trả lời bằng giọng nói — tuỳ chọn thêm bên cạnh gõ tay, không bắt buộc.
+  // Dùng model ASR THẬT (PhoWhisper tiếng Việt) chạy 100% trong trình duyệt,
+  // không gọi API ngoài — xem chi tiết ở useVoiceToText.ts / asr-worker.js.
+  // Văn bản nhận diện được nối thêm vào ô trả lời để người dùng vẫn xem/sửa
+  // lại trước khi nộp câu trả lời.
+  const handleVoiceResult = useCallback((text: string) => {
+    if (!text) return;
+    setAnswerDraft((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+  }, []);
+  const {
+    status: voiceStatus,
+    modelProgressPct: voiceModelProgressPct,
+    errorMsg: voiceErrorMsg,
+    startRecording: startVoiceRecording,
+    stopRecording: stopVoiceRecording,
+    cancelRecording: cancelVoiceRecording,
+  } = useVoiceToText(handleVoiceResult);
+
   // ── Auth + nạp dữ liệu câu hỏi thật từ kết quả phân tích gần nhất ──────────
   useEffect(() => {
     (async () => {
@@ -207,6 +226,10 @@ export default function InterviewPage() {
   }, [analysisJobId, candidateName, jobTitle, questions, router]);
 
   const goToNext = useCallback((timeUsed: number, outcome: AnswerOutcome) => {
+    // Tắt mic ngay khi chuyển câu — tránh ghi âm/transcribe của câu cũ lỡ tay
+    // rơi vào ô trả lời của câu kế tiếp (vd hết giờ đúng lúc đang ghi âm).
+    cancelVoiceRecording();
+
     const q = questions[currentIndex];
     const answerText = answerDraftRef.current;
 
@@ -243,7 +266,7 @@ export default function InterviewPage() {
       }
       return next;
     });
-  }, [currentIndex, questions, finishInterview]);
+  }, [currentIndex, questions, finishInterview, cancelVoiceRecording]);
 
   // ── Đếm ngược 3 phút (180s) / câu ────────────────────────────────────────
   useEffect(() => {
@@ -316,6 +339,7 @@ export default function InterviewPage() {
                   <li>Trả lời ở <strong>phút 2–3</strong>: điểm giảm dần theo thời gian đã dùng.</li>
                   <li><strong>Hết giờ</strong> mà chưa nộp: câu đó bị loại, 0 điểm.</li>
                   <li>Bấm <strong>“Bỏ qua”</strong>: cũng bị mất điểm câu đó (0 điểm), khác với hết giờ.</li>
+                  <li>Có thể <strong>gõ tay</strong> hoặc bấm <strong>micro để trả lời bằng giọng nói</strong> (tự động chuyển thành văn bản) — tuỳ bạn chọn, có thể kết hợp cả hai.</li>
                 </ul>
                 <p>Kết quả (từng câu, điểm, thời gian dùng) sẽ được lưu lại vào hồ sơ để bạn xem lại sau.</p>
               </div>
@@ -359,8 +383,38 @@ export default function InterviewPage() {
                 rows={8}
                 value={answerDraft}
                 onChange={(e) => setAnswerDraft(e.target.value)}
-                placeholder="Nhập câu trả lời của bạn tại đây..."
+                placeholder="Nhập câu trả lời của bạn tại đây, hoặc bấm micro để trả lời bằng giọng nói..."
               />
+
+              {/* Trả lời bằng giọng nói — tuỳ chọn, có thể dùng thay hoặc kết hợp với gõ tay */}
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={voiceStatus === "recording" ? stopVoiceRecording : startVoiceRecording}
+                  disabled={voiceStatus === "transcribing"}
+                  className={`px-4 py-2 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors shrink-0 ${
+                    voiceStatus === "recording"
+                      ? "bg-[#ba1a1a] text-white hover:bg-[#93000a]"
+                      : voiceStatus === "transcribing"
+                      ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
+                      : "bg-white border border-[#c4c5d7]/60 text-[#0037b0] hover:bg-[#eff4ff]"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined text-[18px] ${voiceStatus === "recording" ? "animate-pulse" : ""}`}>
+                    {voiceStatus === "recording" ? "stop_circle" : "mic"}
+                  </span>
+                  {voiceStatus === "recording" ? "Dừng ghi âm" : "Trả lời bằng giọng nói"}
+                </button>
+                <span className="text-[12px] text-[#8fa5c0]">
+                  {voiceStatus === "recording" && "Đang ghi âm — bấm “Dừng ghi âm” khi trả lời xong."}
+                  {voiceStatus === "transcribing" &&
+                    (voiceModelProgressPct !== null && voiceModelProgressPct > 0 && voiceModelProgressPct < 100
+                      ? `Đang tải mô hình nhận diện giọng nói tiếng Việt (chỉ lần đầu)... ${voiceModelProgressPct}%`
+                      : "Đang chuyển giọng nói thành văn bản...")}
+                  {voiceStatus === "error" && <span className="text-[#ba1a1a]">{voiceErrorMsg}</span>}
+                  {voiceStatus === "idle" &&
+                    "Có thể ghi âm nhiều lần, văn bản sẽ được nối vào ô trả lời để bạn xem/sửa lại trước khi nộp."}
+                </span>
+              </div>
 
               <p className="mt-3 text-[11px] text-[#8fa5c0]">
                 {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
@@ -373,7 +427,12 @@ export default function InterviewPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleSkip}
-                    className="px-4 py-2.5 rounded-xl bg-white border border-[#c4c5d7]/60 text-[#565e74] text-[13px] font-medium hover:bg-[#f0f4ff] transition-colors flex items-center gap-2"
+                    disabled={voiceStatus === "recording" || voiceStatus === "transcribing"}
+                    className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors ${
+                      voiceStatus === "recording" || voiceStatus === "transcribing"
+                        ? "bg-[#f0f0f0] text-[#c4c5d7] cursor-not-allowed"
+                        : "bg-white border border-[#c4c5d7]/60 text-[#565e74] hover:bg-[#f0f4ff]"
+                    }`}
                     title="Bỏ qua câu này — sẽ bị 0 điểm"
                   >
                     <span className="material-symbols-outlined text-[16px]">skip_next</span>
@@ -381,7 +440,17 @@ export default function InterviewPage() {
                   </button>
                   <button
                     onClick={handleSubmitAnswer}
-                    className="px-5 py-2.5 rounded-xl bg-[#1d4ed8] text-white text-[13px] font-medium hover:bg-[#0037b0] transition-colors flex items-center gap-2"
+                    disabled={voiceStatus === "recording" || voiceStatus === "transcribing"}
+                    className={`px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors ${
+                      voiceStatus === "recording" || voiceStatus === "transcribing"
+                        ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
+                        : "bg-[#1d4ed8] text-white hover:bg-[#0037b0]"
+                    }`}
+                    title={
+                      voiceStatus === "recording"
+                        ? "Hãy dừng ghi âm trước khi nộp câu trả lời"
+                        : undefined
+                    }
                   >
                     {currentIndex + 1 >= questions.length ? "Nộp & xem kết quả" : "Nộp & câu tiếp theo"}
                     <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
