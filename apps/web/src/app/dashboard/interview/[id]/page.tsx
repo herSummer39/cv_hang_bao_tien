@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 
+type AnswerOutcome = "submitted" | "timeout" | "skipped";
+
 type AnswerRecord = {
   question_id: string;
   category: string;
@@ -12,6 +14,7 @@ type AnswerRecord = {
   time_used_sec: number;
   answer_text: string;
   question_score: number;
+  outcome?: AnswerOutcome; // có thể undefined ở các phiên cũ trước khi thêm field này
   answered_at: string;
 };
 
@@ -19,6 +22,19 @@ function scoreColor(score: number) {
   if (score >= 70) return "text-[#004f35] bg-[#85f8c4]/30";
   if (score >= 40) return "text-[#5c3b00] bg-[#ffe8b8]";
   return "text-[#93000a] bg-[#ffdad6]";
+}
+
+function outcomeBadge(outcome: AnswerOutcome | undefined) {
+  switch (outcome) {
+    case "timeout":
+      return { label: "Hết giờ — bị loại", cls: "text-[#93000a] bg-[#ffdad6]" };
+    case "skipped":
+      return { label: "Đã bỏ qua", cls: "text-[#565e74] bg-[#e5eeff]" };
+    case "submitted":
+      return { label: "Đã nộp", cls: "text-[#004f35] bg-[#85f8c4]/30" };
+    default:
+      return null;
+  }
 }
 
 export default async function InterviewDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -101,7 +117,9 @@ export default async function InterviewDetailPage({ params }: { params: Promise<
         )}
 
         <div className="space-y-4">
-          {answers.map((a, idx) => (
+          {answers.map((a, idx) => {
+            const badge = outcomeBadge(a.outcome);
+            return (
             <div key={a.question_id || idx} className="bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-6">
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
@@ -110,15 +128,26 @@ export default async function InterviewDetailPage({ params }: { params: Promise<
                   </span>
                   <p className="font-semibold text-[#0b1c30] text-[15px] mt-1">{a.question}</p>
                 </div>
-                <span className={`shrink-0 px-3 py-1 rounded-full text-[13px] font-bold ${scoreColor(a.question_score)}`}>
-                  {a.question_score}/100
-                </span>
+                <div className="shrink-0 flex flex-col items-end gap-1.5">
+                  <span className={`px-3 py-1 rounded-full text-[13px] font-bold ${scoreColor(a.question_score)}`}>
+                    {a.question_score}/100
+                  </span>
+                  {badge && (
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${badge.cls}`}>
+                      {badge.label}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="bg-[#eff4ff] rounded-xl p-4 mb-3">
                 <p className="text-[11px] font-semibold text-[#565e74] uppercase mb-1">Câu trả lời của bạn</p>
                 <p className="text-[13px] text-[#0b1c30] whitespace-pre-wrap">
-                  {a.answer_text || <span className="italic text-[#8fa5c0]">Không trả lời (hết thời gian)</span>}
+                  {a.answer_text || (
+                    <span className="italic text-[#8fa5c0]">
+                      {a.outcome === "skipped" ? "Đã bỏ qua, không trả lời" : "Không trả lời (hết thời gian)"}
+                    </span>
+                  )}
                 </p>
                 <p className="text-[11px] text-[#8fa5c0] mt-2">
                   Thời gian dùng: {a.time_used_sec}s / {a.time_limit_sec}s
@@ -132,7 +161,8 @@ export default async function InterviewDetailPage({ params }: { params: Promise<
                 </ul>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </main>
     </div>

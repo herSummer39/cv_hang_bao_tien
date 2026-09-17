@@ -360,45 +360,189 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
             "desc": "Nên điều chỉnh từ ngữ CV để gần hơn với yêu cầu vị trí.",
         })
 
+    # ── Bộ 5 câu hỏi phỏng vấn giả lập — LUÔN đủ 5 câu, mỗi câu bám vào 1 tín hiệu
+    # THẬT đã tính toán ở trên (missing/matched skills, kinh nghiệm, similarity M2,
+    # score M3, gap lớn nhất) — không có câu nào bị bỏ trống hay dùng nội dung
+    # tự bịa; khi thiếu 1 loại tín hiệu (VD không có skill thiếu) thì dùng nhánh
+    # else bám vào tín hiệu thật khác (VD tổng số skill JD yêu cầu) thay thế.
+    total_jd_skills = len(jd_skills)
+
     questions = []
+
+    # Câu 1 — kỹ năng còn thiếu (hoặc xác nhận năng lực nếu không thiếu gì)
     if missing:
-        questions.append({
-            "id": "01",
-            "category": "Xác minh kỹ năng còn thiếu",
-            "categoryColor": "bg-[#dce1ff] text-[#001551]",
-            "badgeBg": "bg-[#1d4ed8]",
-            "duration": "15 phút",
-            "weight": "40%",
-            "weightColor": "text-[#0037b0]",
-            "question": f'"Vị trí {job_title} yêu cầu {", ".join(missing[:3])}. Bạn có kinh nghiệm thực tế với các công nghệ này không? Hãy mô tả dự án cụ thể."',
-            "expected": [
-                "Ứng viên có thể mô tả dự án thực tế liên quan.",
-                "Thể hiện khả năng tự học và tiếp thu công nghệ mới.",
-            ],
-            "redFlags": [
-                "Chỉ biết lý thuyết, không có project thực tế.",
-                "Không thể giải thích cơ chế hoạt động cơ bản.",
-            ],
-        })
+        q1_category = "Xác minh kỹ năng còn thiếu"
+        q1_question = f'"Vị trí {job_title} yêu cầu {", ".join(missing[:3])}. Bạn có kinh nghiệm thực tế với các công nghệ này không? Hãy mô tả dự án cụ thể."'
+        q1_expected = [
+            "Ứng viên có thể mô tả dự án thực tế liên quan.",
+            "Thể hiện khả năng tự học và tiếp thu công nghệ mới.",
+        ]
+        q1_red = [
+            "Chỉ biết lý thuyết, không có project thực tế.",
+            "Không thể giải thích cơ chế hoạt động cơ bản.",
+        ]
+    else:
+        q1_category = "Xác nhận năng lực đáp ứng JD"
+        q1_question = f'"CV của bạn đã thể hiện đủ {total_jd_skills} kỹ năng chính mà JD {job_title} yêu cầu. Trong số đó, kỹ năng nào bạn tự tin nhất và vì sao?"'
+        q1_expected = [
+            "Chọn được kỹ năng thực sự liên quan trọng tâm của JD.",
+            "Giải thích lý do thuyết phục, có ví dụ cụ thể.",
+        ]
+        q1_red = [
+            "Chọn kỹ năng không liên quan đến JD.",
+            "Không đưa ra được ví dụ minh chứng.",
+        ]
+    questions.append({
+        "id": "01",
+        "category": q1_category,
+        "categoryColor": "bg-[#dce1ff] text-[#001551]",
+        "badgeBg": "bg-[#1d4ed8]",
+        "duration": "3 phút",
+        "weight": "20%",
+        "weightColor": "text-[#0037b0]",
+        "question": q1_question,
+        "expected": q1_expected,
+        "redFlags": q1_red,
+    })
+
+    # Câu 2 — đào sâu kỹ năng thế mạnh (hoặc kỹ năng tương đương nếu không match gì)
     if matched:
-        questions.append({
-            "id": "02",
-            "category": "Đào sâu kỹ năng thế mạnh",
-            "categoryColor": "bg-[#85f8c4] text-[#002114]",
-            "badgeBg": "bg-[#004f35]",
-            "duration": "20 phút",
-            "weight": "35%",
-            "weightColor": "text-[#004f35]",
-            "question": f'"Bạn đã dùng {", ".join(matched[:2])} trong môi trường production như thế nào? Kết quả đo lường được là gì?"',
-            "expected": [
-                "Nêu được metrics cụ thể (tốc độ, scale, uptime...).",
-                "Hiểu được trade-off của giải pháp đã chọn.",
-            ],
-            "redFlags": [
-                "Không nhớ kết quả cụ thể.",
-                "Chỉ dùng ở side project nhỏ.",
-            ],
-        })
+        q2_category = "Đào sâu kỹ năng thế mạnh"
+        q2_question = f'"Bạn đã dùng {", ".join(matched[:2])} trong môi trường production như thế nào? Kết quả đo lường được là gì?"'
+        q2_expected = [
+            "Nêu được metrics cụ thể (tốc độ, scale, uptime...).",
+            "Hiểu được trade-off của giải pháp đã chọn.",
+        ]
+        q2_red = [
+            "Không nhớ kết quả cụ thể.",
+            "Chỉ dùng ở side project nhỏ.",
+        ]
+    else:
+        q2_category = "Kỹ năng tương đương / chuyển đổi"
+        q2_question = f'"CV chưa thể hiện kỹ năng nào trùng khớp trực tiếp với {total_jd_skills} kỹ năng JD {job_title} yêu cầu. Bạn có kỹ năng tương đương hoặc gần nào có thể áp dụng cho vị trí này không?"'
+        q2_expected = [
+            "Nêu được kỹ năng tương đương có liên hệ hợp lý với JD.",
+            "Thể hiện khả năng chuyển đổi/áp dụng kiến thức sang lĩnh vực mới.",
+        ]
+        q2_red = [
+            "Không liên hệ được kỹ năng nào với JD.",
+            "Chỉ nói chung, không cụ thể.",
+        ]
+    questions.append({
+        "id": "02",
+        "category": q2_category,
+        "categoryColor": "bg-[#85f8c4] text-[#002114]",
+        "badgeBg": "bg-[#004f35]",
+        "duration": "3 phút",
+        "weight": "20%",
+        "weightColor": "text-[#004f35]",
+        "question": q2_question,
+        "expected": q2_expected,
+        "redFlags": q2_red,
+    })
+
+    # Câu 3 — kinh nghiệm thực tế, bám vào cv_exp / jd_exp_min / jd_exp_max THẬT
+    if exp_gap > 0:
+        q3_question = f'"JD vị trí {job_title} yêu cầu {jd_exp_min:.0f}-{jd_exp_max:.0f} năm kinh nghiệm, CV của bạn thể hiện {cv_exp:.0f} năm. Bạn dự định bù đắp khoảng cách kinh nghiệm này như thế nào để đáp ứng vai trò?"'
+        q3_expected = [
+            "Có kế hoạch cụ thể (học thêm, làm dự án thực tế, mentor...).",
+            "Nhận thức đúng về khoảng cách kinh nghiệm của bản thân.",
+        ]
+        q3_red = [
+            "Không nhận ra khoảng cách kinh nghiệm.",
+            "Kế hoạch mơ hồ, không khả thi.",
+        ]
+    elif cv_exp > jd_exp_max:
+        q3_question = f'"Bạn có {cv_exp:.0f} năm kinh nghiệm, vượt mức {jd_exp_max:.0f} năm JD {job_title} yêu cầu. Kinh nghiệm dư ra đó đã giúp bạn xử lý tình huống khó nào trong công việc?"'
+        q3_expected = [
+            "Mô tả được tình huống thực tế, cụ thể.",
+            "Thể hiện chiều sâu kinh nghiệm tương xứng với số năm nêu ra.",
+        ]
+        q3_red = [
+            "Không kể được tình huống cụ thể.",
+            "Kinh nghiệm nêu ra không tương xứng với số năm.",
+        ]
+    else:
+        q3_question = f'"Với {cv_exp:.0f} năm kinh nghiệm phù hợp yêu cầu {jd_exp_min:.0f}-{jd_exp_max:.0f} năm của JD {job_title}, hãy mô tả dự án tiêu biểu nhất thể hiện năng lực của bạn."'
+        q3_expected = [
+            "Dự án mô tả đúng quy mô, vai trò rõ ràng.",
+            "Có kết quả/đóng góp cụ thể.",
+        ]
+        q3_red = [
+            "Không có dự án tiêu biểu cụ thể.",
+            "Vai trò trong dự án không rõ ràng.",
+        ]
+    questions.append({
+        "id": "03",
+        "category": "Kinh nghiệm thực tế",
+        "categoryColor": "bg-[#ffe8b8] text-[#5c3b00]",
+        "badgeBg": "bg-[#8a5700]",
+        "duration": "3 phút",
+        "weight": "20%",
+        "weightColor": "text-[#8a5700]",
+        "question": q3_question,
+        "expected": q3_expected,
+        "redFlags": q3_red,
+    })
+
+    # Câu 4 — hiểu vai trò & mức độ phù hợp, bám vào similarity THẬT từ M2
+    if similarity >= 0.5:
+        q4_question = f'"Chỉ số phù hợp ngữ nghĩa giữa CV và JD của bạn đạt {similarity*100:.0f}%. Theo bạn, trách nhiệm chính của vị trí {job_title} là gì, và vì sao CV bạn thể hiện sự phù hợp đó?"'
+        q4_expected = [
+            "Nêu đúng trọng tâm trách nhiệm của vị trí.",
+            "Liên hệ được với kinh nghiệm/kỹ năng thực tế trong CV.",
+        ]
+        q4_red = [
+            "Trả lời chung, không liên hệ được với vị trí cụ thể.",
+            "Không hiểu đúng trách nhiệm chính của vai trò.",
+        ]
+    else:
+        q4_question = f'"Chỉ số phù hợp ngữ nghĩa giữa CV và JD vị trí {job_title} hiện chỉ đạt {similarity*100:.0f}%, khá thấp. Bạn nghĩ vì sao CV chưa thể hiện rõ sự phù hợp, và sẽ điều chỉnh nội dung CV như thế nào?"'
+        q4_expected = [
+            "Nhận diện đúng nguyên nhân (thiếu từ khoá, kinh nghiệm chưa liên quan...).",
+            "Đưa ra hướng điều chỉnh CV cụ thể, khả thi.",
+        ]
+        q4_red = [
+            "Không nhận ra vấn đề của CV.",
+            "Đổ lỗi hoàn toàn cho JD/nhà tuyển dụng.",
+        ]
+    questions.append({
+        "id": "04",
+        "category": "Hiểu vai trò & mức độ phù hợp",
+        "categoryColor": "bg-[#e9ddff] text-[#2c0a63]",
+        "badgeBg": "bg-[#5b21b6]",
+        "duration": "3 phút",
+        "weight": "20%",
+        "weightColor": "text-[#5b21b6]",
+        "question": q4_question,
+        "expected": q4_expected,
+        "redFlags": q4_red,
+    })
+
+    # Câu 5 — tổng hợp: bám vào score M3 THẬT + khoảng trống lớn nhất đã phân tích (gaps[0])
+    top_gap_title = gaps[0]["title"] if gaps else None
+    if top_gap_title:
+        q5_question = f'"Điểm tổng thể phân tích của bạn cho vị trí {job_title} là {score:.0f}/100. Khoảng trống lớn nhất được ghi nhận: "{top_gap_title}". Nếu được nhận vào vị trí này, bạn sẽ giải quyết vấn đề đó trong 3 tháng đầu như thế nào?"'
+    else:
+        q5_question = f'"Điểm tổng thể phân tích của bạn cho vị trí {job_title} là {score:.0f}/100, hồ sơ khá phù hợp với JD. Bạn sẽ tạo ra giá trị gì trong 3 tháng đầu nếu được nhận vào vị trí này?"'
+    questions.append({
+        "id": "05",
+        "category": "Kế hoạch hành động & động lực",
+        "categoryColor": "bg-[#ffdad6] text-[#5c0007]",
+        "badgeBg": "bg-[#93000a]",
+        "duration": "3 phút",
+        "weight": "20%",
+        "weightColor": "text-[#93000a]",
+        "question": q5_question,
+        "expected": [
+            "Đưa ra kế hoạch/hành động cụ thể, khả thi trong 3 tháng.",
+            "Liên hệ trực tiếp với khoảng trống hoặc yêu cầu thực tế của JD.",
+        ],
+        "redFlags": [
+            "Kế hoạch chung, không cụ thể, không liên hệ JD.",
+            "Không đưa ra được hành động rõ ràng.",
+        ],
+    })
 
     return {
         "score": round(score, 1),

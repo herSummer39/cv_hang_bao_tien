@@ -6,7 +6,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 
-const TIME_PER_QUESTION_SEC = 60;
+const TIME_PER_QUESTION_SEC = 180; // 3 phút / câu
+const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ, không giảm
+const MIN_TIME_MULTIPLIER = 0.5; // sàn giảm điểm ở cuối phút thứ 3 (giây 180)
+const TOTAL_QUESTIONS = 5;
 
 type ApiQuestion = {
   id: string;
@@ -18,6 +21,8 @@ type ApiQuestion = {
   redFlags: string[];
 };
 
+type AnswerOutcome = "submitted" | "timeout" | "skipped";
+
 type AnswerRecord = {
   question_id: string;
   category: string;
@@ -28,8 +33,20 @@ type AnswerRecord = {
   time_used_sec: number;
   answer_text: string;
   question_score: number;
+  outcome: AnswerOutcome;
   answered_at: string;
 };
+
+// Hệ số giảm điểm theo thời gian dùng thật của câu trả lời:
+// 0–60s (phút đầu): hệ số 1 — điểm tính đầy đủ theo scoreAnswer().
+// 60–180s (phút 2–3): giảm dần tuyến tính từ 1 xuống MIN_TIME_MULTIPLIER.
+// Hết giờ hoàn toàn (>=180s, không nộp) không đi qua hàm này — bị loại (0đ) ở goToNext.
+function timeMultiplier(timeUsedSec: number): number {
+  if (timeUsedSec <= FULL_SCORE_WINDOW_SEC) return 1;
+  if (timeUsedSec >= TIME_PER_QUESTION_SEC) return MIN_TIME_MULTIPLIER;
+  const t = (timeUsedSec - FULL_SCORE_WINDOW_SEC) / (TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC);
+  return 1 - t * (1 - MIN_TIME_MULTIPLIER);
+}
 
 // Bỏ dấu tiếng Việt để so khớp từ khoá được rộng rãi hơn.
 // "đ"/"Đ" không tách được bằng NFD (không phải base + combining-mark),
@@ -40,7 +57,7 @@ function stripAccents(s: string): string {
     .replace(/đ/g, "d")
     .replace(/Đ/g, "D")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 }
 
@@ -154,8 +171,14 @@ export default function InterviewPage() {
     const totalScore = finalAnswers.length
       ? Math.round(finalAnswers.reduce((sum, a) => sum + a.question_score, 0) / finalAnswers.length)
       : 0;
-    const answeredCount = finalAnswers.filter((a) => a.answer_text.trim().length > 0).length;
-    const summary = `Hoàn thành phỏng vấn giả lập ${finalAnswers.length} câu (trả lời ${answeredCount}/${finalAnswers.length}), điểm trung bình ${totalScore}/100 — vị trí ${jobTitle || "chưa xác định"}.`;
+    const submittedCount = finalAnswers.filter((a) => a.outcome === "submitted").length;
+    const timeoutCount = finalAnswers.filter((a) => a.outcome === "timeout").length;
+    const skippedCount = finalAnswers.filter((a) => a.outcome === "skipped").length;
+    const eliminatedNote =
+      timeoutCount || skippedCount
+        ? ` (${timeoutCount} câu hết giờ bị loại, ${skippedCount} câu bị bỏ qua — cả hai đều 0 điểm)`
+        : "";
+    const summary = `Hoàn thành phỏng vấn giả lập ${finalAnswers.length} câu (nộp đúng giờ ${submittedCount}/${finalAnswers.length})${eliminatedNote}, điểm trung bình ${totalScore}/100 — vị trí ${jobTitle || "chưa xác định"}.`;
 
     const { data, error } = await supabase
       .from("interview_sessions")
@@ -183,9 +206,18 @@ export default function InterviewPage() {
     router.push(`/dashboard/interview/${data.id}`);
   }, [analysisJobId, candidateName, jobTitle, questions, router]);
 
-  const goToNext = useCallback((timeUsed: number) => {
+  const goToNext = useCallback((timeUsed: number, outcome: AnswerOutcome) => {
     const q = questions[currentIndex];
     const answerText = answerDraftRef.current;
+
+    // Hết giờ hoàn toàn hoặc bấm "Bỏ qua" → câu đó bị loại, luôn 0 điểm
+    // (dù người dùng có kịp gõ gì đó, nội dung vẫn được lưu lại làm data thật
+    // để xem lại, nhưng không được tính điểm).
+    // Nộp trong thời gian → điểm thật từ scoreAnswer(), nhân hệ số theo mốc
+    // thời gian đã dùng (phút đầu giữ nguyên, phút 2-3 giảm dần).
+    const baseScore = outcome === "submitted" ? scoreAnswer(answerText, q.expected) : 0;
+    const finalScore = outcome === "submitted" ? Math.round(baseScore * timeMultiplier(timeUsed)) : 0;
+
     const record: AnswerRecord = {
       question_id: q.id,
       category: q.category,
@@ -195,7 +227,8 @@ export default function InterviewPage() {
       time_limit_sec: TIME_PER_QUESTION_SEC,
       time_used_sec: timeUsed,
       answer_text: answerText.trim(),
-      question_score: scoreAnswer(answerText, q.expected),
+      question_score: finalScore,
+      outcome,
       answered_at: new Date().toISOString(),
     };
 
@@ -212,11 +245,12 @@ export default function InterviewPage() {
     });
   }, [currentIndex, questions, finishInterview]);
 
-  // ── Đếm ngược 60s / câu ──────────────────────────────────────────────────
+  // ── Đếm ngược 3 phút (180s) / câu ────────────────────────────────────────
   useEffect(() => {
     if (phase !== "running") return;
     if (timeLeft <= 0) {
-      goToNext(TIME_PER_QUESTION_SEC);
+      // Hết giờ hoàn toàn — câu này bị loại (0 điểm), không phụ thuộc nội dung đã gõ
+      goToNext(TIME_PER_QUESTION_SEC, "timeout");
       return;
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
@@ -232,7 +266,12 @@ export default function InterviewPage() {
   }
 
   function handleSubmitAnswer() {
-    goToNext(TIME_PER_QUESTION_SEC - timeLeft);
+    goToNext(TIME_PER_QUESTION_SEC - timeLeft, "submitted");
+  }
+
+  function handleSkip() {
+    // Bỏ qua chủ động — khác với hết giờ, nhưng cũng mất điểm câu này (0đ)
+    goToNext(TIME_PER_QUESTION_SEC - timeLeft, "skipped");
   }
 
   if (!checkedAuth) {
@@ -265,11 +304,21 @@ export default function InterviewPage() {
               <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] font-bold text-[#0b1c30] mb-2">
                 Giả lập phỏng vấn — {jobTitle || "vị trí ứng tuyển"}
               </h1>
-              <p className="text-[13px] text-[#565e74] mb-6">
-                {questions.length} câu hỏi được tạo dựa trên khoảng trống năng lực thật của {candidateName || "bạn"}.
-                Mỗi câu có <strong>{TIME_PER_QUESTION_SEC} giây</strong> để trả lời, trả lời xong (hoặc hết giờ) sẽ tự
-                chuyển sang câu tiếp theo. Kết quả sẽ được lưu lại vào hồ sơ để bạn xem lại sau.
-              </p>
+              <div className="text-[13px] text-[#565e74] mb-6 text-left bg-[#eff4ff] rounded-xl p-4 space-y-2">
+                <p>
+                  <strong className="text-[#0b1c30]">{questions.length} câu hỏi</strong> được tạo dựa trên khoảng
+                  trống năng lực thật của {candidateName || "bạn"}
+                  {questions.length !== TOTAL_QUESTIONS ? " (kết quả phân tích này chưa đủ 5 câu — hãy phân tích CV lại để có bộ câu hỏi mới nhất)." : "."}
+                  {" "}Mỗi câu có <strong className="text-[#0b1c30]">3 phút (180 giây)</strong> để trả lời.
+                </p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Trả lời trong <strong>phút đầu</strong>: điểm được tính đầy đủ.</li>
+                  <li>Trả lời ở <strong>phút 2–3</strong>: điểm giảm dần theo thời gian đã dùng.</li>
+                  <li><strong>Hết giờ</strong> mà chưa nộp: câu đó bị loại, 0 điểm.</li>
+                  <li>Bấm <strong>“Bỏ qua”</strong>: cũng bị mất điểm câu đó (0 điểm), khác với hết giờ.</li>
+                </ul>
+                <p>Kết quả (từng câu, điểm, thời gian dùng) sẽ được lưu lại vào hồ sơ để bạn xem lại sau.</p>
+              </div>
               <button
                 onClick={handleStart}
                 className="px-6 py-3 rounded-xl bg-[#1d4ed8] text-white text-[15px] font-semibold hover:bg-[#0037b0] transition-colors flex items-center gap-2 mx-auto"
@@ -313,15 +362,31 @@ export default function InterviewPage() {
                 placeholder="Nhập câu trả lời của bạn tại đây..."
               />
 
-              <div className="mt-4 flex items-center justify-between">
+              <p className="mt-3 text-[11px] text-[#8fa5c0]">
+                {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
+                  ? "Đang trong phút đầu — trả lời giờ để được tính điểm đầy đủ."
+                  : "Đã qua phút đầu — điểm sẽ giảm dần theo thời gian đã dùng."}
+              </p>
+
+              <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] text-[#8fa5c0]">{answerDraft.trim().length} ký tự</span>
-                <button
-                  onClick={handleSubmitAnswer}
-                  className="px-5 py-2.5 rounded-xl bg-[#1d4ed8] text-white text-[13px] font-medium hover:bg-[#0037b0] transition-colors flex items-center gap-2"
-                >
-                  {currentIndex + 1 >= questions.length ? "Nộp & xem kết quả" : "Nộp & câu tiếp theo"}
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSkip}
+                    className="px-4 py-2.5 rounded-xl bg-white border border-[#c4c5d7]/60 text-[#565e74] text-[13px] font-medium hover:bg-[#f0f4ff] transition-colors flex items-center gap-2"
+                    title="Bỏ qua câu này — sẽ bị 0 điểm"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">skip_next</span>
+                    Bỏ qua
+                  </button>
+                  <button
+                    onClick={handleSubmitAnswer}
+                    className="px-5 py-2.5 rounded-xl bg-[#1d4ed8] text-white text-[13px] font-medium hover:bg-[#0037b0] transition-colors flex items-center gap-2"
+                  >
+                    {currentIndex + 1 >= questions.length ? "Nộp & xem kết quả" : "Nộp & câu tiếp theo"}
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </button>
+                </div>
               </div>
             </div>
           ) : phase === "saving" ? (
