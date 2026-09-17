@@ -557,7 +557,12 @@ export default function ResultPage() {
           </div>
         </section>
 
-        {/* Interview Questions — ẩn mặc định, chỉ hiện khi người dùng chủ động mở */}
+        {/* Interview Questions — ẩn mặc định, chỉ hiện khi người dùng chủ động mở.
+            Hành động CHÍNH ở đây phải là TRẢ LỜI phỏng vấn giả lập (route /interview,
+            có tính giờ + chấm điểm thật), không phải chỉ xem trước danh sách câu hỏi
+            (việc xem trước đáp án kỳ vọng/red-flags hợp lý cho nhà tuyển dụng dùng làm
+            rubric, nhưng với ứng viên tự luyện thì lộ đáp án trước khi làm bài là phản
+            tác dụng — nên tách thành 1 lựa chọn phụ, không phải nút chính). */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-12">
           {!showInterviewPrep ? (
             <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -567,25 +572,42 @@ export default function ResultPage() {
                 </div>
                 <div>
                   <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
-                    Bộ câu hỏi phỏng vấn đề xuất theo khoảng trống năng lực
+                    Phỏng vấn giả lập theo khoảng trống năng lực
                   </h2>
                   <p className="text-[13px] text-[#434655] mt-1">
-                    Hệ thống đã chuẩn bị sẵn bộ câu hỏi dựa trên khoảng trống năng lực — bấm để xem.
+                    {questions.length} câu hỏi được tạo dựa trên chính CV/JD này — nhập câu trả lời trực tiếp, có tính giờ
+                    từng câu, hệ thống tự chấm điểm và lưu lại kết quả để xem lại sau.
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowInterviewPrep(true)}
-                disabled={questions.length === 0}
-                className={`shrink-0 px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 transition-colors ${
-                  questions.length === 0
-                    ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
-                    : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] shadow-sm"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[18px]">visibility</span>
-                Xem bộ câu hỏi phỏng vấn đề xuất
-              </button>
+              <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <Link
+                  href="/interview"
+                  aria-disabled={questions.length === 0}
+                  onClick={(e) => { if (questions.length === 0) e.preventDefault(); }}
+                  className={`px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 transition-colors ${
+                    questions.length === 0
+                      ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
+                      : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] shadow-sm"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                  Bắt đầu trả lời phỏng vấn giả lập
+                </Link>
+                <button
+                  onClick={() => setShowInterviewPrep(true)}
+                  disabled={questions.length === 0}
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 transition-colors ${
+                    questions.length === 0
+                      ? "text-[#c4c5d7] cursor-not-allowed"
+                      : "text-[#565e74] hover:bg-[#f0f4ff]"
+                  }`}
+                  title="Chỉ xem trước danh sách câu hỏi + đáp án kỳ vọng, không tính điểm — hợp cho nhà tuyển dụng tham khảo trước khi phỏng vấn thật"
+                >
+                  <span className="material-symbols-outlined text-[18px]">visibility</span>
+                  Xem trước câu hỏi (không tính điểm)
+                </button>
+              </div>
             </div>
           ) : (
           <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
@@ -599,6 +621,10 @@ export default function ResultPage() {
                 </div>
                 <p className="text-[14px] text-[#434655] mt-1">
                   Được cấu trúc hoá tự động dựa trên phân tích ma trận đối soát giữa CV của {candidateName || "ứng viên"} và bản mô tả vị trí {apiResult?.job_title || "chưa xác định"}.
+                </p>
+                <p className="text-[12px] text-[#8fa5c0] mt-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">info</span>
+                  Chế độ xem trước này hiển thị luôn đáp án kỳ vọng — nếu muốn tự luyện thật thì bấm &quot;Bắt đầu trả lời phỏng vấn giả lập&quot; bên dưới, đừng xem trước đáp án ở đây.
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -680,10 +706,10 @@ export default function ResultPage() {
                 </div>
                 <div>
                   <p className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30]">
-                    Tạo biểu mẫu phỏng vấn số hóa (Digital Rubric Sheet)
+                    Sẵn sàng thử trả lời thật chưa?
                   </p>
                   <p className="text-[13px] text-[#434655]">
-                    Hội đồng có thể nhập điểm trực tiếp trong lúc phỏng vấn để hệ thống tự động tổng hợp kết quả theo thang đo L6.
+                    Vào phòng phỏng vấn giả lập — nhập câu trả lời trực tiếp, mỗi câu có tính giờ, hệ thống tự chấm điểm và lưu lại để bạn xem lại sau.
                   </p>
                 </div>
               </div>
@@ -692,8 +718,8 @@ export default function ResultPage() {
                   href="/interview"
                   className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#1d4ed8] text-white text-[13px] font-medium hover:bg-[#0037b0] transition-colors shadow-sm flex items-center justify-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-[18px]">quiz</span>
-                  Mở Phiếu Phỏng Vấn Số Hóa
+                  <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                  Bắt đầu trả lời phỏng vấn giả lập
                 </Link>
               </div>
             </div>
