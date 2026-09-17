@@ -65,9 +65,11 @@ export interface Database {
           cv_text: string | null;
           cv_b64: string | null;
           cv_filename: string | null;
+          cv_storage_path: string | null;
           jd_text: string;
           job_title: string | null;
           industry_id: string | null;
+          batch_id: string | null;
           status: "pending" | "processing" | "done" | "error";
           result: Json | null;
           error_msg: string | null;
@@ -79,9 +81,11 @@ export interface Database {
           cv_text?: string | null;
           cv_b64?: string | null;
           cv_filename?: string | null;
+          cv_storage_path?: string | null;
           jd_text: string;
           job_title?: string | null;
           industry_id?: string | null;
+          batch_id?: string | null;
           status?: "pending" | "processing" | "done" | "error";
         };
         Update: {

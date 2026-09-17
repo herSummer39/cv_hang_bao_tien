@@ -27,6 +27,9 @@ export default function Header() {
             <Link href="/interview" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
               Phỏng vấn giả lập
             </Link>
+            <Link href="/batch" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
+              So sánh CV
+            </Link>
           </nav>
         </div>
 
