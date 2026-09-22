@@ -103,8 +103,41 @@ def extract_text_from_pdf_b64(b64_str: str) -> str:
         log.warning(f"PDF extract error: {e}")
         return ""
 
-def detect_file_type(b64_str: str) -> str:
-    """Xác định loại file dựa trên magic bytes của base64 string."""
+def extract_text_from_docx_b64(b64_str: str) -> str:
+    """Decode base64 DOCX → extract text bằng python-docx (đoạn văn + bảng)."""
+    try:
+        from docx import Document
+        docx_bytes = base64.b64decode(b64_str)
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+            tmp.write(docx_bytes)
+            tmp_path = tmp.name
+        doc = Document(tmp_path)
+        parts = [p.text for p in doc.paragraphs if p.text.strip()]
+        # Nhiều CV dùng bảng (table) để dàn layout — phải quét luôn, không chỉ paragraph
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        parts.append(cell.text)
+        os.unlink(tmp_path)
+        return "\n".join(parts).strip()
+    except Exception as e:
+        log.warning(f"DOCX extract error: {e}")
+        return ""
+
+def detect_file_type(b64_str: str, filename: str | None = None) -> str:
+    """Xác định loại file — ưu tiên phần mở rộng của tên file (đáng tin cậy hơn),
+    fallback về magic bytes của base64 string nếu không có/không nhận ra tên file."""
+    if filename and "." in filename:
+        ext = filename.lower().rsplit(".", 1)[-1]
+        if ext == "pdf":
+            return "pdf"
+        if ext == "docx":
+            return "docx"
+        if ext in ("jpg", "jpeg"):
+            return "jpg"
+        if ext == "png":
+            return "png"
     try:
         header = base64.b64decode(b64_str[:24])  # 24 chia hết cho 4 → decode an toàn, đủ ~18 byte để check magic bytes
         if header.startswith(b"%PDF"):
@@ -113,6 +146,9 @@ def detect_file_type(b64_str: str) -> str:
             return "jpg"
         elif header.startswith(b"\x89PNG"):
             return "png"
+        elif header.startswith(b"PK\x03\x04"):
+            # DOCX (và các file Office khác) là zip — an toàn vì frontend chỉ nhận .pdf/.docx/ảnh
+            return "docx"
     except Exception:
         pass
     return "unknown"
@@ -263,14 +299,36 @@ def compute_score(features: dict, similarity: float) -> float:
         return similarity * 100
 
 def extract_exp_years(text: str) -> float:
-    """Trích xuất số năm kinh nghiệm từ CV."""
+    """Trích xuất số năm kinh nghiệm từ CV.
+
+    Ưu tiên câu nói rõ "X năm kinh nghiệm". Nhiều CV thật không viết câu này mà
+    chỉ liệt kê lịch sử công việc theo mốc thời gian (VD "06/2021 - 03/2024",
+    "2020 - hiện tại") — nên khi không tìm được câu nói rõ, suy ra số năm kinh
+    nghiệm từ khoảng cách giữa năm sớm nhất và năm muộn nhất (hoặc năm hiện tại
+    nếu CV có từ "hiện tại/hiện nay/present") xuất hiện trong text.
+    """
     import re
+    from datetime import datetime
+
     patterns = [r"(\d+)\s*(?:\+?\s*)?(?:năm|years?)\s*(?:kinh nghiệm|experience)",
                 r"(?:kinh nghiệm|experience)[:\s]+(\d+)\s*(?:năm|years?)"]
     for pat in patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
             return float(m.group(1))
+
+    # Fallback: suy ra từ các mốc năm trong lịch sử công việc
+    current_year = datetime.now().year
+    years_found = [int(y) for y in re.findall(r"(?:19|20)\d{2}", text)
+                   if 1990 <= int(y) <= current_year]
+    if years_found:
+        has_present = bool(re.search(r"hiện tại|hiện nay|present|now\b", text, re.IGNORECASE))
+        earliest = min(years_found)
+        latest = current_year if has_present else max(years_found)
+        span = latest - earliest
+        if 0 < span <= 40:
+            return float(span)
+
     return 0.0
 
 def extract_exp_range_from_jd(jd_text: str) -> tuple[float, float]:
@@ -620,11 +678,15 @@ def main():
             # Lấy CV text
             cv_text = job.get("cv_text") or ""
             if not cv_text and job.get("cv_b64"):
-                file_type = detect_file_type(job["cv_b64"])
+                file_type = detect_file_type(job["cv_b64"], job.get("cv_filename"))
                 if file_type == "pdf":
                     log.info("  📄 Đang extract text từ PDF...")
                     cv_text = extract_text_from_pdf_b64(job["cv_b64"])
                     log.info(f"  ✅ Extracted {len(cv_text)} ký tự từ PDF")
+                elif file_type == "docx":
+                    log.info("  📝 Đang extract text từ DOCX...")
+                    cv_text = extract_text_from_docx_b64(job["cv_b64"])
+                    log.info(f"  ✅ Extracted {len(cv_text)} ký tự từ DOCX")
                 elif file_type in ("jpg", "png"):
                     log.info("  🖼️ Đang OCR ảnh CV...")
                     cv_text = extract_text_from_image_b64(job["cv_b64"])

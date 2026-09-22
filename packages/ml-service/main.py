@@ -188,20 +188,36 @@ def extract_pdf_text(pdf_bytes: bytes) -> str:
         except Exception as e2:
             raise HTTPException(status_code=400, detail=str(e2))
 
+def extract_docx_text(docx_bytes: bytes) -> str:
+    """DOCX (đoạn văn + bảng) — dùng python-docx, cùng cách với worker.py."""
+    try:
+        from docx import Document
+        doc = Document(io.BytesIO(docx_bytes))
+        parts = [p.text for p in doc.paragraphs if p.text.strip()]
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        parts.append(cell.text)
+        return "\n".join(parts).strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 def extract_exp_years(text: str) -> int:
-    for pat in [r"(\d+)\s*(?:nam|year|yr)s?\s*(?:kinh|exp)",
-                r"(?:kinh|exp)\S*\s*(\d+)\s*(?:nam|year)"]:
+    # Chấp cả "năm" có dấu (CV tiếng Việt thật) và "nam" không dấu (giữ tương thích cũ)
+    for pat in [r"(\d+)\s*(?:năm|nam|year|yr)s?\s*(?:kinh|exp)",
+                r"(?:kinh|exp)\S*\s*(\d+)\s*(?:năm|nam|year)"]:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
             return int(m.group(1))
     return 1
 
 def extract_exp_from_jd(text: str):
-    m = re.search(r"(\d+)\s*[-]\s*(\d+)\s*(?:nam|year)", text, re.IGNORECASE)
+    m = re.search(r"(\d+)\s*[-]\s*(\d+)\s*(?:năm|nam|year)", text, re.IGNORECASE)
     if m: return int(m.group(1)), int(m.group(2))
-    m = re.search(r"(\d+)\s*nam\s*tro\s*len", text, re.IGNORECASE)
+    m = re.search(r"(\d+)\s*(?:năm|nam)\s*tr[oở]\s*l[eê]n", text, re.IGNORECASE)
     if m: y = int(m.group(1)); return y, y + 5
-    m = re.search(r"(?:toi thieu|it nhat|minimum)\s*(\d+)\s*(?:nam|year)", text, re.IGNORECASE)
+    m = re.search(r"(?:t[oố]i thi[eể]u|[iíì]t nh[aấ]t|toi thieu|it nhat|minimum)\s*(\d+)\s*(?:năm|nam|year)", text, re.IGNORECASE)
     if m: y = int(m.group(1)); return y, y + 3
     return 1, 5
 
@@ -276,7 +292,11 @@ async def analyze(
 ):
     logger.info("Analyze request received")
     if cv_file and cv_file.filename:
-        raw_cv = extract_pdf_text(await cv_file.read())
+        cv_bytes = await cv_file.read()
+        if cv_file.filename.lower().endswith(".docx"):
+            raw_cv = extract_docx_text(cv_bytes)
+        else:
+            raw_cv = extract_pdf_text(cv_bytes)
     elif cv_text and cv_text.strip():
         raw_cv = cv_text.strip()
     else:
