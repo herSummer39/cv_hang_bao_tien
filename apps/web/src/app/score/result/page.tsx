@@ -5,7 +5,6 @@ import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import jsPDF from "jspdf";
 
 // Chuyển ArrayBuffer (font tải bằng fetch) sang base64 để nạp vào jsPDF VFS
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -139,12 +138,51 @@ export default function ResultPage() {
   } | null>(null);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("cf_result");
-    console.log("[ResultPage] cf_result from sessionStorage:", raw ? JSON.parse(raw) : null);
-    if (raw) {
-      try { setApiResult(JSON.parse(raw)); } catch (e) { console.error("Parse error:", e); }
+    async function loadResult() {
+      try {
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const jobId = params.get("id") || params.get("job_id");
+
+          if (jobId) {
+            sessionStorage.setItem("cf_job_id", jobId);
+            const supabase = createClient();
+            const { data, error } = await supabase
+              .from("analysis_jobs")
+              .select("result, job_title")
+              .eq("id", jobId)
+              .single();
+
+            if (!error && data?.result) {
+              const res = data.result as typeof apiResult;
+              if (res && data.job_title && !res.job_title) {
+                res.job_title = data.job_title;
+              }
+              setApiResult(res);
+              sessionStorage.setItem("cf_result", JSON.stringify(res));
+              setLoaded(true);
+              return;
+            }
+          }
+        }
+
+        const raw = sessionStorage.getItem("cf_result");
+        console.log("[ResultPage] cf_result from sessionStorage:", raw ? JSON.parse(raw) : null);
+        if (raw) {
+          try {
+            setApiResult(JSON.parse(raw));
+          } catch (e) {
+            console.error("Parse error:", e);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load result:", err);
+      } finally {
+        setLoaded(true);
+      }
     }
-    setLoaded(true);
+
+    loadResult();
   }, []);
 
   // Lấy tên thật của người dùng đang đăng nhập từ Supabase — không bịa tên ứng viên
@@ -189,6 +227,7 @@ export default function ResultPage() {
     setExportDone(false);
 
     try {
+      const { default: jsPDF } = await import("jspdf");
       const doc = new jsPDF();
 
       // Nạp font Noto Sans (đủ dấu tiếng Việt) — font mặc định của jsPDF không có dấu

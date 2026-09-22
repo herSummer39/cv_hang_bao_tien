@@ -67,7 +67,13 @@ export default function ProcessingPage() {
 
     // Poll Supabase chờ worker xử lý xong
     async function pollJob() {
-      const jobId = sessionStorage.getItem("cf_job_id");
+      let jobId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("job_id") : null;
+      if (!jobId) {
+        jobId = sessionStorage.getItem("cf_job_id");
+      } else {
+        sessionStorage.setItem("cf_job_id", jobId);
+      }
+
       if (!jobId) {
         setError("Không tìm thấy job ID. Vui lòng quay lại và thử lại.");
         clearInterval(progressTimer);

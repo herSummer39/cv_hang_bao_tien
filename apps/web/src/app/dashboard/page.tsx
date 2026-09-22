@@ -143,8 +143,24 @@ export default async function DashboardPage() {
             <div className="divide-y divide-[#f0f4ff]">
               {jobs.map((j) => {
                 const score = (j.result as AnalysisResult | null)?.score;
+                const isDone = j.status === "done" && score != null;
+                const isProcessing = j.status === "processing" || j.status === "pending";
+                const targetHref = isDone
+                  ? `/score/result?id=${j.id}`
+                  : isProcessing
+                  ? `/score/processing?job_id=${j.id}`
+                  : "#";
+
                 return (
-                  <div key={j.id} className="px-6 py-4 flex items-center gap-4 hover:bg-[#f8faff] transition-colors">
+                  <Link
+                    key={j.id}
+                    href={targetHref}
+                    className={`px-6 py-4 flex items-center gap-4 transition-colors ${
+                      isDone || isProcessing
+                        ? "hover:bg-[#f8faff] cursor-pointer"
+                        : "opacity-75 cursor-default"
+                    }`}
+                  >
                     <div className="w-10 h-10 rounded-xl bg-[#dce1ff]/60 flex items-center justify-center flex-shrink-0">
                       <span className="material-symbols-outlined text-[18px] text-[#0037b0]">description</span>
                     </div>
@@ -158,13 +174,26 @@ export default async function DashboardPage() {
                           {Math.round(score)}
                         </div>
                       ) : (
-                        <div className="text-[13px] text-[#8fa5c0]">{j.status === "processing" || j.status === "pending" ? "⏳" : j.status === "error" ? "⚠️" : "–"}</div>
+                        <div className="text-[13px] text-[#8fa5c0]">
+                          {j.status === "processing" || j.status === "pending" ? (
+                            <span className="inline-flex items-center gap-1 text-[#0037b0] font-medium text-[12px] bg-[#dce1ff]/60 px-2 py-0.5 rounded-md">
+                              ⏳ Đang xử lý
+                            </span>
+                          ) : j.status === "error" ? (
+                            <span className="inline-flex items-center gap-1 text-red-600 font-medium text-[12px] bg-red-50 px-2 py-0.5 rounded-md">
+                              ⚠️ Lỗi
+                            </span>
+                          ) : (
+                            "–"
+                          )}
+                        </div>
                       )}
                       <div className="text-[11px] text-[#c4c5d7]">
                         {new Date(j.created_at).toLocaleDateString("vi-VN")}
                       </div>
                     </div>
-                  </div>
+                    <span className="material-symbols-outlined text-[18px] text-[#c4c5d7]">chevron_right</span>
+                  </Link>
                 );
               })}
             </div>
