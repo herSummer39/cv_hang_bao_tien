@@ -32,6 +32,16 @@ def load_data(data_path: Path) -> tuple[list, list, list]:
     """Load pairs và tách thành train/val/test."""
     pairs = json.loads(data_path.read_text(encoding="utf-8"))
 
+    # Bo sung embedding_pairs_v2.json (generate_training_data_v2.py) neu co -
+    # sinh tu dung skill da seed trong Supabase, phu du 73/73 nganh (xem
+    # industry_skills_source.py) - giup model hoc them cac ngành/skill moi
+    # ma 6000 cap data that co the chua co nhieu vi du.
+    v2_path = data_path.parent / "embedding_pairs_v2.json"
+    if v2_path.exists() and v2_path != data_path:
+        v2_pairs = json.loads(v2_path.read_text(encoding="utf-8"))
+        logger.info(f"Bo sung embedding_pairs_v2.json (73 nganh Supabase): +{len(v2_pairs)} cap")
+        pairs = pairs + v2_pairs
+
     # Chỉ dùng positive pairs cho MultipleNegativesRankingLoss
     # Loss này tự dùng các sample khác trong batch làm negative
     pos_pairs = [(p["cv"], p["jd"]) for p in pairs if p["label"] == 1]
