@@ -198,19 +198,18 @@ def train(mode: str = "full", resume_from_checkpoint: str = None, use_real_data:
         train_samples = load_conll(DATA_DIR / "train.conll")
         val_samples   = load_conll(DATA_DIR / "val.conll")
 
-    # Bo sung train_v2/val_v2 (generate_ner_data_v2.py) neu co - sinh tu dung
+    # Bo sung train_v2.conll (generate_ner_data_v2.py) neu co - sinh tu dung
     # skill da seed trong Supabase (73/73 nganh, xem industry_skills_source.py),
     # giup model thay ro cac skill moi/hiem ma data that chua co nhieu vi du.
+    # QUAN TRONG: KHONG cong val_v2.conll vao val_samples — val phai giu
+    # nguyen 100% data thuc (val_real/val.conll) de precision/recall/F1 do
+    # dung tren phan bo thuc te, khong bi lech vi danh gia tren cau template.
     if (DATA_DIR / "train_v2.conll").exists():
         train_v2 = load_conll(DATA_DIR / "train_v2.conll")
         train_samples = train_samples + train_v2
-        logger.info(f"Bo sung train_v2.conll (73 nganh Supabase): +{len(train_v2)} cau")
-    if (DATA_DIR / "val_v2.conll").exists():
-        val_v2 = load_conll(DATA_DIR / "val_v2.conll")
-        val_samples = val_samples + val_v2
-        logger.info(f"Bo sung val_v2.conll: +{len(val_v2)} cau")
+        logger.info(f"Bo sung train_v2.conll vao TRAIN (73 nganh Supabase): +{len(train_v2)} cau")
 
-    logger.info(f"Train: {len(train_samples)} | Val: {len(val_samples)}")
+    logger.info(f"Train: {len(train_samples)} | Val: {len(val_samples)} (val giu nguyen data thuc)")
 
     if mode == "dev":
         train_samples = train_samples[:200]

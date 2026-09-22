@@ -227,21 +227,17 @@ if __name__ == "__main__":
     industries = load_industries()
     out_dir = Path(__file__).parent.parent / "data" / "ner"
 
+    # KHONG tach val — file nay CHI dung de bo sung vao phan TRAIN cua
+    # train_m1_ner.py (xem comment trong train_m1_ner.py). Val phai giu
+    # nguyen 100% du lieu that (val_real.conll) de danh gia dung thuc te.
     all_samples = generate_dataset(industries, n_samples=6000)
 
-    n = len(all_samples)
-    n_train = int(n * 0.85)
-    train = all_samples[:n_train]
-    val = all_samples[n_train:]
+    save_conll(all_samples, out_dir / "train_v2.conll")
+    save_json(all_samples, out_dir / "train_v2.json")
 
-    save_conll(train, out_dir / "train_v2.conll")
-    save_conll(val, out_dir / "val_v2.conll")
-    save_json(train, out_dir / "train_v2.json")
-
-    # Kiểm tra bao phủ ngành trong câu skill
     all_slugs = [s for s, v in industries.items()
                  if v["level"] in ("group", "branch") and v["skills"]]
-    print(f"\n[SPLIT] Train={len(train)} | Val={len(val)}")
+    print(f"\n[TONG] {len(all_samples)} cau — chi dung bo sung vao TRAIN, khong tach val")
     print(f"[COVERAGE] Tong so nganh co skill dung de sinh cau: {len(all_slugs)}/73")
 
     print("\n--- PREVIEW ---")

@@ -29,25 +29,37 @@ logger = logging.getLogger(__name__)
 
 
 def load_data(data_path: Path) -> tuple[list, list, list]:
-    """Load pairs và tách thành train/val/test."""
+    """Load pairs và tách thành train/val/test.
+
+    QUAN TRONG: eval_pairs (dung de danh gia + chon best checkpoint qua
+    metric_for_best_model) CHI lay tu data GOC (data_path — data that hoac
+    synthetic cu), KHONG duoc lan embedding_pairs_v2.json vao — neu tron ca
+    v2 vao eval thi Spearman correlation se bi danh gia tren 1 phan lon la
+    cau van tong hop/template, khong con phan anh dung chat luong tren CV/JD
+    THAT nua, va co the chon nham checkpoint "hoc tot template" thay vi
+    checkpoint that su tot voi nguoi dung thuc te.
+    v2 CHI duoc cong them vao phan TRAIN (pos_pairs) — noi model can thay
+    nhieu vi du hon cho cac nganh/skill moi (bao hiem, bat dong san...) it
+    xuat hien trong data that.
+    """
     pairs = json.loads(data_path.read_text(encoding="utf-8"))
+
+    # eval_pairs: CHI tu data goc — giu nguyen, khong lan v2 (xem docstring)
+    eval_pairs = [(p["cv"], p["jd"], float(p["score"])) for p in pairs]
 
     # Bo sung embedding_pairs_v2.json (generate_training_data_v2.py) neu co -
     # sinh tu dung skill da seed trong Supabase, phu du 73/73 nganh (xem
-    # industry_skills_source.py) - giup model hoc them cac ngành/skill moi
-    # ma 6000 cap data that co the chua co nhieu vi du.
+    # industry_skills_source.py) - CHI dua vao phan TRAIN, khong dua vao eval.
+    pairs_for_train = pairs
     v2_path = data_path.parent / "embedding_pairs_v2.json"
     if v2_path.exists() and v2_path != data_path:
         v2_pairs = json.loads(v2_path.read_text(encoding="utf-8"))
-        logger.info(f"Bo sung embedding_pairs_v2.json (73 nganh Supabase): +{len(v2_pairs)} cap")
-        pairs = pairs + v2_pairs
+        logger.info(f"Bo sung embedding_pairs_v2.json vao TRAIN (73 nganh Supabase): +{len(v2_pairs)} cap")
+        pairs_for_train = pairs + v2_pairs
 
     # Chỉ dùng positive pairs cho MultipleNegativesRankingLoss
     # Loss này tự dùng các sample khác trong batch làm negative
-    pos_pairs = [(p["cv"], p["jd"]) for p in pairs if p["label"] == 1]
-
-    # Cũng chuẩn bị tập đánh giá gồm cả pos + neg
-    eval_pairs = [(p["cv"], p["jd"], float(p["score"])) for p in pairs]
+    pos_pairs = [(p["cv"], p["jd"]) for p in pairs_for_train if p["label"] == 1]
 
     # Shuffle và split 80/10/10
     import random
