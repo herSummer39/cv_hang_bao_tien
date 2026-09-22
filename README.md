@@ -155,8 +155,8 @@ python scripts/test_ocr_extraction.py
 ![About Page](apps/web/public/screenshots/about.png)
 
 Dự án đồ án tốt nghiệp phát triển bởi:
-- **Nguyễn Thị Thu Hằng** - Trưởng nhóm
-- **Lý Thái Bảo** - Thành viên
-- **Huỳnh Lương Tiến** - Thành viên
+- **Trần Thị Ngọc Hằng** - Trưởng nhóm
+- **Lê Gia Bảo** - Thành viên
+- **Hạ Chí Tiền** - Thành viên
 
 🔗 **GitHub Repo:** https://github.com/herSummer39/cv_hang_bao_tien
