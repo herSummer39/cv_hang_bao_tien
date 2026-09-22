@@ -229,7 +229,7 @@ cv_hang_bao_tien/
 | Storage | Supabase Storage (lưu file CV) |
 | AI/ML | Python, PhoBERT, XGBoost, sentence-transformers |
 | Deploy web | Vercel (tự động khi push) |
-| Deploy AI | HuggingFace Spaces |
+| AI/ML service | Chạy local (`worker.py` poll Supabase) — model được đồng bộ giữa các thành viên qua DVC + Google Drive, chưa deploy lên server public |
 
 ---
 
