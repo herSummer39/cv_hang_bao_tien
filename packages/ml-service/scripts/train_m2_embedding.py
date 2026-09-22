@@ -7,8 +7,13 @@ Base model: bkai-foundation-models/vietnamese-bi-encoder (~135M params)
 Chạy local (CPU — test nhỏ):
   python scripts/train_m2_embedding.py --mode dev
 
-Chạy Kaggle/Colab (GPU T4 — train thật):
+Chạy Kaggle/Colab (GPU T4 — train thật, tu dau tu BASE_MODEL):
   python scripts/train_m2_embedding.py --mode full
+
+Chạy Kaggle/Colab (GPU T4 — TRAIN THEM VAO model da fine-tune san co,
+khong train lai tu dau, giu nguyen nhung gi model da hoc):
+  python scripts/train_m2_embedding.py --mode full \
+      --resume_from_checkpoint models/m2_embedding_full/final
 """
 # Force PyTorch-only — tắt TensorFlow/JAX trước khi import bất cứ thứ gì
 import os
@@ -77,7 +82,7 @@ def load_data(data_path: Path) -> tuple[list, list, list]:
     return train_pairs, val_pos, eval_val
 
 
-def train(mode: str = "dev"):
+def train(mode: str = "dev", resume_from_checkpoint: str = None):
     from sentence_transformers import (
         SentenceTransformer,
         SentenceTransformerTrainer,
@@ -133,10 +138,22 @@ def train(mode: str = "dev"):
     logger.info(f"Train pairs: {len(train_pairs)}")
     logger.info(f"Val pairs  : {len(val_pairs)}")
 
-    # ── Load base model ───────────────────────────────────────────
-    logger.info(f"Dang tai model: {BASE_MODEL}")
-    logger.info("(Lan dau: ~500MB, sau do cache lai)")
-    model = SentenceTransformer(BASE_MODEL)
+    # ── Load base model (hoac resume tu model da fine-tune) ───────
+    # Neu resume_from_checkpoint duoc truyen va duong dan ton tai, load
+    # model TU DO de tiep tuc fine-tune tren nhung gi model da hoc duoc,
+    # KHONG tai lai BASE_MODEL goc tu dau. Luu y: day la SentenceTransformer
+    # da save (model.save()) nen chi co model weights, khong co optimizer/
+    # lr-scheduler state cua Trainer -> optimizer/lr se bat dau lai tu dau,
+    # nhung TRONG SO (weights) la trong so model da hoc duoc tu (cac) lan
+    # train truoc do — dung y "train them vao" (incremental), khong phai
+    # "lam lai tu dau" (full retrain tu BASE_MODEL).
+    if resume_from_checkpoint and Path(resume_from_checkpoint).exists():
+        logger.info(f"Resume tu model da fine-tune: {resume_from_checkpoint}")
+        model = SentenceTransformer(resume_from_checkpoint)
+    else:
+        logger.info(f"Dang tai model goc: {BASE_MODEL}")
+        logger.info("(Lan dau: ~500MB, sau do cache lai)")
+        model = SentenceTransformer(BASE_MODEL)
     logger.info(f"Model da tai: {model.get_sentence_embedding_dimension()} chieu")
 
     # ── Chuẩn bị dataset ─────────────────────────────────────────
@@ -227,5 +244,12 @@ if __name__ == "__main__":
         default="dev",
         help="dev=CPU 50 mau | quick=CPU 500 mau | full=GPU train that",
     )
+    parser.add_argument(
+        "--resume_from_checkpoint",
+        type=str,
+        default=None,
+        help="Duong dan den model da fine-tune de train THEM VAO (VD: models/m2_embedding_full/final). "
+             "Khong truyen = train tu BASE_MODEL goc tu dau.",
+    )
     args = parser.parse_args()
-    train(mode=args.mode)
+    train(mode=args.mode, resume_from_checkpoint=args.resume_from_checkpoint)
