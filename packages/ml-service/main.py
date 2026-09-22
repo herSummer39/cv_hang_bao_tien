@@ -251,19 +251,49 @@ TECH_KEYWORDS = [
 from functools import lru_cache as _lru_cache
 
 @_lru_cache(maxsize=None)
-def _keyword_pattern(keyword: str):
+def _keyword_pattern(word: str):
     """Match theo ranh giới từ — tránh "java" khớp nhầm trong "javascript",
     "sql" khớp nhầm trong "mysql"/"postgresql" (xem worker.py cho chi tiết)."""
-    escaped = re.escape(keyword)
-    left = r"(?<!\w)" if keyword[0].isalnum() else ""
-    right = r"(?!\w)" if keyword[-1].isalnum() else ""
+    escaped = re.escape(word)
+    left = r"(?<!\w)" if word[0].isalnum() else ""
+    right = r"(?!\w)" if word[-1].isalnum() else ""
     return re.compile(left + escaped + right, re.IGNORECASE | re.UNICODE)
 
+_VN_STOPWORDS = {"và", "của", "cho", "về", "các", "những", "trong", "khi", "là",
+                 "có", "được", "này", "đó", "với", "theo", "để", "một", "hay"}
+_SKILL_FILLER_PREFIXES = ("kỹ năng ", "khả năng ", "năng lực ")
+
+@_lru_cache(maxsize=None)
+def _keyword_tokens(keyword: str) -> tuple:
+    k = keyword.lower()
+    for prefix in _SKILL_FILLER_PREFIXES:
+        if k.startswith(prefix):
+            k = k[len(prefix):]
+            break
+    return tuple(w for w in k.split() if w not in _VN_STOPWORDS and len(w) > 1)
+
+_LINE_SPLIT_RE = re.compile(r"[\n\r•●▪·\|]+|(?<=[.!?;])\s+")
+
+@_lru_cache(maxsize=4)
+def _split_lines(text: str) -> tuple:
+    return tuple(_LINE_SPLIT_RE.split(text))
+
 def keyword_extract_skills(text: str) -> list:
-    """Fallback: tìm tech keyword trong text theo ranh giới từ (không phải chuỗi con thô)."""
+    """Fallback: tìm tech keyword theo ranh giới từ. Skill nhiều từ dùng so khớp
+    mềm (đủ từ có nghĩa, cùng 1 dòng, không cần liền nhau) — xem worker.py."""
     found = []
+    lines = None
     for kw in TECH_KEYWORDS:
-        if _keyword_pattern(kw).search(text):
+        tokens = _keyword_tokens(kw)
+        matched = False
+        if len(tokens) <= 1:
+            matched = bool(_keyword_pattern(kw).search(text))
+        else:
+            if lines is None:
+                lines = _split_lines(text)
+            patterns = [_keyword_pattern(t) for t in tokens]
+            matched = any(all(p.search(line) for p in patterns) for line in lines)
+        if matched:
             # Chuẩn hóa tên hiển thị
             found.append(kw.title() if kw[0].isupper() or kw in ("react","vue","html","css","sql","aws","gcp","nlp") else kw)
     return found

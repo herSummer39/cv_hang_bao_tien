@@ -246,27 +246,72 @@ import re as _re
 from functools import lru_cache as _lru_cache
 
 @_lru_cache(maxsize=None)
-def _keyword_pattern(keyword: str) -> "_re.Pattern":
-    """Compile 1 lần/keyword: match theo RANH GIỚI TỪ, không phải chuỗi con thô.
+def _keyword_pattern(word: str) -> "_re.Pattern":
+    """Compile 1 lần/từ: match theo RANH GIỚI TỪ, không phải chuỗi con thô.
 
     Trước đây dùng `kw in text_lower` nên "java" khớp nhầm vào "javascript",
     "sql" khớp nhầm vào "mysql"/"postgresql" — làm sai lệch matched/missing
-    skills (và cả câu hỏi phỏng vấn trích từ đó). Nếu ký tự đầu/cuối keyword đã
+    skills (và cả câu hỏi phỏng vấn trích từ đó). Nếu ký tự đầu/cuối từ đã
     không phải chữ/số (VD "c++", "c#", "ci/cd") thì tự nó đã có ranh giới rồi,
     không cần thêm \b nhân tạo ở phía đó.
     """
-    escaped = _re.escape(keyword)
-    left = r"(?<!\w)" if keyword[0].isalnum() else ""
-    right = r"(?!\w)" if keyword[-1].isalnum() else ""
+    escaped = _re.escape(word)
+    left = r"(?<!\w)" if word[0].isalnum() else ""
+    right = r"(?!\w)" if word[-1].isalnum() else ""
     return _re.compile(left + escaped + right, _re.IGNORECASE | _re.UNICODE)
+
+# Hư từ tiếng Việt + tiền tố khuôn mẫu hay gặp trong tên skill (VD "Kỹ năng chốt
+# hợp đồng") — bỏ đi khi tách skill nhiều từ thành các từ có nghĩa, để không bắt
+# buộc phải thấy "kỹ"/"năng" xuất hiện thì mới tính là khớp (2 từ này quá chung,
+# gần như câu nào cũng có, sẽ làm sai mục đích so khớp).
+_VN_STOPWORDS = {"và", "của", "cho", "về", "các", "những", "trong", "khi", "là",
+                 "có", "được", "này", "đó", "với", "theo", "để", "một", "hay"}
+_SKILL_FILLER_PREFIXES = ("kỹ năng ", "khả năng ", "năng lực ")
+
+@_lru_cache(maxsize=None)
+def _keyword_tokens(keyword: str) -> tuple:
+    """Tách 1 skill/keyword nhiều từ thành các từ có nghĩa để so khớp mềm."""
+    k = keyword.lower()
+    for prefix in _SKILL_FILLER_PREFIXES:
+        if k.startswith(prefix):
+            k = k[len(prefix):]
+            break
+    return tuple(w for w in k.split() if w not in _VN_STOPWORDS and len(w) > 1)
+
+_LINE_SPLIT_RE = _re.compile(r"[\n\r•●▪·\|]+|(?<=[.!?;])\s+")
+
+@_lru_cache(maxsize=4)
+def _split_lines(text: str) -> tuple:
+    """Chia text thành từng dòng/câu ngắn — giới hạn phạm vi so khớp 'đủ từ,
+    không cần liền nhau' trong CÙNG 1 dòng, tránh 2 từ của 1 skill nằm ở 2 chỗ
+    hoàn toàn không liên quan bị tính nhầm là khớp."""
+    return tuple(_LINE_SPLIT_RE.split(text))
 
 def keyword_extract_skills(text: str, domain_keywords: list | None = None) -> list:
     """Keyword fallback. Dùng domain_keywords nếu có, ngược lại dùng ALL_DOMAIN_KEYWORDS.
 
-    Match theo ranh giới từ (xem _keyword_pattern) để tránh khớp nhầm chuỗi con.
+    - Skill 1 từ có nghĩa (VD "java", "c++"): match ranh giới từ như cũ, chính xác.
+    - Skill nhiều từ (VD "dự án chung cư"): KHÔNG còn đòi đúng nguyên cụm liền
+      nhau — chỉ cần TẤT CẢ từ có nghĩa của skill đó cùng xuất hiện trong 1
+      dòng/câu (không cần liền nhau, không cần đúng thứ tự). VD alias "dự án
+      chung cư" vẫn khớp được câu "...các dự án CĂN HỘ chung cư..." dù bị chèn
+      thêm 1 từ ở giữa — trước đây (so khớp nguyên cụm) sẽ bị bỏ sót.
     """
     pool = domain_keywords if domain_keywords is not None else ALL_DOMAIN_KEYWORDS
-    return [kw for kw in pool if _keyword_pattern(kw).search(text)]
+    found = []
+    lines = None  # lazy — chỉ tách dòng khi thực sự có skill nhiều từ cần dùng
+    for kw in pool:
+        tokens = _keyword_tokens(kw)
+        if len(tokens) <= 1:
+            if _keyword_pattern(kw).search(text):
+                found.append(kw)
+            continue
+        if lines is None:
+            lines = _split_lines(text)
+        patterns = [_keyword_pattern(t) for t in tokens]
+        if any(all(p.search(line) for p in patterns) for line in lines):
+            found.append(kw)
+    return found
 
 def extract_skills(text: str, domain_keywords: list | None = None) -> list[str]:
     """M1 NER + keyword fallback để đảm bảo luôn lấy được skill.
