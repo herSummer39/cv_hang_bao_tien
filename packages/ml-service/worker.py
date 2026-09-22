@@ -242,11 +242,31 @@ ALL_DOMAIN_KEYWORDS = [
     "hội nghị hội thảo", "nghiệp vụ lưu trú", "vệ sinh an toàn thực phẩm",
 ]
 
+import re as _re
+from functools import lru_cache as _lru_cache
+
+@_lru_cache(maxsize=None)
+def _keyword_pattern(keyword: str) -> "_re.Pattern":
+    """Compile 1 lần/keyword: match theo RANH GIỚI TỪ, không phải chuỗi con thô.
+
+    Trước đây dùng `kw in text_lower` nên "java" khớp nhầm vào "javascript",
+    "sql" khớp nhầm vào "mysql"/"postgresql" — làm sai lệch matched/missing
+    skills (và cả câu hỏi phỏng vấn trích từ đó). Nếu ký tự đầu/cuối keyword đã
+    không phải chữ/số (VD "c++", "c#", "ci/cd") thì tự nó đã có ranh giới rồi,
+    không cần thêm \b nhân tạo ở phía đó.
+    """
+    escaped = _re.escape(keyword)
+    left = r"(?<!\w)" if keyword[0].isalnum() else ""
+    right = r"(?!\w)" if keyword[-1].isalnum() else ""
+    return _re.compile(left + escaped + right, _re.IGNORECASE | _re.UNICODE)
+
 def keyword_extract_skills(text: str, domain_keywords: list | None = None) -> list:
-    """Keyword fallback. Dùng domain_keywords nếu có, ngược lại dùng ALL_DOMAIN_KEYWORDS."""
+    """Keyword fallback. Dùng domain_keywords nếu có, ngược lại dùng ALL_DOMAIN_KEYWORDS.
+
+    Match theo ranh giới từ (xem _keyword_pattern) để tránh khớp nhầm chuỗi con.
+    """
     pool = domain_keywords if domain_keywords is not None else ALL_DOMAIN_KEYWORDS
-    text_lower = text.lower()
-    return [kw for kw in pool if kw in text_lower]
+    return [kw for kw in pool if _keyword_pattern(kw).search(text)]
 
 def extract_skills(text: str, domain_keywords: list | None = None) -> list[str]:
     """M1 NER + keyword fallback để đảm bảo luôn lấy được skill.
@@ -355,6 +375,71 @@ def extract_exp_range_from_jd(jd_text: str) -> tuple[float, float]:
         return y, y + 3
     return 2.0, 5.0
 
+def generate_cv_suggestions(missing: list, matched: list, exp_gap: float,
+                            jd_exp_min: float, jd_exp_max: float, cv_exp: float,
+                            similarity: float, job_title: str) -> list[dict]:
+    """Gợi ý cải thiện CV để khớp JD hơn — HOÀN TOÀN rule-based, không dùng LLM.
+
+    Áp dụng khung 3 bước (tham khảo ý tưởng từ dự án Resume-Matcher, tự viết lại
+    bằng rule để không cần gọi model sinh văn bản):
+      1) Tìm khoảng trống thật đã tính được ở analyze() (missing skills, gap kinh
+         nghiệm, similarity thấp) — không tự suy diễn thêm khoảng trống nào khác.
+      2) Diễn đạt lại thành hành động cụ thể (thêm ở đâu, viết thế nào), không chỉ
+         liệt kê suông "bạn thiếu X" như phần `gaps` đang làm.
+      3) KHÔNG BỊA: câu gợi ý luôn ở dạng điều kiện ("nếu bạn thực sự có kinh
+         nghiệm với X") — không bao giờ khẳng định ứng viên đã có kỹ năng/kinh
+         nghiệm nào mà CV chưa thể hiện.
+    """
+    suggestions = []
+
+    # Bước 2: chèn từ khóa còn thiếu — tối đa 3 kỹ năng quan trọng nhất (giữ gọn UI)
+    for skill in missing[:3]:
+        suggestions.append({
+            "type": "skill",
+            "title": f'Bổ sung "{skill}" vào CV nếu bạn thực sự có kinh nghiệm',
+            "desc": (f'Vị trí {job_title} yêu cầu "{skill}" nhưng CV hiện chưa thể hiện. '
+                     f'Nếu bạn đã từng dùng qua, hãy thêm vào phần Kỹ năng VÀ mô tả cụ thể '
+                     f'trong phần Kinh nghiệm (dự án nào, dùng để làm gì) — tránh chỉ liệt kê '
+                     f'tên suông vì nhà tuyển dụng sẽ hỏi sâu ở buổi phỏng vấn. Nếu chưa có '
+                     f'kinh nghiệm thật với kỹ năng này, không nên tự thêm vào CV.'),
+        })
+
+    # Gợi ý về khoảng cách kinh nghiệm
+    if exp_gap > 0:
+        suggestions.append({
+            "type": "experience",
+            "title": "Nhấn mạnh chiều sâu thay vì chỉ số năm kinh nghiệm",
+            "desc": (f'JD yêu cầu {jd_exp_min:.0f}-{jd_exp_max:.0f} năm, CV bạn đang thể hiện '
+                     f'{cv_exp:.0f} năm. Hãy làm rõ quy mô dự án, vai trò cụ thể và kết quả đo '
+                     f'lường được (số liệu, % cải thiện, quy mô hệ thống...) trong phần Kinh '
+                     f'nghiệm để bù lại phần thiếu về số năm — nhà tuyển dụng thường quan tâm '
+                     f'chất lượng đóng góp hơn là con số năm thuần túy.'),
+        })
+
+    # Gợi ý về cách diễn đạt / từ khóa (dựa trên similarity M2 thấp)
+    if similarity < 0.4:
+        suggestions.append({
+            "type": "phrasing",
+            "title": "Dùng đúng từ khóa/thuật ngữ của JD",
+            "desc": ('Ngôn ngữ CV hiện đang khác với cách JD diễn đạt. Hãy đối chiếu JD và '
+                     'thay các từ đồng nghĩa trong CV bằng chính thuật ngữ JD sử dụng (VD JD '
+                     'ghi "quản lý dự án" thì CV nên viết đúng cụm đó thay vì chỉ viết "điều '
+                     'phối công việc") — giúp cả hệ thống lọc CV tự động và nhà tuyển dụng dễ '
+                     'nhận ra sự phù hợp hơn.'),
+        })
+
+    # Không phát hiện khoảng trống nào đáng kể — vẫn cho 1 gợi ý mang tính xây dựng
+    if not suggestions:
+        suggestions.append({
+            "type": "phrasing",
+            "title": "CV đã khá bám sát JD",
+            "desc": ('Không phát hiện khoảng trống lớn về từ khóa hay kinh nghiệm. Bạn có thể '
+                     'tập trung làm nổi bật số liệu định lượng (kết quả cụ thể, quy mô) trong '
+                     'phần Kinh nghiệm để tăng sức thuyết phục thêm nữa.'),
+        })
+
+    return suggestions
+
 def analyze(cv_text: str, jd_text: str, job_title: str,
             domain_keywords: list | None = None) -> dict:
     """Chay toan bo pipeline M1->M2->M3 va tra ve ket qua.
@@ -435,6 +520,14 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
             "title": "Ngôn ngữ CV chưa bám sát JD",
             "desc": "Nên điều chỉnh từ ngữ CV để gần hơn với yêu cầu vị trí.",
         })
+
+    # Gợi ý cải thiện CV — dùng lại đúng các tín hiệu thật vừa tính (missing/matched/
+    # exp_gap/similarity), không tính lại/suy diễn thêm gì mới.
+    cv_suggestions = generate_cv_suggestions(
+        missing=missing, matched=matched, exp_gap=exp_gap,
+        jd_exp_min=jd_exp_min, jd_exp_max=jd_exp_max, cv_exp=cv_exp,
+        similarity=similarity, job_title=job_title,
+    )
 
     # ── Bộ 5 câu hỏi phỏng vấn giả lập — LUÔN đủ 5 câu, mỗi câu bám vào 1 tín hiệu
     # THẬT đã tính toán ở trên (missing/matched skills, kinh nghiệm, similarity M2,
@@ -629,6 +722,7 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
         "job_title": job_title,
         "strengths": strengths or [{"title": "Chưa phát hiện thế mạnh rõ ràng", "desc": "CV chưa thể hiện đủ kỹ năng, kinh nghiệm hoặc ngữ cảnh phù hợp với JD này để ghi nhận điểm mạnh."}],
         "gaps": gaps or [{"title": "Không phát hiện khoảng trống rõ ràng", "desc": "CV khá phù hợp với JD."}],
+        "cv_suggestions": cv_suggestions,
         "questions": questions,
         "features": features,
     }

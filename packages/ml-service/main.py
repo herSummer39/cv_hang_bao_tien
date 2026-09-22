@@ -248,12 +248,22 @@ TECH_KEYWORDS = [
     "lập trình", "phát triển web", "kiểm thử", "tối ưu",
 ]
 
+from functools import lru_cache as _lru_cache
+
+@_lru_cache(maxsize=None)
+def _keyword_pattern(keyword: str):
+    """Match theo ranh giới từ — tránh "java" khớp nhầm trong "javascript",
+    "sql" khớp nhầm trong "mysql"/"postgresql" (xem worker.py cho chi tiết)."""
+    escaped = re.escape(keyword)
+    left = r"(?<!\w)" if keyword[0].isalnum() else ""
+    right = r"(?!\w)" if keyword[-1].isalnum() else ""
+    return re.compile(left + escaped + right, re.IGNORECASE | re.UNICODE)
+
 def keyword_extract_skills(text: str) -> list:
-    """Fallback: tìm tech keyword trong text bất kể ngữ cảnh."""
-    text_lower = text.lower()
+    """Fallback: tìm tech keyword trong text theo ranh giới từ (không phải chuỗi con thô)."""
     found = []
     for kw in TECH_KEYWORDS:
-        if kw in text_lower:
+        if _keyword_pattern(kw).search(text):
             # Chuẩn hóa tên hiển thị
             found.append(kw.title() if kw[0].isupper() or kw in ("react","vue","html","css","sql","aws","gcp","nlp") else kw)
     return found

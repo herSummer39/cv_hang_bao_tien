@@ -129,6 +129,7 @@ export default function ResultPage() {
     similarity?: number;
     strengths?: Array<{title: string; desc: string}>;
     gaps?: Array<{title: string; desc: string}>;
+    cv_suggestions?: Array<{type?: string; title: string; desc: string}>;
     questions?: Array<{id: string; category: string; categoryColor: string; badgeBg: string; duration: string; weight: string; weightColor: string; question: string; expected: string[]; redFlags: string[]}>;
     job_title?: string;
     matched_skills?: string[];
@@ -202,6 +203,7 @@ export default function ResultPage() {
   // Chỉ dùng data thật từ apiResult — không còn fallback về mock data cố định
   const strengths = apiResult?.strengths ?? [];
   const gaps      = apiResult?.gaps      ?? [];
+  const cvSuggestions = apiResult?.cv_suggestions ?? [];
   const questions = apiResult?.questions ?? [];
   const finalScore = apiResult?.score ?? 0;
   const matchedCount = apiResult?.matched_skills?.length ?? 0;
@@ -302,6 +304,12 @@ export default function ResultPage() {
       addTitle("Khoảng trống cần lưu ý", 13);
       if (gaps.length === 0) addBody("Không có dữ liệu.");
       gaps.forEach((g) => addBody(`• ${g.title}: ${g.desc}`));
+      addSpacer(4);
+
+      // 5b. Gợi ý cải thiện CV
+      addTitle("Gợi ý cải thiện CV", 13);
+      if (cvSuggestions.length === 0) addBody("Không có dữ liệu.");
+      cvSuggestions.forEach((s) => addBody(`• ${s.title}: ${s.desc}`));
       addSpacer(4);
 
       // 6. Kỹ năng khớp / thiếu
@@ -592,6 +600,43 @@ export default function ResultPage() {
                 <span>Mức độ rủi ro tuyển dụng:</span>
                 <span>{tier.risk}</span>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Gợi ý cải thiện CV (AI Advise) — rule-based, bám đúng missing_skills/exp_gap/similarity
+            đã tính ở trên, không gọi LLM. Luôn ở dạng gợi ý điều kiện ("nếu bạn thực sự có kinh
+            nghiệm với X") — không khẳng định ứng viên đã có gì mà CV chưa thể hiện. */}
+        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-6">
+          <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5c3b00] flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">tips_and_updates</span>
+                Gợi ý cải thiện CV (AI Advise)
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-[#ffe8b8] text-[#5c3b00] text-[12px] font-semibold">
+                {cvSuggestions.length} gợi ý
+              </span>
+            </div>
+            <p className="text-[13px] text-[#434655] mb-4">
+              Hành động cụ thể để CV bám sát JD hơn — chỉ áp dụng nếu đúng với kinh nghiệm thật của bạn:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {cvSuggestions.map((s, i) => {
+                const icon = s.type === "skill" ? "add_circle"
+                  : s.type === "experience" ? "history_edu"
+                  : s.type === "phrasing" ? "translate"
+                  : "tips_and_updates";
+                return (
+                  <div key={`${s.title}-${i}`} className="p-3 rounded-lg bg-[#fff8ea] flex items-start gap-2">
+                    <span className="material-symbols-outlined text-[#8a5700] text-[18px] shrink-0 mt-0.5">{icon}</span>
+                    <div className="min-w-0">
+                      <h4 className="text-[13px] font-semibold text-[#0b1c30]">{s.title}</h4>
+                      <p className="text-[12px] text-[#434655]">{s.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
