@@ -9,6 +9,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
 from adapters.outbound.cv_parser_adapter import CvParserAdapter
 from adapters.outbound.section_parser import parse_cv_sections, structured_cv_to_dict
 from domain.ports.cv_parser_port import CvParseError

@@ -7,7 +7,7 @@ Cách chạy:
 
 Worker tự poll Supabase mỗi 5 giây, lấy job pending → M1+M2+M3 → lưu kết quả
 """
-import os, time, json, logging, base64, tempfile, traceback
+import os, sys, time, json, logging, base64, tempfile, traceback
 from pathlib import Path
 from dotenv import load_dotenv
 import industry_lookup
@@ -38,6 +38,17 @@ M1_PATH      = BASE_DIR / "models" / "m1_ner" / "final"
 M2_PATH      = BASE_DIR / "models" / "m2_embedding_full" / "final"
 M3_PATH      = BASE_DIR / "models" / "m3_xgboost" / "xgboost_scorer.pkl"
 
+# Kiểm tra thư mục models trước khi load
+missing_models = [str(p) for p in [M1_PATH, M2_PATH, M3_PATH] if not p.exists()]
+if missing_models:
+    log.error("❌ Không tìm thấy thư mục/file models:")
+    for m in missing_models:
+        log.error(f"   • {m}")
+    log.error("👉 Bạn cần kéo models về máy từ DVC bằng lệnh:")
+    log.error("   dvc pull packages/ml-service/models.dvc")
+    log.error("   (hoặc copy thư mục models/ từ thành viên trong team)\n")
+    sys.exit(1)
+
 # ─── Load Models (một lần khi khởi động) ────────────────────────────────────
 
 log.info("🔧 Đang load models vào RAM...")
@@ -63,12 +74,16 @@ m3_model = _m3_data["model"]
 m3_keys  = _m3_data["feature_keys"]  # thu tu feature luc train - PHAI dung dung thu tu nay khi predict
 log.info(f"  ok M3 XGBoost loaded (features: {m3_keys})")
 
-# OCR — EasyOCR (khởi tạo 1 lần)
-import easyocr
-ocr_reader = easyocr.Reader(['vi', 'en'], gpu=False)
-log.info("  ✅ EasyOCR loaded")
+# OCR — EasyOCR (khởi tạo 1 lần nếu có)
+ocr_reader = None
+try:
+    import easyocr
+    ocr_reader = easyocr.Reader(['vi', 'en'], gpu=False)
+    log.info("  ✅ EasyOCR loaded")
+except Exception as e:
+    log.warning(f"  ⚠️ EasyOCR chưa sẵn sàng ({e}). Xử lý ảnh OCR tạm thời bị tắt.")
 
-log.info("✅ Tất cả models sẵn sàng!\n")
+log.info("✅ Tất cả models cốt lõi sẵn sàng!\n")
 
 # ─── Hàm trích xuất CV text từ PDF ──────────────────────────────────────────
 
@@ -104,6 +119,9 @@ def detect_file_type(b64_str: str) -> str:
 
 def extract_text_from_image_b64(b64_str: str) -> str:
     """Decode base64 Image → extract text bằng EasyOCR."""
+    if not ocr_reader:
+        log.warning("EasyOCR không khả dụng, bỏ qua trích xuất text từ ảnh.")
+        return ""
     try:
         img_bytes = base64.b64decode(b64_str)
         results = ocr_reader.readtext(img_bytes, detail=0)
