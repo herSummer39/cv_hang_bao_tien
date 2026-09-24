@@ -111,10 +111,13 @@ def train(mode: str = "dev", resume_from_checkpoint: str = None):
     else:
         # Train thật trên GPU T4 (Kaggle/Colab)
         N_SAMPLES   = None  # Dùng hết
-        EPOCHS      = 5
+        EPOCHS      = 3   # giam tu 5 -> 3: resume tu checkpoint-450 (da xong
+                           # 2 epoch) se chi can chay xong epoch 3 (225 step)
+                           # la dat max_steps=675 va dung, thay vi chay tiep
+                           # het epoch 3-4-5 (675 step con lai).
         BATCH_SIZE  = 32
         BASE_MODEL  = "bkai-foundation-models/vietnamese-bi-encoder"
-        logger.info("MODE: FULL (GPU, all samples, 5 epochs) — train that")
+        logger.info("MODE: FULL (GPU, all samples, 3 epochs) — train that")
 
     # ── Load data ─────────────────────────────────────────────────
     # Uu tien data that, fallback sang data tong hop neu chua co
