@@ -83,6 +83,7 @@ def load_data(data_path: Path) -> tuple[list, list, list]:
 
 
 def train(mode: str = "dev", resume_from_checkpoint: str = None):
+    import torch
     from sentence_transformers import (
         SentenceTransformer,
         SentenceTransformerTrainer,
@@ -192,7 +193,7 @@ def train(mode: str = "dev", resume_from_checkpoint: str = None):
         per_device_eval_batch_size=BATCH_SIZE,
         warmup_ratio=0.1,
         learning_rate=2e-5,
-        fp16=False,         # True nếu có GPU
+        fp16=torch.cuda.is_available(),  # tu dong bat mixed-precision khi co GPU (nhanh hon ~1.5-2x tren Tensor Core)
         bf16=False,
         eval_strategy="epoch",
         save_strategy="epoch",
@@ -212,7 +213,20 @@ def train(mode: str = "dev", resume_from_checkpoint: str = None):
         loss=loss,
         evaluator=evaluator,
     )
-    trainer.train()
+    # Neu resume_from_checkpoint la 1 checkpoint THAT SU cua Trainer (co
+    # trainer_state.json - VD checkpoint-450 sau khi terminal bi kill giua
+    # luc dang chay epoch 3/5), resume DUNG VI TRI (epoch, step, optimizer,
+    # lr-scheduler, RNG) de KHONG train lai tu dau cac epoch da xong roi -
+    # tiep tuc dung ngay cho epoch con lai, nhanh hon nhieu so voi train lai
+    # tu "final" (chi la model weights, khong co trainer state).
+    ckpt_path = Path(resume_from_checkpoint) if resume_from_checkpoint else None
+    has_trainer_state = bool(ckpt_path and (ckpt_path / "trainer_state.json").exists())
+    actual_resume = str(ckpt_path) if has_trainer_state else None
+    if resume_from_checkpoint and not has_trainer_state:
+        logger.info("Load model weights xong, bat dau fine-tune fresh (khong resume trainer state)")
+    elif has_trainer_state:
+        logger.info(f"Resume DUNG VI TRI trainer (epoch/step/optimizer/lr) tu: {actual_resume}")
+    trainer.train(resume_from_checkpoint=actual_resume)
 
     # ── Save final model ──────────────────────────────────────────
     final_path = output_dir / "final"
