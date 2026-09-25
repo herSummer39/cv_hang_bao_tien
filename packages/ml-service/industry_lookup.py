@@ -374,3 +374,55 @@ def resolve_best_industry_id(detect_result: dict) -> str | None:
     if detect_result is None:
         return None
     return detect_result.get("branch_id") or detect_result.get("group_id")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Tiện ích: category rộng (7 nhóm) cho 17 nhóm ngành lớn — dùng để chọn cách
+# diễn đạt câu hỏi phỏng vấn phù hợp bối cảnh ngành (VD: không dùng từ "production"
+# cho ngành kế toán/bán hàng). Đồng bộ với GROUP_CATEGORY trong
+# scripts/generate_training_data_v2.py — nếu sửa 1 chỗ thì sửa luôn chỗ kia.
+# ══════════════════════════════════════════════════════════════════════════════
+GROUP_CATEGORY = {
+    "kinh-doanh-ban-hang":        "sales",
+    "marketing-truyen-thong":     "office",
+    "cntt":                       "office",
+    "ke-toan-tai-chinh":          "office",
+    "nhan-su-hanh-chinh":         "office",
+    "dich-vu-khach-hang":         "service",
+    "thiet-ke-kien-truc":         "office",
+    "khach-san-nha-hang-du-lich": "service",
+    "y-te-duoc":                  "healthcare",
+    "xay-dung":                   "technical",
+    "dien-dien-tu-vien-thong":    "technical",
+    "bat-dong-san":               "sales",
+    "co-khi-che-tao":             "technical",
+    "van-tai-logistics":          "technical",
+    "san-xuat-qa-qc":             "technical",
+    "giao-duc-dao-tao":           "education",
+    "lao-dong-pho-thong":         "labor",
+}
+
+
+def resolve_display_name_and_category(industry_id: str | None) -> tuple[str | None, str | None]:
+    """
+    Từ industry_id (group hoặc branch, đã resolve xong), trả về:
+      (display_name, category)
+    - display_name: tên ngành để hiển thị trong câu hỏi phỏng vấn (VD "Kế toán
+      thuế" nếu là branch, hoặc tên nhóm lớn nếu là group).
+    - category: 1 trong 7 nhóm rộng (GROUP_CATEGORY) — dùng để chọn cách diễn
+      đạt câu hỏi phù hợp bối cảnh ngành.
+    Trả về (None, None) nếu không tra được (không có Supabase / industry_id lạ).
+    """
+    if not industry_id or not _CACHE.loaded:
+        return None, None
+    ind = _CACHE.get_industry_by_id(industry_id)
+    if not ind:
+        return None, None
+    display_name = ind.get("name")
+    group_slug = ind.get("slug")
+    if ind.get("level") == "branch":
+        parent = _CACHE.get_parent(ind)
+        if parent:
+            group_slug = parent.get("slug")
+    category = GROUP_CATEGORY.get(group_slug)
+    return display_name, category

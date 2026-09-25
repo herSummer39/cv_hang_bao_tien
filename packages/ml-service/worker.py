@@ -486,12 +486,21 @@ def generate_cv_suggestions(missing: list, matched: list, exp_gap: float,
     return suggestions
 
 def analyze(cv_text: str, jd_text: str, job_title: str,
-            domain_keywords: list | None = None) -> dict:
+            domain_keywords: list | None = None,
+            industry_display_name: str | None = None,
+            industry_category: str | None = None) -> dict:
     """Chay toan bo pipeline M1->M2->M3 va tra ve ket qua.
 
     Args:
         domain_keywords: keyword đặc thù ngành (từ industry_lookup).
             None → dùng ALL_DOMAIN_KEYWORDS (tương thích ngược).
+        industry_display_name: tên ngành đã detect (VD "Kế toán thuế"), dùng
+            để câu hỏi phỏng vấn nêu rõ ngành thay vì chỉ job_title chung.
+            None nếu không detect được ngành (giữ hành vi cũ).
+        industry_category: 1 trong 7 nhóm rộng (xem industry_lookup.GROUP_CATEGORY),
+            dùng để chọn cách diễn đạt câu hỏi phù hợp bối cảnh ngành (VD không
+            dùng từ "production" cho ngành kế toán/bán hàng). None → dùng
+            cách diễn đạt trung tính chung.
     """
     # Trich xuat skills (industry-aware nếu có domain_keywords)
     cv_skills  = set(extract_skills(cv_text, domain_keywords))
@@ -584,9 +593,10 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
     questions = []
 
     # Câu 1 — kỹ năng còn thiếu (hoặc xác nhận năng lực nếu không thiếu gì)
+    industry_suffix = f" (ngành {industry_display_name})" if industry_display_name else ""
     if missing:
         q1_category = "Xác minh kỹ năng còn thiếu"
-        q1_question = f'"Vị trí {job_title} yêu cầu {", ".join(missing[:3])}. Bạn có kinh nghiệm thực tế với các công nghệ này không? Hãy mô tả dự án cụ thể."'
+        q1_question = f'"Vị trí {job_title}{industry_suffix} yêu cầu {", ".join(missing[:3])}. Bạn có kinh nghiệm thực tế với các yêu cầu này không? Hãy mô tả dự án/công việc cụ thể."'
         q1_expected = [
             "Ứng viên có thể mô tả dự án thực tế liên quan.",
             "Thể hiện khả năng tự học và tiếp thu công nghệ mới.",
@@ -597,7 +607,7 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
         ]
     else:
         q1_category = "Xác nhận năng lực đáp ứng JD"
-        q1_question = f'"CV của bạn đã thể hiện đủ {total_jd_skills} kỹ năng chính mà JD {job_title} yêu cầu. Trong số đó, kỹ năng nào bạn tự tin nhất và vì sao?"'
+        q1_question = f'"CV của bạn đã thể hiện đủ {total_jd_skills} kỹ năng chính mà JD {job_title}{industry_suffix} yêu cầu. Trong số đó, kỹ năng nào bạn tự tin nhất và vì sao?"'
         q1_expected = [
             "Chọn được kỹ năng thực sự liên quan trọng tâm của JD.",
             "Giải thích lý do thuyết phục, có ví dụ cụ thể.",
@@ -620,9 +630,19 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
     })
 
     # Câu 2 — đào sâu kỹ năng thế mạnh (hoặc kỹ năng tương đương nếu không match gì)
+    _CATEGORY_CONTEXT_PHRASE = {
+        "technical":  "trong môi trường production",
+        "office":     "trong công việc thực tế tại doanh nghiệp",
+        "sales":      "trong công việc bán hàng/tư vấn khách hàng thực tế",
+        "service":    "khi phục vụ khách hàng thực tế",
+        "healthcare": "trong công việc khám/điều trị thực tế",
+        "education":  "trong giảng dạy/đào tạo thực tế",
+        "labor":      "trong công việc thực tế tại hiện trường",
+    }
+    context_phrase = _CATEGORY_CONTEXT_PHRASE.get(industry_category, "trong công việc thực tế")
     if matched:
         q2_category = "Đào sâu kỹ năng thế mạnh"
-        q2_question = f'"Bạn đã dùng {", ".join(matched[:2])} trong môi trường production như thế nào? Kết quả đo lường được là gì?"'
+        q2_question = f'"Bạn đã dùng {", ".join(matched[:2])} {context_phrase} như thế nào? Kết quả đo lường được là gì?"'
         q2_expected = [
             "Nêu được metrics cụ thể (tốc độ, scale, uptime...).",
             "Hiểu được trade-off của giải pháp đã chọn.",
@@ -874,6 +894,14 @@ def main():
                     log.info("  📚 Không có skill trong DB cho ngành này — dùng ALL_DOMAIN_KEYWORDS")
                     domain_keywords = None
 
+            # Tra ten hien thi + category (7 nhom rong) tu industry_id (du di tu
+            # detect_industry() hay tu job.industry_id da co san) - dung de cau
+            # hoi phong van bam sat dung ngành, khong con chung chung/lech nganh
+            # (VD khong dung tu "production" cho nganh ke toan/ban hang).
+            industry_display_name, industry_category = (
+                industry_lookup.resolve_display_name_and_category(industry_id)
+            )
+
             # Chạy AI pipeline — truyền domain_keywords (None = hành vi cũ)
             log.info("  🤖 Đang phân tích M1 → M2 → M3...")
             result = analyze(
@@ -881,6 +909,8 @@ def main():
                 jd_text=jd_text,
                 job_title=job_title,
                 domain_keywords=domain_keywords,
+                industry_display_name=industry_display_name,
+                industry_category=industry_category,
             )
 
             # Ghi thêm industry metadata vào result để FE có thể hiển thị

@@ -20,7 +20,25 @@ class AsrPipelineSingleton {
 
   static async getInstance(progress_callback) {
     if (this.instance === null) {
-      this.instance = pipeline(this.task, this.model, { progress_callback });
+      // Thu tai ban da luong tu hoa (q8) truoc - nhe hon nhieu (~1/4 dung
+      // luong) va tai/chay nhanh hon dang ke so voi ban day du (fp32).
+      // Neu repo model nay khong co san file q8 (community convert co the
+      // chi export fp32), pipeline() se bao loi ngay khi tai (khong phai
+      // luc dang transcribe) - luc do fallback nguyen ban fp32 nhu truoc.
+      this.instance = pipeline(this.task, this.model, {
+        progress_callback,
+        dtype: "q8",
+      }).catch((err) => {
+        console.warn(
+          "[asr-worker] Tai ban q8 (luong tu hoa) that bai, dung ban goc (fp32):",
+          err
+        );
+        // KHONG reset this.instance = null o day - de singleton giu lai dung
+        // promise nay (se resolve ra pipeline fp32 fallback) cho cac lan goi
+        // getInstance() sau tai su dung lai, khong thu lai q8 (chac chan fail
+        // lai) moi lan ghi am tiep theo.
+        return pipeline(this.task, this.model, { progress_callback });
+      });
     }
     return this.instance;
   }
