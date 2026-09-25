@@ -11,7 +11,13 @@
 // model đang tải/suy luận, đúng khuyến nghị chính thức của transformers.js.
 import { pipeline } from "@huggingface/transformers";
 
-const ASR_MODEL_ID = "huuquyet/PhoWhisper-tiny";
+// PhoWhisper-tiny (ban cu) qua nho -> nhan dien sai nhieu tu. PhoWhisper-base
+// (ban ONNX cua cung nguoi convert huuquyet) chinh xac hon ro ret, doi lai
+// model nang hon mot chut (tai lan dau lau hon vai giay, sau do trinh duyet
+// cache lai qua IndexedDB nen cac lan sau khong phai tai lai). Neu van chua
+// du chinh xac, buoc tiep theo la "huuquyet/PhoWhisper-small" (chinh xac hon
+// nua, nhung tai lan dau lau hon).
+const ASR_MODEL_ID = "huuquyet/PhoWhisper-base";
 
 class AsrPipelineSingleton {
   static task = "automatic-speech-recognition";
