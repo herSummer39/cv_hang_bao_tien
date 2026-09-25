@@ -11,6 +11,7 @@ import os, sys, time, json, logging, base64, tempfile, traceback
 from pathlib import Path
 from dotenv import load_dotenv
 import industry_lookup
+import interview_tts
 
 # Load env từ file .env.worker (cùng thư mục với worker.py)
 load_dotenv(Path(__file__).parent / ".env.worker")
@@ -794,6 +795,48 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
 
 # ─── Main Loop ───────────────────────────────────────────────────────────────
 
+def _fetch_pending_audio_job(supabase):
+    """Lay 1 job doc-cau-hoi-phong-van (TTS) pending cu nhat, neu co. Uu tien
+    xu ly TRUOC analysis_jobs vi nguoi dung dang thuc su cho ngay luc bam
+    'Bat dau phong van' (khac voi phan tich CV/JD chay nen)."""
+    resp = (
+        supabase.table("interview_audio_jobs")
+        .select("id, voice, questions")
+        .eq("status", "pending")
+        .order("created_at", desc=False)
+        .limit(1)
+        .execute()
+    )
+    jobs = resp.data or []
+    return jobs[0] if jobs else None
+
+
+def _process_audio_job(supabase, job):
+    job_id = job["id"]
+    try:
+        supabase.table("interview_audio_jobs").update({"status": "processing"}).eq("id", job_id).execute()
+        voice = job.get("voice") or interview_tts.DEFAULT_VOICE_CODE
+        questions = job.get("questions") or []
+        log.info(f"🔊 Audio phong van: {job_id[:8]}... | giong: {voice} | {len(questions)} cau")
+
+        audio_urls = interview_tts.synthesize_and_upload(supabase, job_id, questions, voice)
+
+        supabase.table("interview_audio_jobs").update({
+            "status": "done",
+            "audio_urls": audio_urls,
+        }).eq("id", job_id).execute()
+        log.info(f"  ✅ Xong! Da upload {len(audio_urls)} file audio.\n")
+    except Exception:
+        log.error(f"Loi sinh audio phong van:\n{traceback.format_exc()}")
+        try:
+            supabase.table("interview_audio_jobs").update({
+                "status": "error",
+                "error_msg": traceback.format_exc()[-300:],
+            }).eq("id", job_id).execute()
+        except Exception:
+            pass
+
+
 def main():
     if not SUPABASE_URL or not SUPABASE_KEY:
         log.error("❌ Thiếu SUPABASE_URL hoặc SUPABASE_KEY trong .env.worker!")
@@ -810,6 +853,15 @@ def main():
 
     while True:
         try:
+            # Uu tien xu ly audio job (doc cau hoi phong van bang TTS) truoc —
+            # xem docstring _fetch_pending_audio_job(). Xu ly xong thi lap lai
+            # ngay (continue, khong sleep) de kiem tra tiep, giu do tre thap.
+            audio_job = _fetch_pending_audio_job(supabase)
+            if audio_job:
+                print()
+                _process_audio_job(supabase, audio_job)
+                continue
+
             # Lấy 1 job pending cũ nhất — bao gồm cả industry_id (có thể NULL)
             resp = (
                 supabase.table("analysis_jobs")

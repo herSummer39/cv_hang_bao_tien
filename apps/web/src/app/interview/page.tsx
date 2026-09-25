@@ -12,6 +12,20 @@ const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ
 const MIN_TIME_MULTIPLIER = 0.5; // sàn giảm điểm ở cuối phút thứ 3 (giây 180)
 const TOTAL_QUESTIONS = 5;
 
+// 7 giọng đọc VieNeu-TTS — ĐÚNG mã + tên hiển thị đã dùng ở tool video
+// (html-render-video-v2-react/ui/index.html), để nhất quán. "" = không
+// đọc giọng (chỉ hiện chữ như trước đây), phòng khi máy chưa cài vieneu.
+const VOICE_OPTIONS: { code: string; label: string }[] = [
+  { code: "Ly", label: "Trúc Ly — nữ, miền Bắc (mặc định)" },
+  { code: "Ngoc", label: "Bích Ngọc — nữ, miền Bắc" },
+  { code: "Doan", label: "Thục Đoan — nữ, miền Nam" },
+  { code: "Binh", label: "Thanh Bình — nam, miền Bắc" },
+  { code: "Tuyen", label: "Phạm Tuyên — nam, miền Bắc" },
+  { code: "Vinh", label: "Xuân Vĩnh — nam, miền Nam" },
+  { code: "Son", label: "Thái Sơn — nam, miền Nam" },
+  { code: "", label: "Không đọc giọng (chỉ hiện chữ)" },
+];
+
 type ApiQuestion = {
   id: string;
   category: string;
@@ -110,12 +124,19 @@ export default function InterviewPage() {
   const [questions, setQuestions] = useState<ApiQuestion[]>([]);
   const [loadError, setLoadError] = useState("");
 
-  const [phase, setPhase] = useState<"intro" | "running" | "saving" | "finished">("intro");
+  const [phase, setPhase] = useState<"intro" | "preparing" | "running" | "saving" | "finished">("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answerDraft, setAnswerDraft] = useState("");
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION_SEC);
   const [collected, setCollected] = useState<AnswerRecord[]>([]);
   const [saveError, setSaveError] = useState("");
+
+  // Đọc câu hỏi bằng giọng người phỏng vấn — VieNeu-TTS (7 giọng vùng miền),
+  // sinh audio local qua worker.py lúc bấm "Bắt đầu", KHÔNG gọi API ngoài.
+  const [selectedVoice, setSelectedVoice] = useState("Ly");
+  const [audioUrls, setAudioUrls] = useState<string[] | null>(null);
+  const [audioNote, setAudioNote] = useState("");
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const answerDraftRef = useRef(answerDraft);
   answerDraftRef.current = answerDraft;
@@ -280,13 +301,84 @@ export default function InterviewPage() {
     return () => clearTimeout(t);
   }, [phase, timeLeft, goToNext]);
 
-  function handleStart() {
+  // Sinh audio doc cau hoi (VieNeu-TTS qua worker.py local) khi bam "Bat dau".
+  // Khong bao gio de tinh nang nay chan phong van: loi/qua lau -> van vao
+  // "running" nhu thuong, chi thieu audio (audioUrls = null).
+  async function handleStart() {
     setCurrentIndex(0);
     setAnswerDraft("");
     setTimeLeft(TIME_PER_QUESTION_SEC);
     setCollected([]);
-    setPhase("running");
+    setAudioUrls(null);
+    setAudioNote("");
+
+    if (!selectedVoice || questions.length === 0) {
+      setPhase("running");
+      return;
+    }
+
+    setPhase("preparing");
+    try {
+      const supabase = createClient();
+      const { data: job, error: insertError } = await supabase
+        .from("interview_audio_jobs")
+        .insert({
+          analysis_job_id: analysisJobId,
+          voice: selectedVoice,
+          questions: questions.map((q) => q.question),
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !job?.id) throw new Error(insertError?.message || "tao audio job that bai");
+
+      // Poll toi da ~45s. Lan dau worker.py phai load model VieNeu-TTS nen co
+      // the mat vai chuc giay; cac lan sau (model da o san trong RAM) nhanh hon.
+      const deadline = Date.now() + 45_000;
+      let settled = false;
+      while (Date.now() < deadline) {
+        const { data: row } = await supabase
+          .from("interview_audio_jobs")
+          .select("status, audio_urls")
+          .eq("id", job.id)
+          .single();
+        if (row?.status === "done") {
+          setAudioUrls((row.audio_urls as string[]) || null);
+          settled = true;
+          break;
+        }
+        if (row?.status === "error") {
+          setAudioNote("Không tạo được giọng đọc (worker báo lỗi) — vẫn tiếp tục phỏng vấn, chỉ hiện chữ.");
+          settled = true;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      if (!settled) {
+        setAudioNote("Tạo giọng đọc quá lâu (worker.py có đang chạy trên máy không?) — vẫn tiếp tục phỏng vấn, chỉ hiện chữ.");
+      }
+    } catch (e) {
+      setAudioNote(
+        "Không tạo được giọng đọc: " + (e instanceof Error ? e.message : "unknown") + " — vẫn tiếp tục phỏng vấn, chỉ hiện chữ."
+      );
+    } finally {
+      setPhase("running");
+    }
   }
+
+  // Tu dong phat audio cau hoi hien tai (neu co) moi khi doi cau/vao phong
+  // van. Trinh duyet co the chan autoplay -> nut "Nghe lai cau hoi" trong
+  // JSX ben duoi la duong lui thu cong.
+  useEffect(() => {
+    if (phase !== "running") return;
+    const url = audioUrls?.[currentIndex];
+    const el = questionAudioRef.current;
+    if (!url || !el) return;
+    el.src = url;
+    el.play().catch(() => {
+      // Tu dong phat bi chan - da co nut "Nghe lai cau hoi" de bam thu cong.
+    });
+  }, [phase, currentIndex, audioUrls]);
 
   function handleSubmitAnswer() {
     goToNext(TIME_PER_QUESTION_SEC - timeLeft, "submitted");
@@ -343,6 +435,27 @@ export default function InterviewPage() {
                 </ul>
                 <p>Kết quả (từng câu, điểm, thời gian dùng) sẽ được lưu lại vào hồ sơ để bạn xem lại sau.</p>
               </div>
+
+              <div className="mb-6 text-left">
+                <label className="block text-[12px] font-semibold text-[#565e74] uppercase tracking-wider mb-2">
+                  Giọng đọc câu hỏi (người phỏng vấn)
+                </label>
+                <select
+                  value={selectedVoice}
+                  onChange={(e) => setSelectedVoice(e.target.value)}
+                  className="w-full bg-[#eff4ff] rounded-xl px-4 py-2.5 text-[14px] text-[#0b1c30] focus:outline-none"
+                >
+                  {VOICE_OPTIONS.map((v) => (
+                    <option key={v.code || "none"} value={v.code}>
+                      {v.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[12px] text-[#9aa0b4] mt-1">
+                  Giọng đọc thật (VieNeu-TTS), sinh cục bộ trên máy chạy worker.py — không gửi câu hỏi lên server ngoài nào.
+                </p>
+              </div>
+
               <button
                 onClick={handleStart}
                 className="px-6 py-3 rounded-xl bg-[#1d4ed8] text-white text-[15px] font-semibold hover:bg-[#0037b0] transition-colors flex items-center gap-2 mx-auto"
@@ -350,6 +463,12 @@ export default function InterviewPage() {
                 <span className="material-symbols-outlined text-[20px]">play_arrow</span>
                 Bắt đầu phỏng vấn
               </button>
+            </div>
+          ) : phase === "preparing" ? (
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[32px] mb-3 block">progress_activity</span>
+              <p className="text-[#0b1c30] font-semibold mb-1">Đang chuẩn bị giọng đọc phỏng vấn viên...</p>
+              <p className="text-[13px] text-[#565e74]">Lần đầu có thể mất khoảng 30–45 giây (worker.py cần load model VieNeu-TTS). Nếu quá lâu, phỏng vấn sẽ tự chuyển sang chế độ chỉ hiện chữ.</p>
             </div>
           ) : phase === "running" ? (
             <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
@@ -376,6 +495,24 @@ export default function InterviewPage() {
               <p className="font-[family-name:var(--font-plus-jakarta)] text-[17px] font-semibold text-[#0b1c30] leading-relaxed mb-4">
                 {questions[currentIndex]?.question}
               </p>
+
+              {audioUrls?.[currentIndex] && (
+                <div className="mb-4 flex items-center gap-2">
+                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                  <audio ref={questionAudioRef} className="hidden" />
+                  <button
+                    type="button"
+                    onClick={() => questionAudioRef.current?.play().catch(() => {})}
+                    className="px-3 py-1.5 rounded-lg bg-[#eff4ff] text-[#0037b0] text-[12px] font-medium flex items-center gap-1.5 hover:bg-[#e5eeff] transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">volume_up</span>
+                    Nghe lại câu hỏi
+                  </button>
+                </div>
+              )}
+              {audioNote && (
+                <p className="text-[12px] text-[#9aa0b4] mb-3">{audioNote}</p>
+              )}
 
               <textarea
                 autoFocus
