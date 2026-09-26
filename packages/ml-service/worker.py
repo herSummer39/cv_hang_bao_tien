@@ -14,6 +14,7 @@ import industry_lookup
 import interview_tts
 import interview_asr
 import detail_analysis
+import interview_builder
 
 # Load env từ file .env.worker (cùng thư mục với worker.py)
 load_dotenv(Path(__file__).parent / ".env.worker")
@@ -491,7 +492,8 @@ def generate_cv_suggestions(missing: list, matched: list, exp_gap: float,
 def analyze(cv_text: str, jd_text: str, job_title: str,
             domain_keywords: list | None = None,
             industry_display_name: str | None = None,
-            industry_category: str | None = None) -> dict:
+            industry_category: str | None = None,
+            question_bank: dict | None = None) -> dict:
     """Chay toan bo pipeline M1->M2->M3 va tra ve ket qua.
 
     Args:
@@ -810,6 +812,17 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
         ],
     })
 
+    # Thay bộ câu hỏi chung bằng câu hỏi THEO NGÀNH + bám CV/JD (ngân hàng câu hỏi
+    # migration v15). Câu nào thiếu dữ liệu thì giữ câu tương ứng của cách sinh cũ ở trên.
+    try:
+        questions = interview_builder.build_questions(
+            bank=question_bank, job_title=job_title, industry_name=industry_display_name,
+            matched=matched, missing=missing, requirements=requirements, cv_exp=cv_exp,
+            seed_text=cv_text[:3000] + "|" + jd_text[:3000], legacy=questions,
+        )
+    except Exception as e:
+        log.warning(f"  ⚠️ Chọn câu hỏi theo ngành lỗi, dùng bộ câu hỏi cũ: {e}")
+
     return {
         "score": round(score, 1),
         "similarity": round(similarity, 3),
@@ -1057,6 +1070,7 @@ def main():
                 domain_keywords=domain_keywords,
                 industry_display_name=industry_display_name,
                 industry_category=industry_category,
+                question_bank=industry_lookup.get_interview_bank(industry_id),
             )
 
             # Ghi thêm industry metadata vào result để FE có thể hiển thị

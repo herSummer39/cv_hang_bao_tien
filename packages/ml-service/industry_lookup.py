@@ -155,6 +155,7 @@ class _Cache:
     def __init__(self):
         self._industries: list[dict] = []  # [{id, parent_id, level, name, slug}, ...]
         self._skills: list[dict] = []      # [{id, industry_id, skill_type, name, aliases}, ...]
+        self._questions: list[dict] = []   # ngân hàng câu hỏi phỏng vấn (migration v15)
         self._by_slug: dict[str, dict] = {}   # slug → industry row
         self._by_id: dict[str, dict] = {}     # id   → industry row
         self._loaded_at: float = 0.0
@@ -182,6 +183,17 @@ class _Cache:
                      f"{len(self._skills)} skills from Supabase")
         except Exception as e:
             log.warning(f"[industry_lookup] Reload thất bại: {e}")
+        # Ngân hàng câu hỏi — tách riêng: chưa chạy migration v15 thì chỉ cảnh báo,
+        # worker vẫn chạy (câu hỏi phỏng vấn dùng lại cách sinh cũ).
+        try:
+            q_resp = (self._supabase.table("interview_questions")
+                      .select("id, industry_id, skill_tag, question_type, difficulty, question, expected, red_flags")
+                      .execute())
+            self._questions = q_resp.data or []
+            log.info(f"[industry_lookup] Loaded {len(self._questions)} câu hỏi phỏng vấn theo ngành")
+        except Exception as e:
+            self._questions = []
+            log.warning(f"[industry_lookup] Chưa tải được ngân hàng câu hỏi (đã chạy migration v15?): {e}")
 
     def refresh_if_stale(self) -> None:
         if self.is_stale():
@@ -205,6 +217,11 @@ class _Cache:
     def skills(self) -> list[dict]:
         self.refresh_if_stale()
         return self._skills
+
+    @property
+    def questions(self) -> list[dict]:
+        self.refresh_if_stale()
+        return self._questions
 
     @property
     def loaded(self) -> bool:
@@ -426,3 +443,29 @@ def resolve_display_name_and_category(industry_id: str | None) -> tuple[str | No
             group_slug = parent.get("slug")
     category = GROUP_CATEGORY.get(group_slug)
     return display_name, category
+
+
+def get_interview_bank(industry_id: str | None) -> dict:
+    """Câu hỏi phỏng vấn cho ngành của job: {"industry": [...], "general": [...], "group_name": str|None}.
+
+    Câu hỏi gắn ở cấp nhóm lớn → nếu industry_id là nhánh nhỏ thì lấy theo nhóm cha,
+    cộng thêm câu gắn riêng cho nhánh (nếu có). "general" = câu không gắn ngành."""
+    qs = _CACHE.questions
+    general = [q for q in qs if not q.get("industry_id")]
+    if not industry_id or not _CACHE.loaded:
+        return {"industry": [], "general": general, "group_name": None}
+    ind = _CACHE.get_industry_by_id(industry_id)
+    if not ind:
+        return {"industry": [], "general": general, "group_name": None}
+    ids = {ind["id"]}
+    group = ind
+    if ind.get("level") == "branch":
+        parent = _CACHE.get_parent(ind)
+        if parent:
+            ids.add(parent["id"])
+            group = parent
+    return {
+        "industry": [q for q in qs if q.get("industry_id") in ids],
+        "general": general,
+        "group_name": group.get("name"),
+    }
