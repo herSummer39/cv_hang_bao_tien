@@ -137,6 +137,9 @@ export default function InterviewPage() {
   const [audioUrls, setAudioUrls] = useState<string[] | null>(null);
   const [audioNote, setAudioNote] = useState("");
   const questionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioJobId, setAudioJobId] = useState<string | null>(null);
+  const [audioJobActive, setAudioJobActive] = useState(false);
+  const playedAudioRef = useRef<Set<number>>(new Set());
 
   const answerDraftRef = useRef(answerDraft);
   answerDraftRef.current = answerDraft;
@@ -301,9 +304,10 @@ export default function InterviewPage() {
     return () => clearTimeout(t);
   }, [phase, timeLeft, goToNext]);
 
-  // Sinh audio doc cau hoi (VieNeu-TTS qua worker.py local) khi bam "Bat dau".
-  // Khong bao gio de tinh nang nay chan phong van: loi/qua lau -> van vao
-  // "running" nhu thuong, chi thieu audio (audioUrls = null).
+  // Đọc câu hỏi bằng giọng người phỏng vấn (VieNeu-TTS trên worker.py local).
+  // worker sinh TỪNG CÂU MỘT và cập nhật audio_urls ngay → chỉ cần chờ câu 1
+  // rồi vào phỏng vấn, các câu sau tiếp tục được sinh trong nền (poll ở
+  // useEffect bên dưới). Lỗi/quá lâu không bao giờ chặn phỏng vấn.
   async function handleStart() {
     setCurrentIndex(0);
     setAnswerDraft("");
@@ -311,6 +315,9 @@ export default function InterviewPage() {
     setCollected([]);
     setAudioUrls(null);
     setAudioNote("");
+    setAudioJobId(null);
+    setAudioJobActive(false);
+    playedAudioRef.current = new Set();
 
     if (!selectedVoice || questions.length === 0) {
       setPhase("running");
@@ -329,35 +336,34 @@ export default function InterviewPage() {
         })
         .select("id")
         .single();
+      if (insertError || !job?.id) throw new Error(insertError?.message || "tạo audio job thất bại");
 
-      if (insertError || !job?.id) throw new Error(insertError?.message || "tao audio job that bai");
+      setAudioJobId(job.id);
+      setAudioJobActive(true);
 
-      // Poll toi da ~45s. Lan dau worker.py phai load model VieNeu-TTS nen co
-      // the mat vai chuc giay; cac lan sau (model da o san trong RAM) nhanh hon.
-      const deadline = Date.now() + 45_000;
-      let settled = false;
+      // Chỉ chờ audio CÂU 1 (tối đa 60s). Các câu sau poll tiếp trong nền.
+      const deadline = Date.now() + 60_000;
       while (Date.now() < deadline) {
         const { data: row } = await supabase
           .from("interview_audio_jobs")
           .select("status, audio_urls")
           .eq("id", job.id)
           .single();
-        if (row?.status === "done") {
-          setAudioUrls((row.audio_urls as string[]) || null);
-          settled = true;
+        const urls = (row?.audio_urls as string[] | null) || null;
+        if (urls && urls.length > 0) {
+          setAudioUrls(urls);
+          if (row?.status === "done") setAudioJobActive(false);
           break;
         }
         if (row?.status === "error") {
+          setAudioJobActive(false);
           setAudioNote("Không tạo được giọng đọc (worker báo lỗi) — vẫn tiếp tục phỏng vấn, chỉ hiện chữ.");
-          settled = true;
           break;
         }
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-      if (!settled) {
-        setAudioNote("Tạo giọng đọc quá lâu (worker.py có đang chạy trên máy không?) — vẫn tiếp tục phỏng vấn, chỉ hiện chữ.");
+        await new Promise((r) => setTimeout(r, 1000));
       }
     } catch (e) {
+      setAudioJobActive(false);
       setAudioNote(
         "Không tạo được giọng đọc: " + (e instanceof Error ? e.message : "unknown") + " — vẫn tiếp tục phỏng vấn, chỉ hiện chữ."
       );
@@ -366,17 +372,40 @@ export default function InterviewPage() {
     }
   }
 
-  // Tu dong phat audio cau hoi hien tai (neu co) moi khi doi cau/vao phong
-  // van. Trinh duyet co the chan autoplay -> nut "Nghe lai cau hoi" trong
-  // JSX ben duoi la duong lui thu cong.
+  // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong từng câu.
+  useEffect(() => {
+    if (!audioJobId || !audioJobActive) return;
+    if (phase !== "running" && phase !== "preparing") return;
+    const supabase = createClient();
+    let stopped = false;
+    const timer = setInterval(async () => {
+      const { data: row } = await supabase
+        .from("interview_audio_jobs")
+        .select("status, audio_urls")
+        .eq("id", audioJobId)
+        .single();
+      if (stopped || !row) return;
+      const urls = (row.audio_urls as string[] | null) || null;
+      if (urls && urls.length > 0) setAudioUrls(urls);
+      if (row.status === "done" || row.status === "error") setAudioJobActive(false);
+    }, 2000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [audioJobId, audioJobActive, phase]);
+
+  // Tự phát audio câu hiện tại đúng 1 lần (khi vào câu, hoặc khi audio của câu
+  // đó vừa sinh xong). Trình duyệt chặn autoplay thì có nút "Nghe lại câu hỏi".
   useEffect(() => {
     if (phase !== "running") return;
     const url = audioUrls?.[currentIndex];
     const el = questionAudioRef.current;
-    if (!url || !el) return;
+    if (!url || !el || playedAudioRef.current.has(currentIndex)) return;
+    playedAudioRef.current.add(currentIndex);
     el.src = url;
     el.play().catch(() => {
-      // Tu dong phat bi chan - da co nut "Nghe lai cau hoi" de bam thu cong.
+      // Tự phát bị chặn — người dùng bấm nút "Nghe lại câu hỏi".
     });
   }, [phase, currentIndex, audioUrls]);
 
@@ -468,7 +497,7 @@ export default function InterviewPage() {
             <div className="bg-white rounded-xl shadow-sm p-8 text-center">
               <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[32px] mb-3 block">progress_activity</span>
               <p className="text-[#0b1c30] font-semibold mb-1">Đang chuẩn bị giọng đọc phỏng vấn viên...</p>
-              <p className="text-[13px] text-[#565e74]">Lần đầu có thể mất khoảng 30–45 giây (worker.py cần load model VieNeu-TTS). Nếu quá lâu, phỏng vấn sẽ tự chuyển sang chế độ chỉ hiện chữ.</p>
+              <p className="text-[13px] text-[#565e74]">Đang sinh giọng đọc câu hỏi đầu tiên (thường ~10 giây). Các câu sau sẽ được sinh tiếp trong lúc bạn trả lời.</p>
             </div>
           ) : phase === "running" ? (
             <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
@@ -509,6 +538,9 @@ export default function InterviewPage() {
                     Nghe lại câu hỏi
                   </button>
                 </div>
+              )}
+              {!audioUrls?.[currentIndex] && audioJobActive && (
+                <p className="text-[12px] text-[#9aa0b4] mb-3">Đang tạo giọng đọc cho câu này, sẽ tự phát khi xong...</p>
               )}
               {audioNote && (
                 <p className="text-[12px] text-[#9aa0b4] mb-3">{audioNote}</p>

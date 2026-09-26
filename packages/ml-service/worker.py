@@ -12,6 +12,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import industry_lookup
 import interview_tts
+import interview_asr
 
 # Load env từ file .env.worker (cùng thư mục với worker.py)
 load_dotenv(Path(__file__).parent / ".env.worker")
@@ -795,39 +796,90 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
 
 # ─── Main Loop ───────────────────────────────────────────────────────────────
 
-def _fetch_pending_audio_job(supabase):
-    """Lay 1 job doc-cau-hoi-phong-van (TTS) pending cu nhat, neu co. Uu tien
-    xu ly TRUOC analysis_jobs vi nguoi dung dang thuc su cho ngay luc bam
-    'Bat dau phong van' (khac voi phan tich CV/JD chay nen)."""
+# Poll nhanh khi rảnh — job giọng nói (TTS/ASR) cần phản hồi gần như tức thì
+# vì người dùng đang chờ trực tiếp trong lúc phỏng vấn.
+IDLE_SLEEP = float(os.environ.get("IDLE_SLEEP", "1.5"))
+
+
+def _process_one_asr_job(supabase) -> bool:
+    """Nhận diện giọng nói 1 câu trả lời (ưu tiên cao nhất — ứng viên đang chờ
+    chữ hiện ra ngay trong lúc trả lời). Trả về True nếu có job được xử lý."""
     resp = (
-        supabase.table("interview_audio_jobs")
-        .select("id, voice, questions")
+        supabase.table("interview_asr_jobs")
+        .select("id, audio_path")
         .eq("status", "pending")
         .order("created_at", desc=False)
         .limit(1)
         .execute()
     )
     jobs = resp.data or []
-    return jobs[0] if jobs else None
-
-
-def _process_audio_job(supabase, job):
+    if not jobs:
+        return False
+    job = jobs[0]
     job_id = job["id"]
     try:
-        supabase.table("interview_audio_jobs").update({"status": "processing"}).eq("id", job_id).execute()
-        voice = job.get("voice") or interview_tts.DEFAULT_VOICE_CODE
-        questions = job.get("questions") or []
-        log.info(f"🔊 Audio phong van: {job_id[:8]}... | giong: {voice} | {len(questions)} cau")
-
-        audio_urls = interview_tts.synthesize_and_upload(supabase, job_id, questions, voice)
-
-        supabase.table("interview_audio_jobs").update({
+        supabase.table("interview_asr_jobs").update({"status": "processing"}).eq("id", job_id).execute()
+        t0 = time.time()
+        wav_bytes = supabase.storage.from_(interview_asr.ANSWER_BUCKET).download(job["audio_path"])
+        text = interview_asr.transcribe(wav_bytes)
+        supabase.table("interview_asr_jobs").update({
             "status": "done",
-            "audio_urls": audio_urls,
+            "transcript": text,
         }).eq("id", job_id).execute()
-        log.info(f"  ✅ Xong! Da upload {len(audio_urls)} file audio.\n")
+        log.info(f"🎙️ ASR {job_id[:8]}... xong trong {time.time() - t0:.1f}s: {text[:60]!r}")
     except Exception:
-        log.error(f"Loi sinh audio phong van:\n{traceback.format_exc()}")
+        log.error(f"Lỗi ASR:\n{traceback.format_exc()}")
+        try:
+            supabase.table("interview_asr_jobs").update({
+                "status": "error",
+                "error_msg": traceback.format_exc()[-300:],
+            }).eq("id", job_id).execute()
+        except Exception:
+            pass
+    finally:
+        # Không giữ lại bản ghi âm giọng nói của ứng viên sau khi đã nhận diện xong
+        try:
+            supabase.storage.from_(interview_asr.ANSWER_BUCKET).remove([job["audio_path"]])
+        except Exception:
+            pass
+    return True
+
+
+def _process_one_tts_step(supabase) -> bool:
+    """Sinh audio cho ĐÚNG 1 câu hỏi tiếp theo của job TTS cũ nhất chưa xong,
+    cập nhật audio_urls ngay (FE thấy từng câu một). Trả về True nếu có việc."""
+    resp = (
+        supabase.table("interview_audio_jobs")
+        .select("id, voice, questions, audio_urls, status")
+        .in_("status", ["pending", "processing"])
+        .order("created_at", desc=False)
+        .limit(1)
+        .execute()
+    )
+    jobs = resp.data or []
+    if not jobs:
+        return False
+    job = jobs[0]
+    job_id = job["id"]
+    try:
+        questions = job.get("questions") or []
+        urls = list(job.get("audio_urls") or [])
+        idx = len(urls)
+        if idx >= len(questions):
+            supabase.table("interview_audio_jobs").update({"status": "done"}).eq("id", job_id).execute()
+            return True
+
+        voice = job.get("voice") or interview_tts.DEFAULT_VOICE_CODE
+        t0 = time.time()
+        urls.append(interview_tts.synthesize_one(supabase, job_id, idx, questions[idx], voice))
+        is_last = len(urls) >= len(questions)
+        supabase.table("interview_audio_jobs").update({
+            "status": "done" if is_last else "processing",
+            "audio_urls": urls,
+        }).eq("id", job_id).execute()
+        log.info(f"🔊 TTS {job_id[:8]}... câu {idx + 1}/{len(questions)} ({voice}) xong trong {time.time() - t0:.1f}s")
+    except Exception:
+        log.error(f"Lỗi sinh audio phỏng vấn:\n{traceback.format_exc()}")
         try:
             supabase.table("interview_audio_jobs").update({
                 "status": "error",
@@ -835,6 +887,7 @@ def _process_audio_job(supabase, job):
             }).eq("id", job_id).execute()
         except Exception:
             pass
+    return True
 
 
 def main():
@@ -851,15 +904,23 @@ def main():
     industry_lookup.init_cache(supabase)
     log.info("   Industry cache đã load xong.\n")
 
+    # Load sẵn model giọng nói ngay lúc khởi động (không để lần phỏng vấn đầu
+    # tiên phải chờ load model). Thiếu thư viện thì chỉ cảnh báo, worker vẫn
+    # chạy phần phân tích CV/JD bình thường.
+    for name, mod in (("TTS (VieNeu)", interview_tts), ("ASR (PhoWhisper)", interview_asr)):
+        try:
+            mod.warm_up()
+        except Exception as e:
+            log.warning(f"⚠️ Không load được {name}: {e} — tính năng này sẽ báo lỗi trên web.")
+    print()
+
     while True:
         try:
-            # Uu tien xu ly audio job (doc cau hoi phong van bang TTS) truoc —
-            # xem docstring _fetch_pending_audio_job(). Xu ly xong thi lap lai
-            # ngay (continue, khong sleep) de kiem tra tiep, giu do tre thap.
-            audio_job = _fetch_pending_audio_job(supabase)
-            if audio_job:
-                print()
-                _process_audio_job(supabase, audio_job)
+            # Ưu tiên: ASR (đang chờ chữ) > TTS (từng câu một) > phân tích CV/JD.
+            # Có việc thì lặp lại ngay, không sleep.
+            if _process_one_asr_job(supabase):
+                continue
+            if _process_one_tts_step(supabase):
                 continue
 
             # Lấy 1 job pending cũ nhất — bao gồm cả industry_id (có thể NULL)
@@ -875,7 +936,7 @@ def main():
             jobs = resp.data or []
             if not jobs:
                 print(".", end="", flush=True)
-                time.sleep(POLL_INTERVAL)
+                time.sleep(min(POLL_INTERVAL, IDLE_SLEEP))
                 continue
 
             job = jobs[0]

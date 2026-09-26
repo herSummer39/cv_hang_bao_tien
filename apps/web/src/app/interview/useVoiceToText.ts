@@ -1,19 +1,22 @@
 "use client";
 import { useRef, useState, useCallback, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-// "transcribing" bao gồm cả việc tải model ASR lần đầu (chỉ xảy ra 1 lần / phiên
-// trình duyệt) VÀ việc suy luận thật — modelProgressPct phân biệt 2 giai đoạn đó
-// khi cần hiển thị chi tiết hơn cho người dùng.
+// "transcribing" = đã dừng ghi âm, đang chuyển giọng nói thành văn bản.
 export type VoiceStatus =
   | "idle"          // chưa làm gì / xong 1 lượt, sẵn sàng ghi âm tiếp
   | "recording"      // đang ghi âm
-  | "transcribing"   // đã dừng ghi âm — đang tải model (nếu lần đầu) + chuyển giọng nói thành văn bản
+  | "transcribing"   // đang nhận diện (worker.py, hoặc dự phòng trong trình duyệt)
   | "error";
 
+// Nhận diện chính chạy trên worker.py (PhoWhisper-small, GPU) — nhanh và chính
+// xác hơn nhiều so với chạy trong trình duyệt. Trình duyệt chỉ là đường dự
+// phòng khi worker không phản hồi.
+const ANSWER_BUCKET = "interview-answers";
+const SERVER_ASR_TIMEOUT_MS = 90_000;
+
 // Giải mã Blob ghi âm (webm/opus, mp4...) → Float32Array mono 16kHz — định dạng
-// bắt buộc của Whisper/PhoWhisper. decodeAudioData tự resample về sampleRate của
-// AudioContext nên chỉ cần tạo context đúng 16000Hz. Chạy ở main thread vì
-// AudioContext không đảm bảo có sẵn trong Worker ở mọi trình duyệt.
+// chuẩn của Whisper/PhoWhisper.
 async function blobToPcm16k(blob: Blob): Promise<Float32Array> {
   const arrayBuffer = await blob.arrayBuffer();
   const AudioCtx =
@@ -35,9 +38,64 @@ async function blobToPcm16k(blob: Blob): Promise<Float32Array> {
   }
 }
 
-// Hook dùng chung cho tính năng "trả lời phỏng vấn bằng giọng nói" — ứng viên có
-// thể chọn ghi âm (hook này) HOẶC gõ tay trực tiếp vào ô trả lời, tuỳ ý, không
-// bắt buộc phải dùng giọng nói.
+// Float32 PCM → WAV 16-bit mono (worker đọc bằng thư viện chuẩn `wave`, không cần ffmpeg).
+function pcmToWav16(pcm: Float32Array, sampleRate = 16000): Blob {
+  const buffer = new ArrayBuffer(44 + pcm.length * 2);
+  const view = new DataView(buffer);
+  const writeStr = (offset: number, s: string) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+  };
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + pcm.length * 2, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);          // kích thước chunk fmt
+  view.setUint16(20, 1, true);           // PCM
+  view.setUint16(22, 1, true);           // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, "data");
+  view.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) {
+    const s = Math.max(-1, Math.min(1, pcm[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+async function transcribeOnWorker(pcm: Float32Array): Promise<string> {
+  const supabase = createClient();
+  const path = `${crypto.randomUUID()}.wav`;
+  const { error: upErr } = await supabase.storage
+    .from(ANSWER_BUCKET)
+    .upload(path, pcmToWav16(pcm), { contentType: "audio/wav" });
+  if (upErr) throw new Error("upload ghi âm: " + upErr.message);
+
+  const { data: job, error: insErr } = await supabase
+    .from("interview_asr_jobs")
+    .insert({ audio_path: path })
+    .select("id")
+    .single();
+  if (insErr || !job?.id) throw new Error("tạo job: " + (insErr?.message || "unknown"));
+
+  const deadline = Date.now() + SERVER_ASR_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 800));
+    const { data: row } = await supabase
+      .from("interview_asr_jobs")
+      .select("status, transcript")
+      .eq("id", job.id)
+      .single();
+    if (row?.status === "done") return (row.transcript as string) || "";
+    if (row?.status === "error") throw new Error("worker báo lỗi khi nhận diện");
+  }
+  throw new Error("quá thời gian chờ worker.py");
+}
+
+// Hook dùng chung cho "trả lời phỏng vấn bằng giọng nói" — ứng viên có thể ghi
+// âm (hook này) HOẶC gõ tay, tuỳ ý.
 export function useVoiceToText(onResult: (text: string) => void) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [modelProgressPct, setModelProgressPct] = useState<number | null>(null);
@@ -50,10 +108,21 @@ export function useVoiceToText(onResult: (text: string) => void) {
   const onResultRef = useRef(onResult);
   onResultRef.current = onResult;
 
+  // Mỗi lần huỷ (chuyển câu) tăng "thế hệ" — kết quả nhận diện về trễ của câu
+  // cũ sẽ bị bỏ, không rơi nhầm vào ô trả lời của câu mới.
+  const genRef = useRef(0);
+  const workerGenRef = useRef(0);
+
+  const deliver = useCallback((gen: number, text: string) => {
+    if (gen !== genRef.current) return;
+    setModelProgressPct(null);
+    setStatus("idle");
+    onResultRef.current(text);
+  }, []);
+
+  // Dự phòng: PhoWhisper chạy trong trình duyệt (chậm hơn, kém chính xác hơn).
   const ensureWorker = useCallback(() => {
     if (!workerRef.current) {
-      // Tạo Worker MUỘN — chỉ khi người dùng thực sự bấm ghi âm lần đầu, để
-      // không bắt ai cũng phải tải thư viện transformers.js nếu chỉ gõ tay.
       workerRef.current = new Worker(new URL("./asr-worker.js", import.meta.url), {
         type: "module",
       });
@@ -62,14 +131,13 @@ export function useVoiceToText(onResult: (text: string) => void) {
           | { status: "progress"; data: { status?: string; progress?: number } }
           | { status: "complete"; text: string }
           | { status: "error"; error: string };
+        if (workerGenRef.current !== genRef.current) return;
         if (msg.status === "progress") {
           if (typeof msg.data?.progress === "number") {
             setModelProgressPct(Math.round(msg.data.progress));
           }
         } else if (msg.status === "complete") {
-          setModelProgressPct(null);
-          setStatus("idle");
-          onResultRef.current(msg.text);
+          deliver(workerGenRef.current, msg.text);
         } else if (msg.status === "error") {
           setModelProgressPct(null);
           setErrorMsg("Chuyển giọng nói thành văn bản thất bại: " + msg.error);
@@ -78,7 +146,7 @@ export function useVoiceToText(onResult: (text: string) => void) {
       };
     }
     return workerRef.current;
-  }, []);
+  }, [deliver]);
 
   useEffect(() => {
     return () => {
@@ -90,8 +158,9 @@ export function useVoiceToText(onResult: (text: string) => void) {
   const startRecording = useCallback(async () => {
     setErrorMsg("");
     try {
-      ensureWorker();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
       streamRef.current = stream;
       chunksRef.current = [];
       const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
@@ -108,12 +177,11 @@ export function useVoiceToText(onResult: (text: string) => void) {
       );
       setStatus("error");
     }
-  }, [ensureWorker]);
+  }, []);
 
-  // Hủy ghi âm đang chạy mà KHÔNG transcribe — dùng khi chuyển câu (hết giờ/bỏ
-  // qua/nộp) để tắt mic ngay, tránh đoạn ghi âm của câu cũ bị lỡ tay tính vào
-  // câu mới. An toàn khi gọi dù không có gì đang ghi âm.
+  // Huỷ ghi âm/nhận diện đang chạy mà KHÔNG lấy kết quả — dùng khi chuyển câu.
   const cancelRecording = useCallback(() => {
+    genRef.current += 1;
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
@@ -128,26 +196,38 @@ export function useVoiceToText(onResult: (text: string) => void) {
   const stopRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
+    const gen = genRef.current;
     recorder.onstop = async () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       setStatus("transcribing");
-      // Model tải lần đầu (nếu chưa từng tải trong phiên này) có thể mất một
-      // lúc — hiện trạng thái "loading-model" xen giữa qua progress callback.
-      setModelProgressPct((p) => (p === null ? 0 : p));
+      let pcm: Float32Array;
       try {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        const pcm = await blobToPcm16k(blob);
-        const worker = ensureWorker();
-        worker.postMessage({ audio: pcm }, [pcm.buffer]);
+        pcm = await blobToPcm16k(blob);
       } catch (e) {
         setErrorMsg(
           "Xử lý audio ghi âm thất bại: " + (e instanceof Error ? e.message : "unknown")
         );
         setStatus("error");
+        return;
       }
+
+      try {
+        const text = await transcribeOnWorker(pcm);
+        deliver(gen, text);
+        return;
+      } catch (e) {
+        if (gen !== genRef.current) return;
+        console.warn("[voice] Nhận diện trên worker.py thất bại, dùng dự phòng trong trình duyệt:", e);
+      }
+
+      // Dự phòng trong trình duyệt
+      setModelProgressPct(0);
+      workerGenRef.current = gen;
+      ensureWorker().postMessage({ audio: pcm }, [pcm.buffer]);
     };
     recorder.stop();
-  }, [ensureWorker]);
+  }, [deliver, ensureWorker]);
 
   return { status, modelProgressPct, errorMsg, startRecording, stopRecording, cancelRecording };
 }

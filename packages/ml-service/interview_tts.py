@@ -1,12 +1,13 @@
 """
 interview_tts.py — Sinh giọng đọc câu hỏi phỏng vấn bằng VieNeu-TTS (package
-"vieneu"), chạy 100% local/offline (KHÔNG gọi API/LLM ngoài — đúng ràng buộc
-của đồ án). Dùng lại ĐÚNG 7 mã giọng + tên hiển thị đã cấu hình sẵn trong tool
-video của Khánh (E:\\tool_obs_ctien\\html-render-video-v2-react\\ui\\index.html
-/ scripts\\vieneu_tts.py) để không phải học lại 1 danh sách giọng khác.
+"vieneu"), chạy 100% local/offline (KHÔNG gọi API/LLM ngoài). Dùng lại đúng 7
+mã giọng của tool video (html-render-video-v2-react).
 
-Model VieNeu-TTS được load 1 lần duy nhất (singleton), giống cách M1/M2/M3
-được load 1 lần khi worker.py khởi động — không load lại mỗi lần sinh audio.
+Xử lý TỪNG CÂU MỘT (synthesize_one) thay vì cả 5 câu liền một mạch, để:
+  - FE có audio câu 1 sau ~10s và bắt đầu phỏng vấn ngay, các câu sau sinh
+    tiếp trong lúc ứng viên đang trả lời;
+  - worker.py xen kẽ được job nhận diện giọng nói (ASR) giữa các câu, không
+    bắt người dùng chờ TTS xong cả 5 câu.
 """
 import logging
 import os
@@ -14,8 +15,6 @@ import tempfile
 
 log = logging.getLogger("worker")
 
-# Mã giọng (dùng trong DB + FE dropdown) -> tên preset voice thật của VieNeu-TTS.
-# Giữ đúng như VOICE_MAP trong scripts/vieneu_tts.py của tool video.
 VOICE_MAP = {
     "Ly":    "Trúc Ly",     # nữ, miền Bắc (mặc định)
     "Ngoc":  "Bích Ngọc",   # nữ, miền Bắc
@@ -35,42 +34,40 @@ def _get_tts():
     """Load model VieNeu-TTS 1 lần duy nhất (singleton)."""
     global _tts_instance
     if _tts_instance is None:
-        log.info("  🔧 Đang load model VieNeu-TTS (lần đầu, có thể mất vài chục giây)...")
+        log.info("🔧 Đang load model VieNeu-TTS...")
         from vieneu import Vieneu
         _tts_instance = Vieneu()
-        log.info("  ✅ VieNeu-TTS đã sẵn sàng.")
+        log.info("✅ VieNeu-TTS đã sẵn sàng.")
     return _tts_instance
 
 
-def synthesize_and_upload(supabase, job_id: str, questions: list, voice_code: str) -> list:
-    """
-    Sinh audio cho từng câu hỏi trong `questions`, upload lên Supabase Storage
-    bucket `interview-audio`, trả về list public URL (ĐÚNG thứ tự với
-    `questions`). Bucket phải đã được tạo + set public=true (xem migration
-    migration_v12_interview_audio.sql) để get_public_url() dùng được ngay,
-    không cần ký signed URL.
-    """
+def warm_up():
+    """Load sẵn model lúc worker.py khởi động — tránh lần phỏng vấn đầu tiên
+    phải chờ thêm thời gian load model (nguyên nhân FE bị quá thời gian chờ)."""
+    _get_tts()
+
+
+def synthesize_one(supabase, job_id: str, idx: int, text: str, voice_code: str) -> str:
+    """Sinh audio cho 1 câu hỏi, upload lên Storage, trả về public URL."""
     voice_name = VOICE_MAP.get(voice_code, VOICE_MAP[DEFAULT_VOICE_CODE])
     tts = _get_tts()
 
-    urls = []
+    try:
+        audio = tts.infer(text, voice=voice_name)
+    except Exception as e:  # tên giọng không có trong bản vieneu đang cài
+        log.warning(f"    ⚠️ Giọng '{voice_name}' lỗi ({e}) — dùng giọng mặc định của VieNeu")
+        audio = tts.infer(text)
+
     with tempfile.TemporaryDirectory() as tmp_dir:
-        for idx, text in enumerate(questions):
-            wav_path = os.path.join(tmp_dir, f"q{idx}.wav")
-            audio = tts.infer(text, voice=voice_name)
-            tts.save(audio, wav_path)
+        wav_path = os.path.join(tmp_dir, f"q{idx}.wav")
+        tts.save(audio, wav_path)
+        with open(wav_path, "rb") as f:
+            wav_bytes = f.read()
 
-            with open(wav_path, "rb") as f:
-                wav_bytes = f.read()
-
-            storage_path = f"{job_id}/q{idx}.wav"
-            supabase.storage.from_(STORAGE_BUCKET).upload(
-                storage_path,
-                wav_bytes,
-                {"content-type": "audio/wav", "upsert": "true"},
-            )
-            public_url = supabase.storage.from_(STORAGE_BUCKET).get_public_url(storage_path)
-            urls.append(public_url)
-            log.info(f"    🔊 Câu {idx + 1}/{len(questions)} xong ({voice_name})")
-
-    return urls
+    storage_path = f"{job_id}/q{idx}.wav"
+    supabase.storage.from_(STORAGE_BUCKET).upload(
+        storage_path,
+        wav_bytes,
+        {"content-type": "audio/wav", "upsert": "true"},
+    )
+    return supabase.storage.from_(STORAGE_BUCKET).get_public_url(storage_path)
