@@ -22,13 +22,15 @@ export default async function DashboardPage() {
     .from("analysis_jobs")
     .select("id, cv_filename, job_title, status, result, created_at")
     .eq("user_id", user.id)
+    .is("batch_id", null) // CV trong "So sánh CV" là của ứng viên khác → hiện ở mục riêng
     .order("created_at", { ascending: false })
     .limit(10);
 
   const { count: analysisCount } = await supabase
     .from("analysis_jobs")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .is("batch_id", null);
 
   const { data: interviews } = await supabase
     .from("interview_sessions")
@@ -36,6 +38,25 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
+
+  // Lịch sử các lượt "So sánh CV" (bảng batches — migration v14)
+  const { data: batches } = await supabase
+    .from("batches")
+    .select("id, name, job_title, cv_count, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  const batchIds = (batches ?? []).map((b) => b.id as string);
+  const { data: batchJobs } = batchIds.length
+    ? await supabase.from("analysis_jobs").select("batch_id, status, score:result->score").in("batch_id", batchIds)
+    : { data: [] as { batch_id: string; status: string; score: number | null }[] };
+  const batchStats = new Map<string, { done: number; best: number | null }>();
+  for (const j of (batchJobs ?? []) as { batch_id: string; status: string; score: number | null }[]) {
+    const s = batchStats.get(j.batch_id) ?? { done: 0, best: null };
+    if (j.status === "done" || j.status === "error") s.done++;
+    if (typeof j.score === "number") s.best = s.best == null ? j.score : Math.max(s.best, j.score);
+    batchStats.set(j.batch_id, s);
+  }
 
   const doneJobs = (jobs ?? []).filter((j) => (j.result as AnalysisResult | null)?.score != null);
   const avgScore = doneJobs.length > 0
@@ -200,6 +221,66 @@ export default async function DashboardPage() {
           )}
         </div>
 
+        {/* Batch compare history */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#e5eeff] overflow-hidden mt-6">
+          <div className="px-6 py-4 border-b border-[#f0f4ff] flex items-center justify-between">
+            <h2 className="font-bold text-[18px] text-[#0b1c30]">Lịch sử so sánh CV</h2>
+            <Link href="/batch" className="text-[13px] font-medium text-[#0037b0] hover:underline">
+              + Lượt so sánh mới
+            </Link>
+          </div>
+
+          {!batches || batches.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-[#e5eeff] flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-[32px] text-[#0037b0]">compare_arrows</span>
+              </div>
+              <p className="text-[#565e74] font-medium mb-2">Chưa có lượt so sánh CV nào</p>
+              <p className="text-[#8fa5c0] text-[13px]">Tải nhiều CV cho 1 JD ở mục &quot;So sánh CV&quot; để xếp hạng ứng viên</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#f0f4ff]">
+              {batches.map((b) => {
+                const st = batchStats.get(b.id) ?? { done: 0, best: null };
+                const count = b.cv_count || 0;
+                return (
+                  <Link
+                    key={b.id}
+                    href={`/batch/${b.id}`}
+                    className="px-6 py-4 flex items-center gap-4 hover:bg-[#f8faff] transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-[#e5eeff] flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-[18px] text-[#0037b0]">compare_arrows</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-[#0b1c30] text-[14px] truncate">
+                        {b.name || b.job_title || "Lượt so sánh chưa đặt tên"}
+                      </div>
+                      <div className="text-[12px] text-[#8fa5c0] truncate">
+                        {count} CV · {st.done >= count ? "đã xử lý xong" : `đang xử lý ${st.done}/${count}`}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {st.best != null ? (
+                        <div className={`text-[22px] font-bold ${st.best >= 70 ? "text-[#004f35]" : st.best >= 50 ? "text-[#b45309]" : "text-red-500"}`}>
+                          {Math.round(st.best)}
+                        </div>
+                      ) : (
+                        <div className="text-[13px] text-[#8fa5c0]">–</div>
+                      )}
+                      <div className="text-[11px] text-[#c4c5d7]">
+                        {st.best != null ? "điểm cao nhất · " : ""}
+                        {new Date(b.created_at).toLocaleDateString("vi-VN")}
+                      </div>
+                    </div>
+                    <span className="material-symbols-outlined text-[18px] text-[#c4c5d7]">chevron_right</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Interview history */}
         <div className="bg-white rounded-2xl shadow-sm border border-[#e5eeff] overflow-hidden mt-6">
           <div className="px-6 py-4 border-b border-[#f0f4ff] flex items-center justify-between">
@@ -212,7 +293,7 @@ export default async function DashboardPage() {
                 <span className="material-symbols-outlined text-[32px] text-[#7c3aed]">quiz</span>
               </div>
               <p className="text-[#565e74] font-medium mb-2">Chưa có phiên phỏng vấn giả lập nào</p>
-              <p className="text-[#8fa5c0] text-[13px]">Mở "Phiếu Phỏng Vấn Số Hóa" từ trang kết quả phân tích để bắt đầu</p>
+              <p className="text-[#8fa5c0] text-[13px]">Mở &quot;Phiếu Phỏng Vấn Số Hóa&quot; từ trang kết quả phân tích để bắt đầu</p>
             </div>
           ) : (
             <div className="divide-y divide-[#f0f4ff]">

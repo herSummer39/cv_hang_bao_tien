@@ -12,6 +12,9 @@ const CV_MIME: Record<string, string> = {
   pdf: "application/pdf",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   doc: "application/msword",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
 };
 
 export default function BatchPage() {
@@ -56,6 +59,18 @@ export default function BatchPage() {
     const supabase = createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     const batchId = crypto.randomUUID();
+
+    // Lưu lượt so sánh để xem lại trong Dashboard. Lỗi (vd chưa chạy migration
+    // v14) thì bỏ qua — không chặn việc so sánh.
+    await supabase.from("batches").insert({
+      id: batchId,
+      user_id: currentUser?.id ?? null,
+      name: jobTitle.trim() || null,
+      job_title: jobTitle.trim() || null,
+      jd_text: jdContent,
+      industry_id: selectedIndustryId ?? null,
+      cv_count: files.length,
+    });
 
     let failCount = 0;
 
@@ -139,7 +154,7 @@ export default function BatchPage() {
                 </span>
               </div>
               <p className="text-[13px] text-[#565e74] mb-4">
-                Hỗ trợ PDF, DOCX. Chọn nhiều file cùng lúc hoặc bấm nhiều lần để thêm dần.
+                Hỗ trợ PDF, DOCX, ảnh chụp CV (PNG/JPG — worker tự OCR). Chọn nhiều file cùng lúc hoặc bấm nhiều lần để thêm dần.
               </p>
 
               <div
@@ -147,7 +162,7 @@ export default function BatchPage() {
               >
                 <input
                   ref={fileInputRef}
-                  accept=".pdf,.docx"
+                  accept=".pdf,.docx,.png,.jpg,.jpeg"
                   multiple
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   onChange={handleFilesSelected}

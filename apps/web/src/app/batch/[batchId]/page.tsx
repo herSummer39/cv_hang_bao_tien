@@ -5,14 +5,13 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
-
-type JobResult = {
-  score?: number;
-  matched_skills?: string[];
-  missing_skills?: string[];
-  cv_exp_years?: number;
-  job_title?: string;
-};
+import {
+  buildSkillMatrix,
+  compareCandidates,
+  explainRank,
+  type JobResult,
+  type RankedCandidate,
+} from "./compare";
 
 type BatchJob = {
   id: string;
@@ -37,6 +36,21 @@ export default function BatchResultPage() {
   const [jobs, setJobs] = useState<BatchJob[]>([]);
   const [notFoundBatch, setNotFoundBatch] = useState(false);
   const [minScore, setMinScore] = useState(0);
+  const [batchTitle, setBatchTitle] = useState<string | null>(null);
+  const [showAllSkills, setShowAllSkills] = useState(false);
+
+  // Tên lượt so sánh (bảng batches — migration v14). Chưa có thì bỏ qua.
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("batches")
+        .select("name, job_title")
+        .eq("id", batchId)
+        .maybeSingle();
+      if (data) setBatchTitle(data.name || data.job_title || null);
+    })();
+  }, [batchId]);
 
   const poll = useCallback(async () => {
     const supabase = createClient();
@@ -54,21 +68,52 @@ export default function BatchResultPage() {
   }, [batchId]);
 
   useEffect(() => {
-    poll();
+    const first = setTimeout(poll, 0);
     const t = setInterval(poll, 4000);
-    return () => clearInterval(t);
+    return () => {
+      clearTimeout(first);
+      clearInterval(t);
+    };
   }, [poll]);
 
   const total = jobs.length;
   const finishedCount = jobs.filter((j) => j.status === "done" || j.status === "error").length;
   const allDone = total > 0 && finishedCount === total;
 
+  // CV đã xong xếp trước (điểm M3 giảm dần, hoà điểm thì ai khớp nhiều kỹ
+  // năng hơn đứng trên); CV đang xử lý/lỗi xuống cuối.
   const ranked = [...jobs].sort((a, b) => {
-    const sa = a.result?.score ?? -1;
-    const sb = b.result?.score ?? -1;
-    return sb - sa;
+    const aDone = a.status === "done" && a.result;
+    const bDone = b.status === "done" && b.result;
+    if (aDone && bDone) return compareCandidates(a.result!, b.result!);
+    if (aDone) return -1;
+    if (bDone) return 1;
+    return 0;
   });
   const visible = ranked.filter((j) => (j.result?.score ?? -1) >= minScore || j.status !== "done");
+
+  // Ứng viên đã có kết quả, theo đúng thứ hạng — dùng cho giải thích + ma trận
+  const doneRanked: RankedCandidate[] = ranked
+    .filter((j) => j.status === "done" && j.result)
+    .map((j, i) => ({ id: j.id, label: `#${i + 1}`, result: j.result! }));
+  const rankOf = new Map(doneRanked.map((c, i) => [c.id, i]));
+
+  function explanationFor(jobId: string): string | null {
+    const i = rankOf.get(jobId);
+    if (i == null || doneRanked.length < 2) return null;
+    // Mỗi ứng viên được giải thích so với người NGAY DƯỚI mình; người cuối
+    // bảng thì giải thích vì sao người ngay trên xếp hơn.
+    if (i < doneRanked.length - 1) return explainRank(doneRanked[i], doneRanked[i + 1]);
+    const upper = doneRanked[i - 1];
+    return `Xếp sau ${upper.label} — ${upper.label}: ${explainRank(upper, doneRanked[i])}`;
+  }
+
+  const matrixCandidates = doneRanked.filter((c) => (c.result.score ?? 0) >= minScore);
+  const skillRows = buildSkillMatrix(matrixCandidates);
+  const SKILL_ROWS_PREVIEW = 15;
+  const shownSkillRows = showAllSkills ? skillRows : skillRows.slice(0, SKILL_ROWS_PREVIEW);
+  const nobodyHas = skillRows.filter((r) => r.haveCount === 0).map((r) => r.skill);
+  const fileLabel = (id: string) => jobs.find((j) => j.id === id)?.cv_filename || "CV";
 
   function openDetail(job: BatchJob) {
     if (job.status !== "done" || !job.result) return;
@@ -98,7 +143,9 @@ export default function BatchResultPage() {
                     Bảng xếp hạng ứng viên
                   </h1>
                   <p className="text-[13px] text-[#565e74] mt-1">
-                    {jobs[0]?.result?.job_title ? `Vị trí: ${jobs[0].result.job_title} · ` : ""}
+                    {batchTitle || jobs[0]?.result?.job_title
+                      ? `Vị trí: ${batchTitle || jobs[0]?.result?.job_title} · `
+                      : ""}
                     {allDone ? `Đã xử lý xong ${total}/${total} CV.` : `Đang xử lý ${finishedCount}/${total} CV...`}
                   </p>
                 </div>
@@ -155,7 +202,14 @@ export default function BatchResultPage() {
                         }`}
                       >
                         <span className="text-[#8fa5c0] font-medium">{idx + 1}</span>
-                        <span className="text-[#0b1c30] font-medium truncate">{job.cv_filename || "CV"}</span>
+                        <span className="min-w-0">
+                          <span className="block text-[#0b1c30] font-medium truncate">{job.cv_filename || "CV"}</span>
+                          {explanationFor(job.id) && (
+                            <span className="block text-[11px] text-[#565e74] leading-snug mt-0.5">
+                              {explanationFor(job.id)}
+                            </span>
+                          )}
+                        </span>
                         <span>
                           {score != null ? (
                             <span className={`px-2 py-0.5 rounded-full text-[12px] font-bold ${scoreColor(score)}`}>
@@ -192,6 +246,89 @@ export default function BatchResultPage() {
                   })}
                 </div>
               </div>
+
+              {matrixCandidates.length > 0 && skillRows.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm mt-6 overflow-hidden">
+                  <div className="px-4 py-4 border-b border-[#f0f4ff]">
+                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
+                      Ma trận kỹ năng
+                    </h2>
+                    <p className="text-[12px] text-[#565e74] mt-1">
+                      Kỹ năng JD yêu cầu (M1 trích xuất) × từng ứng viên, theo đúng thứ hạng. Kỹ năng ít người có nhất xếp lên đầu.
+                    </p>
+                    {nobodyHas.length > 0 && (
+                      <p className="text-[12px] text-[#93000a] bg-[#ffdad6]/60 rounded-lg px-3 py-2 mt-3">
+                        <strong>Cả lô đều thiếu {nobodyHas.length} kỹ năng:</strong> {nobodyHas.slice(0, 8).join(", ")}
+                        {nobodyHas.length > 8 ? "…" : ""} — cân nhắc nới yêu cầu JD hoặc đào tạo thêm sau tuyển.
+                      </p>
+                    )}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-[12px]">
+                      <thead>
+                        <tr className="bg-[#eff4ff] text-[#565e74]">
+                          <th className="sticky left-0 bg-[#eff4ff] text-left font-semibold px-4 py-2 min-w-[180px]">Kỹ năng</th>
+                          {matrixCandidates.map((cand) => (
+                            <th
+                              key={cand.id}
+                              title={fileLabel(cand.id)}
+                              className="font-semibold px-2 py-2 text-center min-w-[64px]"
+                            >
+                              <div>{cand.label}</div>
+                              <div className="font-normal text-[10px] text-[#8fa5c0] truncate max-w-[80px] mx-auto">
+                                {fileLabel(cand.id)}
+                              </div>
+                            </th>
+                          ))}
+                          <th className="font-semibold px-3 py-2 text-center">Số người có</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#f0f4ff]">
+                        {shownSkillRows.map((row) => (
+                          <tr key={row.skill}>
+                            <td className="sticky left-0 bg-white px-4 py-2 text-[#0b1c30] font-medium">{row.skill}</td>
+                            {matrixCandidates.map((cand) => {
+                              const v = row.has[cand.id];
+                              return (
+                                <td key={cand.id} className="px-2 py-2 text-center">
+                                  {v === true ? (
+                                    <span className="inline-flex w-6 h-6 rounded-md bg-[#85f8c4]/50 text-[#004f35] items-center justify-center material-symbols-outlined text-[16px]">check</span>
+                                  ) : v === false ? (
+                                    <span className="inline-flex w-6 h-6 rounded-md bg-[#ffdad6] text-[#93000a] items-center justify-center material-symbols-outlined text-[16px]">close</span>
+                                  ) : (
+                                    <span className="text-[#c4c5d7]">–</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="px-3 py-2 text-center">
+                              <span
+                                className={`font-semibold ${
+                                  row.haveCount === 0 ? "text-[#93000a]" : row.haveCount === matrixCandidates.length ? "text-[#004f35]" : "text-[#434655]"
+                                }`}
+                              >
+                                {row.haveCount}/{matrixCandidates.length}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {skillRows.length > SKILL_ROWS_PREVIEW && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSkills((v) => !v)}
+                      className="w-full py-3 text-[13px] font-medium text-[#0037b0] hover:bg-[#f8faff] border-t border-[#f0f4ff]"
+                    >
+                      {showAllSkills ? "Thu gọn" : `Xem tất cả ${skillRows.length} kỹ năng`}
+                    </button>
+                  )}
+                  <p className="px-4 py-3 text-[11px] text-[#8fa5c0] border-t border-[#f0f4ff]">
+                    ✓ có trong CV · ✕ JD yêu cầu nhưng CV thiếu · – M1 không trích được kỹ năng này từ JD ở lượt phân tích CV đó.
+                  </p>
+                </div>
+              )}
 
               {!allDone && (
                 <p className="text-[12px] text-[#8fa5c0] mt-3 text-center">
