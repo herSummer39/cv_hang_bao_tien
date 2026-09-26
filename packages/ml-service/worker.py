@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 import industry_lookup
 import interview_tts
 import interview_asr
+import detail_analysis
 
 # Load env từ file .env.worker (cùng thư mục với worker.py)
 load_dotenv(Path(__file__).parent / ".env.worker")
@@ -522,8 +523,19 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
     exp_gap = max(0.0, jd_exp_min - cv_exp)
     exp_ratio = min(cv_exp / max(jd_exp_min, 1), 2.0)
 
-    # M2 similarity
-    similarity = compute_similarity(cv_text[:512], jd_text[:512])
+    # M2 similarity + đối chiếu từng yêu cầu JD — trên TOÀN BỘ CV/JD (trước đây
+    # chỉ so cv_text[:512] với jd_text[:512], tức phần họ tên/liên hệ ở đầu CV).
+    detail = {"similarity": None, "requirements": [], "summary": None}
+    try:
+        detail = detail_analysis.analyze_detail(
+            m2_model, util, cv_text, jd_text, list(jd_skills), matched,
+            skill_finder=lambda t: keyword_extract_skills(t, list(jd_skills)),
+        )
+    except Exception as e:
+        log.warning(f"  ⚠️ Phân tích chi tiết từng yêu cầu lỗi, bỏ qua: {e}")
+    similarity = detail["similarity"] if detail["similarity"] is not None else compute_similarity(cv_text, jd_text)
+    requirements = detail["requirements"]
+    req_summary = detail["summary"]
 
     # M3 score (0-100) - feature vector day du 11 chieu, dung thu tu luc train
     features = {
@@ -541,6 +553,8 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
     }
     raw_score = compute_score(features, similarity)
     score = max(0.0, min(100.0, raw_score))
+    # Giải thích điểm: mức nền + đóng góp từng nhóm yếu tố (SHAP có sẵn của XGBoost)
+    score_breakdown = detail_analysis.explain_score(m3_model, m3_keys, features, score)
 
     # Build strengths / gaps / questions
     strengths = []
@@ -560,7 +574,23 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
             "desc": f"JD yêu cầu {req_exp:.0f} năm — ứng viên đã vượt yêu cầu.",
         })
 
+    if req_summary and req_summary["met"]:
+        met_reqs = [r for r in requirements if r["status"] == "met"]
+        ex = met_reqs[0]
+        strengths.insert(0, {
+            "title": f"Đáp ứng {req_summary['met']}/{req_summary['total']} yêu cầu của JD",
+            "desc": f'VD: "{ex["text"]}" — CV có: "{ex["evidence"]}".',
+        })
+
     gaps = []
+    if req_summary:
+        miss_required = [r for r in requirements if r["status"] == "missing" and r["priority"] == "required"]
+        if miss_required:
+            gaps.insert(0, {
+                "title": f"Chưa thấy bằng chứng cho {len(miss_required)} yêu cầu bắt buộc",
+                "desc": "; ".join(f'"{r["text"]}"' for r in miss_required[:3])
+                        + (f" và {len(miss_required) - 3} yêu cầu khác." if len(miss_required) > 3 else "."),
+            })
     if missing:
         gaps.append({
             "title": f"Thiếu {len(missing)} kỹ năng quan trọng trong JD",
@@ -792,6 +822,9 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
         "cv_suggestions": cv_suggestions,
         "questions": questions,
         "features": features,
+        "requirements": requirements,
+        "requirement_summary": req_summary,
+        "score_breakdown": score_breakdown,
     }
 
 # ─── Main Loop ───────────────────────────────────────────────────────────────

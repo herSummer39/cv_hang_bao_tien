@@ -20,6 +20,14 @@ export type JobResult = {
   cv_exp_years?: number;
   job_title?: string;
   features?: JobFeatures;
+  requirements?: {
+    text: string;
+    priority: "required" | "preferred";
+    status: "met" | "partial" | "missing";
+    match: number;
+    evidence: string | null;
+  }[];
+  requirement_summary?: { total: number; met: number; partial: number; missing: number; required_total: number; required_met: number } | null;
 };
 
 export type RankedCandidate = {
@@ -72,6 +80,14 @@ export function explainRank(upper: RankedCandidate, lower: RankedCandidate): str
   const dSkill = a.overlap - b.overlap;
   if (dSkill > 0) pros.push(`khớp nhiều hơn ${dSkill} kỹ năng JD yêu cầu`);
   else if (dSkill < 0) cons.push(`khớp ít hơn ${-dSkill} kỹ năng`);
+
+  const ra = upper.result.requirement_summary;
+  const rb = lower.result.requirement_summary;
+  if (ra && rb) {
+    const dReq = ra.met - rb.met;
+    if (dReq > 0) pros.push(`đáp ứng nhiều hơn ${dReq} yêu cầu JD`);
+    else if (dReq < 0) cons.push(`đáp ứng ít hơn ${-dReq} yêu cầu JD`);
+  }
 
   const dSim = a.sim != null && b.sim != null ? Math.round((a.sim - b.sim) * 100) : 0;
   if (dSim >= 3) pros.push(`nội dung CV sát JD hơn (tương đồng M2 +${dSim} điểm)`);
@@ -154,4 +170,36 @@ export function buildSkillMatrix(candidates: RankedCandidate[]): SkillRow[] {
   }
   rows.sort((r1, r2) => r1.haveCount - r2.haveCount || r1.skill.localeCompare(r2.skill, "vi"));
   return rows;
+}
+
+export type RequirementRow = {
+  text: string;
+  priority: "required" | "preferred";
+  status: Record<string, "met" | "partial" | "missing" | null>;
+  metCount: number;
+};
+
+/**
+ * Ma trận yêu cầu JD: cùng 1 JD nên worker tách ra cùng 1 bộ yêu cầu cho mọi
+ * CV → hàng = từng yêu cầu, cột = ứng viên. Yêu cầu bắt buộc ít người đáp ứng
+ * nhất lên đầu.
+ */
+export function buildRequirementMatrix(candidates: RankedCandidate[]): RequirementRow[] {
+  const rows = new Map<string, RequirementRow>();
+  for (const c of candidates) {
+    for (const r of c.result.requirements ?? []) {
+      const key = r.text.trim().toLowerCase();
+      let row = rows.get(key);
+      if (!row) {
+        row = { text: r.text, priority: r.priority, status: {}, metCount: 0 };
+        rows.set(key, row);
+      }
+      row.status[c.id] = r.status;
+      if (r.status === "met") row.metCount++;
+    }
+  }
+  for (const row of rows.values()) for (const c of candidates) if (!(c.id in row.status)) row.status[c.id] = null;
+  return [...rows.values()].sort(
+    (a, b) => (a.priority === b.priority ? 0 : a.priority === "required" ? -1 : 1) || a.metCount - b.metCount
+  );
 }

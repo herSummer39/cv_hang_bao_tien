@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import {
+  buildRequirementMatrix,
   buildSkillMatrix,
   compareCandidates,
   explainRank,
@@ -110,6 +111,7 @@ export default function BatchResultPage() {
 
   const matrixCandidates = doneRanked.filter((c) => (c.result.score ?? 0) >= minScore);
   const skillRows = buildSkillMatrix(matrixCandidates);
+  const reqRows = buildRequirementMatrix(matrixCandidates);
   const SKILL_ROWS_PREVIEW = 15;
   const shownSkillRows = showAllSkills ? skillRows : skillRows.slice(0, SKILL_ROWS_PREVIEW);
   const nobodyHas = skillRows.filter((r) => r.haveCount === 0).map((r) => r.skill);
@@ -181,10 +183,11 @@ export default function BatchResultPage() {
               </div>
 
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="grid grid-cols-[40px_1fr_90px_110px_110px_100px_90px] gap-2 px-4 py-3 bg-[#eff4ff] text-[11px] font-semibold text-[#565e74] uppercase">
+                <div className="grid grid-cols-[40px_1fr_80px_100px_90px_90px_90px_90px] gap-2 px-4 py-3 bg-[#eff4ff] text-[11px] font-semibold text-[#565e74] uppercase">
                   <span>#</span>
                   <span>Ứng viên (file)</span>
                   <span>Điểm</span>
+                  <span title="Số yêu cầu của JD có bằng chứng rõ trong CV">Yêu cầu JD</span>
                   <span>Kỹ năng khớp</span>
                   <span>Kỹ năng thiếu</span>
                   <span>Kinh nghiệm</span>
@@ -197,7 +200,7 @@ export default function BatchResultPage() {
                       <div
                         key={job.id}
                         onClick={() => openDetail(job)}
-                        className={`grid grid-cols-[40px_1fr_90px_110px_110px_100px_90px] gap-2 px-4 py-3 items-center text-[13px] ${
+                        className={`grid grid-cols-[40px_1fr_80px_100px_90px_90px_90px_90px] gap-2 px-4 py-3 items-center text-[13px] ${
                           job.status === "done" ? "cursor-pointer hover:bg-[#f8faff]" : ""
                         }`}
                       >
@@ -217,6 +220,15 @@ export default function BatchResultPage() {
                             </span>
                           ) : (
                             <span className="text-[#c4c5d7]">–</span>
+                          )}
+                        </span>
+                        <span className="text-[#434655]" title={job.result?.requirement_summary ? `Đáp ứng ${job.result.requirement_summary.met}, một phần ${job.result.requirement_summary.partial}, chưa có ${job.result.requirement_summary.missing}` : undefined}>
+                          {job.result?.requirement_summary ? (
+                            <>
+                              <span className="font-semibold text-[#0b1c30]">{job.result.requirement_summary.met}</span>/{job.result.requirement_summary.total}
+                            </>
+                          ) : (
+                            "–"
                           )}
                         </span>
                         <span className="text-[#434655]">{job.result?.matched_skills?.length ?? "–"}</span>
@@ -246,6 +258,71 @@ export default function BatchResultPage() {
                   })}
                 </div>
               </div>
+
+              {matrixCandidates.length > 0 && reqRows.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm mt-6 overflow-hidden">
+                  <div className="px-4 py-4 border-b border-[#f0f4ff]">
+                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
+                      Ma trận yêu cầu JD
+                    </h2>
+                    <p className="text-[12px] text-[#565e74] mt-1">
+                      Từng dòng yêu cầu trong JD × từng ứng viên (M2 tìm bằng chứng trong CV). Yêu cầu bắt buộc ít người đáp ứng nhất xếp đầu.
+                    </p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-[12px]">
+                      <thead>
+                        <tr className="bg-[#eff4ff] text-[#565e74]">
+                          <th className="sticky left-0 bg-[#eff4ff] text-left font-semibold px-4 py-2 min-w-[280px]">Yêu cầu</th>
+                          {matrixCandidates.map((cand) => (
+                            <th key={cand.id} title={fileLabel(cand.id)} className="font-semibold px-2 py-2 text-center min-w-[64px]">
+                              <div>{cand.label}</div>
+                              <div className="font-normal text-[10px] text-[#8fa5c0] truncate max-w-[80px] mx-auto">{fileLabel(cand.id)}</div>
+                            </th>
+                          ))}
+                          <th className="font-semibold px-3 py-2 text-center">Đáp ứng</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#f0f4ff]">
+                        {reqRows.map((row) => (
+                          <tr key={row.text}>
+                            <td className="sticky left-0 bg-white px-4 py-2 text-[#0b1c30]">
+                              <span className="block">{row.text}</span>
+                              <span className={`text-[10px] font-semibold ${row.priority === "required" ? "text-[#0037b0]" : "text-[#8fa5c0]"}`}>
+                                {row.priority === "required" ? "Bắt buộc" : "Ưu tiên"}
+                              </span>
+                            </td>
+                            {matrixCandidates.map((cand) => {
+                              const s = row.status[cand.id];
+                              const cls =
+                                s === "met" ? "bg-[#85f8c4]/50 text-[#004f35]" : s === "partial" ? "bg-[#ffe8b8] text-[#5c3b00]" : "bg-[#ffdad6] text-[#93000a]";
+                              const icon = s === "met" ? "check" : s === "partial" ? "radio_button_partial" : "close";
+                              const label = s === "met" ? "Đáp ứng" : s === "partial" ? "Một phần" : "Chưa có";
+                              return (
+                                <td key={cand.id} className="px-2 py-2 text-center">
+                                  {s ? (
+                                    <span title={label} className={`inline-flex w-6 h-6 rounded-md items-center justify-center material-symbols-outlined text-[16px] ${cls}`}>
+                                      {icon}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[#c4c5d7]">–</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="px-3 py-2 text-center font-semibold text-[#434655]">
+                              {row.metCount}/{matrixCandidates.length}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="px-4 py-3 text-[11px] text-[#8fa5c0] border-t border-[#f0f4ff]">
+                    ✓ đáp ứng · ◐ một phần · ✕ chưa có bằng chứng trong CV · – CV này được phân tích trước khi có tính năng đối chiếu yêu cầu.
+                  </p>
+                </div>
+              )}
 
               {matrixCandidates.length > 0 && skillRows.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm mt-6 overflow-hidden">

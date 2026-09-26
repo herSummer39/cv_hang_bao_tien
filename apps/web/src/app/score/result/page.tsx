@@ -5,6 +5,13 @@ import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import {
+  RequirementMatchCard,
+  ScoreBreakdownCard,
+  type RequirementItem,
+  type RequirementSummary,
+  type ScoreBreakdown,
+} from "./DetailSections";
 
 // Chuyển ArrayBuffer (font tải bằng fetch) sang base64 để nạp vào jsPDF VFS
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -136,6 +143,9 @@ export default function ResultPage() {
     missing_skills?: string[];
     cv_exp_years?: number;
     features?: { skill_ratio?: number; exp_ratio?: number; [key: string]: number | undefined };
+    requirements?: RequirementItem[];
+    requirement_summary?: RequirementSummary | null;
+    score_breakdown?: ScoreBreakdown | null;
   } | null>(null);
 
   useEffect(() => {
@@ -212,6 +222,11 @@ export default function ResultPage() {
   const skillRatioPct = Math.round((apiResult?.features?.skill_ratio ?? 0) * 100);
   const expFitPct = Math.round(Math.min(apiResult?.features?.exp_ratio ?? 0, 1) * 100);
   const similarityPct = Math.round((apiResult?.similarity ?? 0) * 100);
+  const requirements = apiResult?.requirements ?? [];
+  const reqSummary = apiResult?.requirement_summary ?? null;
+  const breakdown = apiResult?.score_breakdown ?? null;
+  // Kết quả phân tích trước khi có phần chi tiết (không có 2 trường mới)
+  const isLegacyResult = !!apiResult && apiResult.requirements === undefined && apiResult.score_breakdown === undefined;
 
   function scoreTier(score: number) {
     if (score >= 70) return { label: "Độ tương thích cao", badge: "bg-[#85f8c4] text-[#002114]", heading: "Đạt chuẩn năng lực", risk: "Thấp" };
@@ -293,6 +308,29 @@ export default function ResultPage() {
       addBody(`Đáp ứng yêu cầu kinh nghiệm: ${expFitPct}%`);
       addBody(`Tương đồng ngữ nghĩa CV ↔ JD: ${similarityPct}%`);
       addSpacer(4);
+
+      // 3b. Giải thích điểm (M3 · SHAP)
+      if (breakdown) {
+        addTitle("Vì sao được số điểm này", 13);
+        addBody(
+          `Mức nền ${breakdown.base.toFixed(1)} ` +
+            breakdown.factors.map((f) => `${f.contribution >= 0 ? "+" : "−"} ${Math.abs(f.contribution).toFixed(1)} (${f.label})`).join(" ") +
+            ` = ${Math.round(breakdown.final)} điểm`
+        );
+        breakdown.factors.forEach((f) => addBody(`• ${f.label}: ${f.detail}`));
+        addSpacer(4);
+      }
+
+      // 3c. Đối chiếu từng yêu cầu JD
+      if (reqSummary && requirements.length > 0) {
+        addTitle(`Đối chiếu yêu cầu JD: đáp ứng ${reqSummary.met}/${reqSummary.total}, một phần ${reqSummary.partial}, chưa có ${reqSummary.missing}`, 13);
+        const label = { met: "ĐÁP ỨNG", partial: "MỘT PHẦN", missing: "CHƯA CÓ" } as const;
+        requirements.forEach((r) => {
+          addBody(`[${label[r.status]}] ${r.text}${r.priority === "preferred" ? " (ưu tiên)" : ""}`);
+          if (r.evidence) addBody(`   → CV: "${r.evidence}"`);
+        });
+        addSpacer(4);
+      }
 
       // 4. Thế mạnh
       addTitle("Thế mạnh", 13);
@@ -603,6 +641,31 @@ export default function ResultPage() {
             </div>
           </div>
         </section>
+
+        {/* Phân tích chi tiết: giải thích điểm (M3·SHAP) + đối chiếu từng yêu cầu JD (M2) */}
+        {isLegacyResult && (
+          <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-6">
+            <div className="bg-[#eff4ff] border border-[#dce1ff] text-[#0037b0] rounded-xl p-4 text-[13px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span className="flex items-start gap-2">
+                <span className="material-symbols-outlined text-[18px]">info</span>
+                Kết quả này được phân tích trước khi có phần giải thích điểm và đối chiếu từng yêu cầu JD. Phân tích lại CV để xem đầy đủ.
+              </span>
+              <Link href="/score" className="shrink-0 px-3 py-1.5 rounded-lg bg-[#0037b0] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors">
+                Phân tích lại
+              </Link>
+            </div>
+          </section>
+        )}
+        {breakdown && (
+          <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-6">
+            <ScoreBreakdownCard data={breakdown} />
+          </section>
+        )}
+        {reqSummary && requirements.length > 0 && (
+          <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-6">
+            <RequirementMatchCard items={requirements} summary={reqSummary} />
+          </section>
+        )}
 
         {/* Gợi ý cải thiện CV (AI Advise) — rule-based, bám đúng missing_skills/exp_gap/similarity
             đã tính ở trên, không gọi LLM. Luôn ở dạng gợi ý điều kiện ("nếu bạn thực sự có kinh
