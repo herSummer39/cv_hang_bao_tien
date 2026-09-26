@@ -9,10 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 
 type Preset = "frontend" | "pm" | "sales";
 
-const PRESETS: Record<Preset, { title: string; level: string; jd: string }> = {
+const PRESETS: Record<Preset, { title: string; jd: string }> = {
   frontend: {
     title: "Kỹ sư Frontend Cao cấp (Senior Frontend Engineer)",
-    level: "senior",
     jd: `Yêu cầu chuyên môn:
 - Tối thiểu 5 năm kinh nghiệm phát triển ứng dụng web hiện đại với React, TypeScript, Next.js.
 - Thành thạo kiến trúc Micro-frontend, tối ưu hóa Web Vitals, Responsive Layout và Accessibility (WCAG).
@@ -21,7 +20,6 @@ const PRESETS: Record<Preset, { title: string; level: string; jd: string }> = {
   },
   pm: {
     title: "Trưởng nhóm Sản phẩm (Product Lead)",
-    level: "lead",
     jd: `Yêu cầu chuyên môn:
 - Ít nhất 4 năm làm Product Manager cho các sản phẩm công nghệ B2B SaaS hoặc Fintech.
 - Năng lực phân tích dữ liệu chuyên sâu (SQL, Amplitude, Mixpanel), định hình Product Roadmap và OKRs.
@@ -30,7 +28,6 @@ const PRESETS: Record<Preset, { title: string; level: string; jd: string }> = {
   },
   sales: {
     title: "Chuyên viên Kinh doanh B2B Cao cấp",
-    level: "middle",
     jd: `Yêu cầu chuyên môn:
 - 3+ năm kinh nghiệm bán hàng giải pháp công nghệ cho nhóm khách hàng doanh nghiệp vừa và lớn.
 - Kỹ năng thuyết trình giải pháp, đàm phán hợp đồng thương mại và quản trị phễu khách hàng qua CRM.
@@ -47,7 +44,6 @@ export default function ScorePage() {
   const [showRawCV, setShowRawCV] = useState(false);
   const [rawCV, setRawCV] = useState("");
   const [jobTitle, setJobTitle] = useState("");
-  const [seniorityLevel, setSeniorityLevel] = useState("");
   const [jdContent, setJdContent] = useState("");
 
   const cvReady = hasFile || rawCV.trim().length > 20;
@@ -93,7 +89,6 @@ export default function ScorePage() {
   function applyPreset(type: Preset) {
     const p = PRESETS[type];
     setJobTitle(p.title);
-    setSeniorityLevel(p.level);
     setJdContent(p.jd);
   }
 
@@ -402,9 +397,9 @@ export default function ScorePage() {
                 Cung cấp tiêu chí kỳ vọng, yêu cầu kỹ thuật và bối cảnh nhóm để thiết lập thang đo phù hợp.
               </p>
 
-              {/* Role + level + Industry */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                <div className="sm:col-span-2">
+              {/* Role + Industry */}
+              <div className="mb-3">
+                <div>
                   <label className="block text-[11px] font-semibold text-[#565e74] uppercase tracking-wider mb-1" htmlFor="job-title">
                     Chức danh công việc
                   </label>
@@ -420,24 +415,6 @@ export default function ScorePage() {
                       badge
                     </span>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#565e74] uppercase tracking-wider mb-1" htmlFor="seniority-level">
-                    Cấp bậc
-                  </label>
-                  <select
-                    id="seniority-level"
-                    className="w-full bg-[#eff4ff] rounded-xl px-3 py-2 text-[14px] text-[#0b1c30] focus:outline-none focus:bg-[#e5eeff] transition-all appearance-none cursor-pointer"
-                    value={seniorityLevel}
-                    onChange={(e) => setSeniorityLevel(e.target.value)}
-                  >
-                    <option value="">Chọn cấp bậc</option>
-                    <option value="intern">Thực tập sinh (Intern)</option>
-                    <option value="junior">Junior (1 - 2 năm)</option>
-                    <option value="middle">Middle (2 - 4 năm)</option>
-                    <option value="senior">Senior (5+ năm)</option>
-                    <option value="lead">Trưởng nhóm / Quản lý</option>
-                  </select>
                 </div>
               </div>
 
