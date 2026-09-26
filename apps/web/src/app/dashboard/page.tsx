@@ -1,30 +1,30 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import DashboardView, { type BatchRow, type BatchStat, type InterviewRow, type JobRow } from "./DashboardView";
 
-type AnalysisResult = { score?: number };
+// Mốc thời gian "N ngày trước" (tách ra ngoài component — quy tắc purity)
+function daysAgoIso(days: number) {
+  return new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  // Lấy profile + lịch sử — dùng analysis_jobs (luồng thật đang chạy), không
-  // còn dùng cv_sessions (kiến trúc cũ, không được ghi dữ liệu nữa).
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
-  const { data: jobs } = await supabase
+  // Phân tích CV cá nhân (không tính CV trong "So sánh CV" — đó là CV của ứng viên khác)
+  const { data: jobsRaw } = await supabase
     .from("analysis_jobs")
     .select("id, cv_filename, job_title, status, result, created_at")
     .eq("user_id", user.id)
-    .is("batch_id", null) // CV trong "So sánh CV" là của ứng viên khác → hiện ở mục riêng
+    .is("batch_id", null)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(30);
+  const jobs = (jobsRaw ?? []) as JobRow[];
 
   const { count: analysisCount } = await supabase
     .from("analysis_jobs")
@@ -32,303 +32,62 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .is("batch_id", null);
 
-  const { data: interviews } = await supabase
+  const since30 = daysAgoIso(30);
+  const { count: last30Count } = await supabase
+    .from("analysis_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .is("batch_id", null)
+    .gte("created_at", since30);
+
+  const { data: interviewsRaw } = await supabase
     .from("interview_sessions")
     .select("id, job_title, total_score, status, completed_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(6);
+  const interviews = (interviewsRaw ?? []) as InterviewRow[];
 
-  // Lịch sử các lượt "So sánh CV" (bảng batches — migration v14)
-  const { data: batches } = await supabase
+  // Lịch sử "So sánh CV" (bảng batches — migration v14)
+  const { data: batchesRaw } = await supabase
     .from("batches")
     .select("id, name, job_title, cv_count, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(10);
-  const batchIds = (batches ?? []).map((b) => b.id as string);
+    .limit(6);
+  const batches = (batchesRaw ?? []) as BatchRow[];
+  const batchIds = batches.map((b) => b.id);
   const { data: batchJobs } = batchIds.length
     ? await supabase.from("analysis_jobs").select("batch_id, status, score:result->score").in("batch_id", batchIds)
     : { data: [] as { batch_id: string; status: string; score: number | null }[] };
-  const batchStats = new Map<string, { done: number; best: number | null }>();
+  const batchStats: Record<string, BatchStat> = {};
   for (const j of (batchJobs ?? []) as { batch_id: string; status: string; score: number | null }[]) {
-    const s = batchStats.get(j.batch_id) ?? { done: 0, best: null };
+    const s = batchStats[j.batch_id] ?? { done: 0, best: null };
     if (j.status === "done" || j.status === "error") s.done++;
     if (typeof j.score === "number") s.best = s.best == null ? j.score : Math.max(s.best, j.score);
-    batchStats.set(j.batch_id, s);
+    batchStats[j.batch_id] = s;
   }
-
-  const doneJobs = (jobs ?? []).filter((j) => (j.result as AnalysisResult | null)?.score != null);
-  const avgScore = doneJobs.length > 0
-    ? Math.round(doneJobs.reduce((a, j) => a + ((j.result as AnalysisResult).score ?? 0), 0) / doneJobs.length)
-    : null;
 
   const displayName = profile?.full_name ?? user.email?.split("@")[0] ?? "Bạn";
 
   return (
-    <div className="min-h-screen bg-[#f0f4ff]">
-      {/* Top nav */}
-      <nav className="bg-white border-b border-[#e5eeff] px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#0037b0] flex items-center justify-center">
-            <span className="material-symbols-outlined text-white text-[16px]">analytics</span>
-          </div>
-          <span className="font-bold text-[18px] text-[#0b1c30]">CareerFit</span>
-        </Link>
-
-        <div className="flex items-center gap-4">
-          <Link href="/score"
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0037b0] text-white text-[13px] font-semibold hover:bg-[#1d4ed8] transition-all">
-            <span className="material-symbols-outlined text-[15px]">add</span>
-            Phân tích mới
-          </Link>
-          <form action="/auth/signout" method="post">
-            <button type="submit"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[#565e74] text-[13px] font-medium hover:bg-[#f0f4ff] transition-all border border-[#e5eeff]">
-              <span className="material-symbols-outlined text-[15px]">logout</span>
-              Đăng xuất
-            </button>
-          </form>
-        </div>
-      </nav>
-
-      <main className="max-w-5xl mx-auto px-4 py-10">
-        {/* Welcome */}
-        <div className="mb-8">
-          <h1 className="text-[32px] font-bold text-[#0b1c30] mb-1">
-            Xin chào, {displayName} 👋
-          </h1>
-          <p className="text-[#565e74]">Theo dõi kết quả phân tích CV của bạn</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          {[
-            {
-              icon: "description",
-              label: "Lần phân tích",
-              value: analysisCount ?? 0,
-              color: "text-[#0037b0]",
-              bg: "bg-[#dce1ff]/60",
-            },
-            {
-              icon: "grade",
-              label: "Điểm trung bình",
-              value: avgScore ? `${avgScore}/100` : "–",
-              color: "text-[#004f35]",
-              bg: "bg-[#85f8c4]/40",
-            },
-            {
-              icon: "workspace_premium",
-              label: "Gói dịch vụ",
-              value: profile?.plan === "pro" ? "Pro ⭐" : "Free",
-              color: "text-[#7c3aed]",
-              bg: "bg-[#ede9fe]/60",
-            },
-          ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-[#e5eeff]">
-              <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
-                <span className={`material-symbols-outlined text-[20px] ${s.color}`}>{s.icon}</span>
-              </div>
-              <div className={`text-[28px] font-bold ${s.color} leading-none mb-1`}>{s.value}</div>
-              <div className="text-[12px] text-[#8fa5c0]">{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Sessions list */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#e5eeff] overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#f0f4ff] flex items-center justify-between">
-            <h2 className="font-bold text-[18px] text-[#0b1c30]">Lịch sử phân tích</h2>
-            <Link href="/score"
-              className="text-[13px] text-[#0037b0] font-semibold flex items-center gap-1 hover:opacity-80">
-              Phân tích mới
-              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-            </Link>
-          </div>
-
-          {!jobs || jobs.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-[#dce1ff]/60 flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-[32px] text-[#0037b0]">upload_file</span>
-              </div>
-              <p className="text-[#565e74] font-medium mb-2">Chưa có phân tích nào</p>
-              <p className="text-[#8fa5c0] text-[13px] mb-6">Upload CV và paste JD để bắt đầu</p>
-              <Link href="/score"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0037b0] text-white text-[14px] font-semibold hover:bg-[#1d4ed8] transition-all">
-                <span className="material-symbols-outlined text-[16px]">analytics</span>
-                Phân tích CV ngay
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-[#f0f4ff]">
-              {jobs.map((j) => {
-                const score = (j.result as AnalysisResult | null)?.score;
-                const isDone = j.status === "done" && score != null;
-                const isProcessing = j.status === "processing" || j.status === "pending";
-                const targetHref = isDone
-                  ? `/score/result?id=${j.id}`
-                  : isProcessing
-                  ? `/score/processing?job_id=${j.id}`
-                  : "#";
-
-                return (
-                  <Link
-                    key={j.id}
-                    href={targetHref}
-                    className={`px-6 py-4 flex items-center gap-4 transition-colors ${
-                      isDone || isProcessing
-                        ? "hover:bg-[#f8faff] cursor-pointer"
-                        : "opacity-75 cursor-default"
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-[#dce1ff]/60 flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-[18px] text-[#0037b0]">description</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-[#0b1c30] text-[14px] truncate">{j.cv_filename || "CV dán trực tiếp"}</div>
-                      <div className="text-[12px] text-[#8fa5c0] truncate">{j.job_title ?? "Vị trí chưa rõ tên"}</div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      {score != null ? (
-                        <div className={`text-[22px] font-bold ${score >= 70 ? "text-[#004f35]" : score >= 50 ? "text-[#b45309]" : "text-red-500"}`}>
-                          {Math.round(score)}
-                        </div>
-                      ) : (
-                        <div className="text-[13px] text-[#8fa5c0]">
-                          {j.status === "processing" || j.status === "pending" ? (
-                            <span className="inline-flex items-center gap-1 text-[#0037b0] font-medium text-[12px] bg-[#dce1ff]/60 px-2 py-0.5 rounded-md">
-                              ⏳ Đang xử lý
-                            </span>
-                          ) : j.status === "error" ? (
-                            <span className="inline-flex items-center gap-1 text-red-600 font-medium text-[12px] bg-red-50 px-2 py-0.5 rounded-md">
-                              ⚠️ Lỗi
-                            </span>
-                          ) : (
-                            "–"
-                          )}
-                        </div>
-                      )}
-                      <div className="text-[11px] text-[#c4c5d7]">
-                        {new Date(j.created_at).toLocaleDateString("vi-VN")}
-                      </div>
-                    </div>
-                    <span className="material-symbols-outlined text-[18px] text-[#c4c5d7]">chevron_right</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Batch compare history */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#e5eeff] overflow-hidden mt-6">
-          <div className="px-6 py-4 border-b border-[#f0f4ff] flex items-center justify-between">
-            <h2 className="font-bold text-[18px] text-[#0b1c30]">Lịch sử so sánh CV</h2>
-            <Link href="/batch" className="text-[13px] font-medium text-[#0037b0] hover:underline">
-              + Lượt so sánh mới
-            </Link>
-          </div>
-
-          {!batches || batches.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-[#e5eeff] flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-[32px] text-[#0037b0]">compare_arrows</span>
-              </div>
-              <p className="text-[#565e74] font-medium mb-2">Chưa có lượt so sánh CV nào</p>
-              <p className="text-[#8fa5c0] text-[13px]">Tải nhiều CV cho 1 JD ở mục &quot;So sánh CV&quot; để xếp hạng ứng viên</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-[#f0f4ff]">
-              {batches.map((b) => {
-                const st = batchStats.get(b.id) ?? { done: 0, best: null };
-                const count = b.cv_count || 0;
-                return (
-                  <Link
-                    key={b.id}
-                    href={`/batch/${b.id}`}
-                    className="px-6 py-4 flex items-center gap-4 hover:bg-[#f8faff] transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-[#e5eeff] flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-[18px] text-[#0037b0]">compare_arrows</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-[#0b1c30] text-[14px] truncate">
-                        {b.name || b.job_title || "Lượt so sánh chưa đặt tên"}
-                      </div>
-                      <div className="text-[12px] text-[#8fa5c0] truncate">
-                        {count} CV · {st.done >= count ? "đã xử lý xong" : `đang xử lý ${st.done}/${count}`}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      {st.best != null ? (
-                        <div className={`text-[22px] font-bold ${st.best >= 70 ? "text-[#004f35]" : st.best >= 50 ? "text-[#b45309]" : "text-red-500"}`}>
-                          {Math.round(st.best)}
-                        </div>
-                      ) : (
-                        <div className="text-[13px] text-[#8fa5c0]">–</div>
-                      )}
-                      <div className="text-[11px] text-[#c4c5d7]">
-                        {st.best != null ? "điểm cao nhất · " : ""}
-                        {new Date(b.created_at).toLocaleDateString("vi-VN")}
-                      </div>
-                    </div>
-                    <span className="material-symbols-outlined text-[18px] text-[#c4c5d7]">chevron_right</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Interview history */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#e5eeff] overflow-hidden mt-6">
-          <div className="px-6 py-4 border-b border-[#f0f4ff] flex items-center justify-between">
-            <h2 className="font-bold text-[18px] text-[#0b1c30]">Lịch sử phỏng vấn giả lập</h2>
-          </div>
-
-          {!interviews || interviews.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-[#ede9fe]/60 flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-[32px] text-[#7c3aed]">quiz</span>
-              </div>
-              <p className="text-[#565e74] font-medium mb-2">Chưa có phiên phỏng vấn giả lập nào</p>
-              <p className="text-[#8fa5c0] text-[13px]">Mở &quot;Phiếu Phỏng Vấn Số Hóa&quot; từ trang kết quả phân tích để bắt đầu</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-[#f0f4ff]">
-              {interviews.map((it) => (
-                <Link
-                  key={it.id}
-                  href={`/dashboard/interview/${it.id}`}
-                  className="px-6 py-4 flex items-center gap-4 hover:bg-[#f8faff] transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-[#ede9fe]/60 flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-[18px] text-[#7c3aed]">quiz</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-[#0b1c30] text-[14px] truncate">{it.job_title || "Vị trí chưa xác định"}</div>
-                    <div className="text-[12px] text-[#8fa5c0] truncate">{it.status === "completed" ? "Đã hoàn thành" : "Đang thực hiện"}</div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    {it.total_score != null ? (
-                      <div className={`text-[22px] font-bold ${it.total_score >= 70 ? "text-[#004f35]" : it.total_score >= 50 ? "text-[#b45309]" : "text-red-500"}`}>
-                        {Math.round(it.total_score)}
-                      </div>
-                    ) : (
-                      <div className="text-[13px] text-[#8fa5c0]">–</div>
-                    )}
-                    <div className="text-[11px] text-[#c4c5d7]">
-                      {new Date(it.completed_at ?? it.created_at).toLocaleDateString("vi-VN")}
-                    </div>
-                  </div>
-                  <span className="material-symbols-outlined text-[18px] text-[#c4c5d7]">chevron_right</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="bg-[#f8f9ff] min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1 pt-16">
+        <DashboardView
+          data={{
+            displayName,
+            plan: profile?.plan ?? null,
+            analysisCount: analysisCount ?? 0,
+            last30Count: last30Count ?? 0,
+            jobs,
+            interviews,
+            batches,
+            batchStats,
+          }}
+        />
       </main>
+      <Footer />
     </div>
   );
 }
