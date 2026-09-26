@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ScoreTrendChart, { type TrendPoint } from "./ScoreTrendChart";
 
 // ─── Kiểu dữ liệu (client Supabase không gắn schema nên tự khai báo) ─────────
 export type AnalysisResult = {
@@ -54,53 +55,6 @@ function initials(name: string) {
   return (first + last).toUpperCase();
 }
 
-// ─── Biểu đồ xu hướng điểm (SVG thuần, render phía server) ───────────────────
-function ScoreTrend({ points }: { points: { score: number; date: string; title: string }[] }) {
-  const W = 640, H = 220, L = 34, R = 16, T = 14, B = 30;
-  const n = points.length;
-  const x = (i: number) => (n === 1 ? L + (W - L - R) / 2 : L + (i * (W - L - R)) / (n - 1));
-  const y = (s: number) => T + (1 - s / 100) * (H - T - B);
-  const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.score).toFixed(1)}`).join(" ");
-  const area = `${line} L${x(n - 1).toFixed(1)},${y(0)} L${x(0).toFixed(1)},${y(0)} Z`;
-  const last = points[n - 1];
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Diễn biến điểm phù hợp qua các lần phân tích">
-      {[0, 50, 70, 100].map((g) => (
-        <g key={g}>
-          <line
-            x1={L} x2={W - R} y1={y(g)} y2={y(g)}
-            stroke="#e5eeff" strokeWidth={1}
-            strokeDasharray={g === 50 || g === 70 ? "4 4" : undefined}
-          />
-          <text x={L - 8} y={y(g) + 4} textAnchor="end" className="fill-[#8fa5c0]" fontSize={11}>{g}</text>
-        </g>
-      ))}
-      <text x={W - R} y={y(70) - 6} textAnchor="end" className="fill-[#8fa5c0]" fontSize={10}>Ngưỡng phù hợp cao</text>
-
-      <path d={area} fill="#0037b0" opacity={0.06} />
-      <path d={line} fill="none" stroke="#0037b0" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-
-      {points.map((p, i) => (
-        <g key={i}>
-          <title>{`${p.date} · ${p.title} · ${Math.round(p.score)} điểm`}</title>
-          <circle cx={x(i)} cy={y(p.score)} r={12} fill="transparent" />
-          <circle cx={x(i)} cy={y(p.score)} r={4} fill="#0037b0" stroke="#ffffff" strokeWidth={2} />
-        </g>
-      ))}
-
-      {/* Nhãn trực tiếp chỉ cho điểm mới nhất */}
-      <text x={x(n - 1)} y={y(last.score) - 12} textAnchor={n === 1 ? "middle" : "end"} fontSize={12} fontWeight={700} className="fill-[#0b1c30]">
-        {Math.round(last.score)}
-      </text>
-
-      <text x={x(0)} y={H - 8} textAnchor={n === 1 ? "middle" : "start"} fontSize={11} className="fill-[#8fa5c0]">{points[0].date}</text>
-      {n > 1 && (
-        <text x={x(n - 1)} y={H - 8} textAnchor="end" fontSize={11} className="fill-[#8fa5c0]">{last.date}</text>
-      )}
-    </svg>
-  );
-}
 
 function SectionCard({
   title, subtitle, icon, action, children, className = "",
@@ -176,10 +130,13 @@ export default function DashboardView({ data }: { data: DashboardData }) {
     ? Math.round(completedInterviews.reduce((a, i) => a + (i.total_score ?? 0), 0) / completedInterviews.length)
     : null;
 
-  const trendPoints = [...done].slice(0, 12).reverse().map((j) => ({
+  const trendPoints: TrendPoint[] = [...done].slice(0, 12).reverse().map((j) => ({
+    id: j.id,
     score: j.result!.score!,
-    date: fmtShortDate(j.created_at),
-    title: j.job_title || j.cv_filename || "Phân tích CV",
+    date: fmtDate(j.created_at),
+    shortDate: fmtShortDate(j.created_at),
+    title: j.job_title || "Chưa đặt tên vị trí",
+    cv: j.cv_filename || "CV dán trực tiếp",
   }));
 
   // Kỹ năng lấy từ ĐÚNG lần phân tích gần nhất (1 JD cụ thể) — không gộp các
@@ -304,13 +261,11 @@ export default function DashboardView({ data }: { data: DashboardData }) {
               className="lg:col-span-2"
               icon="show_chart"
               title="Diễn biến điểm phù hợp"
-              subtitle="12 lần phân tích gần nhất · rê chuột vào từng điểm để xem chi tiết"
+              subtitle="12 lần phân tích gần nhất · rê chuột vào từng điểm để xem chi tiết, bấm để mở kết quả"
             >
               {trendPoints.length > 0 ? (
-                <div className="px-3 sm:px-5 pb-5 overflow-x-auto">
-                  <div className="min-w-[480px]">
-                    <ScoreTrend points={trendPoints} />
-                  </div>
+                <div className="px-3 sm:px-5 pb-5">
+                  <ScoreTrendChart points={trendPoints} />
                 </div>
               ) : (
                 <EmptyState icon="show_chart" title="Chưa có dữ liệu xu hướng" desc="Phân tích CV để bắt đầu theo dõi điểm theo thời gian." href="/score" cta="Đánh giá CV" />
