@@ -30,25 +30,64 @@ MAX_CV_CHUNKS = 160
 _BULLET_RE = re.compile(r"^\s*(?:[-•*+–—▪►●○◦✓✔]|\d{1,2}[.)]|[a-zA-Z][.)])\s*")
 _SPLIT_RE = re.compile(r"[\n\r]+|(?<=[.!?;])\s+(?=[A-ZĐÀ-Ỹ0-9•\-])|\s[•▪►●]\s")
 
-_HEAD_REQ = re.compile(r"yêu cầu|requirement|qualification|tiêu chuẩn|kỹ năng|kĩ năng|năng lực|kinh nghiệm|skills?", re.I)
-_HEAD_RESP = re.compile(r"mô tả công việc|trách nhiệm|nhiệm vụ|responsibilit|job description|công việc chính|bạn sẽ làm", re.I)
+# Tiêu đề mục trong JD — chỉ nhận là tiêu đề khi từ khoá nằm ở ĐẦU dòng (sau số thứ
+# tự/gạch đầu dòng/emoji), để dòng nội dung như "Kinh nghiệm 1 năm..." không bị
+# nhầm là tiêu đề.
 _HEAD_SKIP = re.compile(
-    r"quyền lợi|phúc lợi|benefit|chế độ|thu nhập|mức lương|lương|đãi ngộ|địa điểm|nơi làm việc|thời gian làm việc|"
-    r"liên hệ|hồ sơ|cách thức ứng tuyển|ứng tuyển|giới thiệu công ty|về chúng tôi|about us|hạn nộp", re.I)
+    r"^(quyền lợi|phúc lợi|benefits?|chế độ|đãi ngộ|thu nhập|mức lương|lương|địa điểm|nơi làm việc|"
+    r"thời gian làm việc|giờ làm việc|liên hệ|hồ sơ|cách thức ứng tuyển|cách ứng tuyển|ứng tuyển|"
+    r"giới thiệu (?:công ty|về)|về chúng tôi|about|hạn nộp|thông tin (khác|chung|liên hệ)|why join|what we offer|tại sao)", re.I)
+_HEAD_RESP = re.compile(
+    r"^(mô tả công việc|mô tả|chi tiết công việc|trách nhiệm|nhiệm vụ|responsibilit|job description|"
+    r"công việc chính|bạn sẽ làm|what you.?ll do)", re.I)
+_HEAD_REQ = re.compile(
+    r"^(yêu cầu|requirements?|qualifications?|tiêu chuẩn|điều kiện|kỹ năng cần có|ứng viên cần|"
+    r"what we.?re looking|who you are)", re.I)
+# Tiêu đề yếu: chỉ tính khi dòng kết thúc bằng ":" hoặc viết HOA toàn bộ
+_HEAD_REQ_WEAK = re.compile(r"^(kỹ năng|kĩ năng|năng lực|kinh nghiệm|skills?)", re.I)
 _PREFERRED = re.compile(r"ưu tiên|là (?:một )?lợi thế|lợi thế|điểm cộng|nice to have|preferred|is a plus|\bplus\b", re.I)
-_LINE_SKIP = re.compile(r"lương|thưởng|bảo hiểm|nghỉ phép|du lịch|team ?building|salary|insurance|bonus|đóng bhxh|phụ cấp", re.I)
+# Lưới an toàn: dòng mang nội dung quyền lợi/đãi ngộ thì bỏ dù nằm ở mục nào
+# (Viết cụ thể theo NGỮ CẢNH đãi ngộ — tránh xoá nhầm yêu cầu của ngành bảo hiểm,
+# du lịch, nhân sự tính lương, kế toán thuế thu nhập...)
+_LINE_SKIP = re.compile(
+    r"mức lương|lương (?:cứng|cơ bản|tháng 13|thưởng|từ|up|upto|hấp dẫn|cạnh tranh|khởi điểm|\d)|tăng lương|"
+    r"thưởng (?:nóng|doanh số|lễ|tết|hấp dẫn|theo|kpi|cuối năm)|"
+    r"(?:tổng )?thu nhập (?:từ|đến|lên|upto|up to|hấp dẫn|không giới hạn|trung bình|cạnh tranh|\d)|"
+    r"hoa hồng|\d+\s*(?:-|–|~|đến)?\s*\d*\s*(?:tr|triệu)\b|vnđ|usd|\$|hỗ trợ chi phí|chi phí marketing|"
+    r"được (?:đào tạo|hưởng|cấp|tham gia|nghỉ|hỗ trợ|thưởng|tăng lương|xét|cung cấp|đóng)|thăng tiến|"
+    r"lộ trình phát triển|môi trường làm việc|nghỉ (?:lễ|phép|mát)|phép năm|khám sức khỏe|khám sức khoẻ|"
+    r"phụ cấp|bhxh|bhyt|bảo hiểm (?:xã hội|y tế|sức khỏe|sức khoẻ|đầy đủ|theo)|du lịch (?:hằng|hàng) năm|"
+    r"team ?building|đồng phục|công việc ổn định|salary|bonus|allowance|commission",
+    re.I)
+_LEAD_RE = re.compile(r"^(?:[#*\-•▪►●○◦✓✔➢➤→=]+|\d{1,2}[.)]|[ivxIVX]{1,4}[.)])?\s*[^\wÀ-ỹ]*")
 
 
 def _norm(text: str) -> str:
     return unicodedata.normalize("NFC", text or "")
 
 
-def _is_heading(line: str) -> bool:
-    s = line.strip()
+def _heading(line: str):
+    """(section | None, phần nội dung còn lại sau dấu ':' nếu có).
+    section: "skip" | "responsibility" | "requirement" | None (không phải tiêu đề)."""
+    s = _LEAD_RE.sub("", line.strip()).strip()
     if not s:
-        return False
-    words = s.rstrip(":").split()
-    return (s.endswith(":") and len(words) <= 8) or (len(words) <= 6 and s.upper() == s and any(c.isalpha() for c in s))
+        return None, ""
+    head, sep, rest = s.partition(":")
+    words = head.split()
+    short = len(words) <= 8
+    if not short:
+        return None, ""
+    strong = bool(sep) or s.upper() == s or len(s.split()) <= 6
+    rest = rest.strip()
+    if _HEAD_SKIP.match(head) and strong:
+        return "skip", rest
+    if _HEAD_RESP.match(head) and strong:
+        return "responsibility", rest
+    if _HEAD_REQ.match(head) and strong:
+        return "requirement", rest
+    if _HEAD_REQ_WEAK.match(head) and (sep or s.upper() == s) and not rest:
+        return "requirement", ""
+    return None, ""
 
 
 def _clean(line: str) -> str:
@@ -63,14 +102,12 @@ def split_jd_requirements(jd_text: str) -> list[dict]:
         line = raw.strip()
         if not line:
             continue
-        if _is_heading(line):
-            if _HEAD_SKIP.search(line):
-                section = "skip"
-            elif _HEAD_RESP.search(line):
-                section = "responsibility"
-            elif _HEAD_REQ.search(line):
-                section = "requirement"
-            continue
+        sec, rest = _heading(line)
+        if sec:
+            section = sec
+            if not rest:
+                continue
+            line = rest  # "Yêu cầu: có 1 năm kinh nghiệm..." → xử lý phần sau dấu ":"
         if section == "skip":
             continue
         # 1 dòng dài có thể chứa nhiều ý ngăn bởi ";" hoặc " - "
@@ -97,9 +134,26 @@ def split_jd_requirements(jd_text: str) -> list[dict]:
     return uniq[:MAX_REQUIREMENTS]
 
 
+def _join_wrapped_lines(text: str) -> str:
+    """PDF xuống dòng giữa câu (VD "...cập nhật\ntin thị trường, thông tin sản phẩm")
+    → nối lại thành câu trọn vẹn: dòng trước chưa kết thúc bằng dấu câu và dòng
+    sau bắt đầu bằng chữ thường thì là phần tiếp theo của cùng một câu."""
+    out: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            out.append("")
+            continue
+        if out and out[-1] and not re.search(r"[.!?:;]$", out[-1]) and line[0].islower():
+            out[-1] = out[-1] + " " + line
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
 def split_cv_chunks(cv_text: str) -> list[str]:
     chunks, seen = [], set()
-    for part in _SPLIT_RE.split(_norm(cv_text)):
+    for part in _SPLIT_RE.split(_join_wrapped_lines(_norm(cv_text))):
         text = _clean(part or "")
         if len(text) < 12 or len(text.split()) < 3:
             continue
@@ -120,10 +174,13 @@ def _jd_chunks_all(jd_text: str) -> list[str]:
         line = raw.strip()
         if not line:
             continue
-        if _is_heading(line):
-            skip = bool(_HEAD_SKIP.search(line))
-            continue
-        if skip:
+        sec, rest = _heading(line)
+        if sec:
+            skip = sec == "skip"
+            if not rest:
+                continue
+            line = rest
+        if skip or _LINE_SKIP.search(line):
             continue
         text = _clean(line)
         if len(text) >= 12 and len(text.split()) >= 3:
