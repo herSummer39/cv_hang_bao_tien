@@ -17,29 +17,40 @@ export default function Header() {
           </Link>
 
           {/* Nav */}
-          <nav className="hidden lg:flex items-center gap-6 h-16">
-            <Link href="/score" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
+          <nav className="hidden lg:flex items-center gap-5 h-16">
+            <Link
+              href="/score"
+              className="h-full flex items-center text-[#0037b0] text-[13px] font-semibold hover:text-[#1d4ed8] transition-colors relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#0037b0]"
+            >
+              <span className="material-symbols-outlined text-[16px] mr-1.5">upload_file</span>
               Đánh giá CV
             </Link>
-            {/* /advise chưa có trang riêng — tạm trỏ vào /score (kết quả phân tích đã có phần
-                gợi ý cải thiện/gaps). Đổi lại link này khi trang /advise được xây xong. */}
-            <Link href="/score" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
-              Tư vấn cải thiện
-            </Link>
             <Link href="/interview" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
+              <span className="material-symbols-outlined text-[16px] mr-1 text-[#8fa5c0]">record_voice_over</span>
               Phỏng vấn giả lập
             </Link>
             <Link href="/batch" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
+              <span className="material-symbols-outlined text-[16px] mr-1 text-[#8fa5c0]">compare_arrows</span>
               So sánh CV
             </Link>
             <Link href="/explore" className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors">
-              Khám phá
+              <span className="material-symbols-outlined text-[16px] mr-1 text-[#8fa5c0]">explore</span>
+              Khám phá việc làm
             </Link>
           </nav>
         </div>
 
-        {/* Auth state — Client Component */}
-        <AuthNav />
+        {/* Auth state + CTA */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/score"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-semibold hover:bg-[#1d4ed8] shadow-sm transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">add_circle</span>
+            <span>Chấm điểm CV mới</span>
+          </Link>
+          <AuthNav />
+        </div>
       </div>
     </header>
   );

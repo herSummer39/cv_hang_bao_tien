@@ -179,7 +179,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
   return (
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-6">
           {/* ── Hero ─────────────────────────────────────────────────────── */}
-          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0037b0] to-[#1d4ed8] text-white px-6 sm:px-8 py-7">
+          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0037b0] to-[#1d4ed8] text-white px-6 sm:px-8 py-7 shadow-lg shadow-[#0037b0]/15">
             <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-[20px] font-bold flex-shrink-0">
@@ -204,19 +204,15 @@ export default function DashboardView({ data }: { data: DashboardData }) {
                         )}
                       </>
                     ) : (
-                      "Bắt đầu bằng việc đánh giá CV của bạn với một JD cụ thể."
+                      "Chào mừng bạn đến với CareerFit! Hãy bắt đầu với 3 bước chuẩn hóa hồ sơ bên dưới."
                     )}
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link href="/score" className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white text-[#0037b0] text-[13px] font-semibold hover:bg-[#eff4ff] transition-colors">
+                <Link href="/score" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-[#0037b0] text-[13px] font-bold hover:bg-[#eff4ff] shadow-md transition-all">
                   <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                  Đánh giá CV mới
-                </Link>
-                <Link href="/batch" className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 border border-white/25 text-white text-[13px] font-semibold hover:bg-white/20 transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">compare_arrows</span>
-                  So sánh CV
+                  Bắt đầu đánh giá CV
                 </Link>
                 <Link href="/interview" className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 border border-white/25 text-white text-[13px] font-semibold hover:bg-white/20 transition-colors">
                   <span className="material-symbols-outlined text-[18px]">mic</span>
@@ -225,6 +221,72 @@ export default function DashboardView({ data }: { data: DashboardData }) {
               </div>
             </div>
           </section>
+
+          {/* ── Flow Hướng dẫn 3 bước cho người mới ───────────────────────── */}
+          {jobs.length === 0 && (
+            <section className="bg-white rounded-2xl border-2 border-[#0037b0]/20 p-6 shadow-sm">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-7 h-7 rounded-lg bg-[#0037b0] text-white flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[16px]">route</span>
+                </div>
+                <div>
+                  <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-bold text-[#0b1c30]">
+                    Lộ trình 3 bước chinh phục công việc mơ ước
+                  </h2>
+                  <p className="text-[12px] text-[#8fa5c0]">Làm theo quy trình chuẩn để đạt tỉ lệ đậu phỏng vấn cao nhất</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Bước 1 */}
+                <div className="relative p-4 rounded-xl bg-[#eff4ff]/60 border border-[#dce1ff] flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#0037b0] text-white text-[11px] font-bold">Bước 1</span>
+                      <span className="material-symbols-outlined text-[#0037b0]">upload_file</span>
+                    </div>
+                    <h3 className="font-semibold text-[14px] text-[#0b1c30] mb-1">Đánh giá CV theo JD</h3>
+                    <p className="text-[12px] text-[#434655] leading-relaxed">Tải CV và dán mô tả công việc (JD) để AI quét điểm ATS và độ tương thích kỹ năng.</p>
+                  </div>
+                  <Link href="/score" className="mt-4 inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-[#0037b0] text-white text-[12px] font-semibold hover:bg-[#1d4ed8] transition-colors">
+                    <span>Thực hiện ngay</span>
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
+                </div>
+
+                {/* Bước 2 */}
+                <div className="relative p-4 rounded-xl bg-[#f8f9ff] border border-[#e5eeff] flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#e5eeff] text-[#434655] text-[11px] font-bold">Bước 2</span>
+                      <span className="material-symbols-outlined text-[#8fa5c0]">auto_fix_high</span>
+                    </div>
+                    <h3 className="font-semibold text-[14px] text-[#0b1c30] mb-1">Tối ưu từ khóa & Lỗ hổng</h3>
+                    <p className="text-[12px] text-[#434655] leading-relaxed">Xem danh sách kỹ năng còn thiếu, từ khóa ATS cần bổ sung và mẹo chỉnh sửa CV.</p>
+                  </div>
+                  <div className="mt-4 text-center py-2 text-[12px] font-medium text-[#8fa5c0] bg-white rounded-lg border border-[#e5eeff]">
+                    Sẵn sàng sau Bước 1
+                  </div>
+                </div>
+
+                {/* Bước 3 */}
+                <div className="relative p-4 rounded-xl bg-[#f8f9ff] border border-[#e5eeff] flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#e5eeff] text-[#434655] text-[11px] font-bold">Bước 3</span>
+                      <span className="material-symbols-outlined text-[#8fa5c0]">record_voice_over</span>
+                    </div>
+                    <h3 className="font-semibold text-[14px] text-[#0b1c30] mb-1">Luyện phỏng vấn thử AI</h3>
+                    <p className="text-[12px] text-[#434655] leading-relaxed">Tham gia phiên phỏng vấn tương tác với AI theo đúng câu hỏi phỏng vấn thực tế của ngành.</p>
+                  </div>
+                  <Link href="/interview" className="mt-4 inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-white border border-[#c4c5d7] text-[#0b1c30] text-[12px] font-semibold hover:bg-[#f0f4ff] transition-colors">
+                    <span>Xem phòng phỏng vấn</span>
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* ── KPI ──────────────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

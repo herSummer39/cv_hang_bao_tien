@@ -863,15 +863,100 @@ export default function ResultPage() {
               <div className="shrink-0 w-full sm:w-auto">
                 <Link
                   href="/interview"
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#1d4ed8] text-white text-[13px] font-medium hover:bg-[#0037b0] transition-colors shadow-sm flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-bold hover:bg-[#1d4ed8] transition-colors shadow-sm flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                  Bắt đầu trả lời phỏng vấn giả lập
+                  Bắt đầu phỏng vấn giả lập
                 </Link>
               </div>
             </div>
           </div>
           )}
+
+          {/* ── Khối điều hướng bước tiếp theo (Next Action Journey) ───────── */}
+          <section className="mt-8 p-6 sm:p-8 rounded-2xl bg-white border-2 border-[#0037b0]/15 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0037b0] bg-[#eff4ff] px-2.5 py-1 rounded-full">
+                  Bước tiếp theo dành cho bạn
+                </span>
+                <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-bold text-[#0b1c30] mt-2">
+                  Bạn muốn làm gì tiếp theo?
+                </h3>
+                <p className="text-[13px] text-[#565e74] mt-0.5">
+                  Dựa trên kết quả đối chiếu năng lực, hãy chọn bước đi phù hợp nhất với kế hoạch của bạn.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Action 1 */}
+              <Link
+                href="/interview"
+                className="group p-5 rounded-xl bg-[#eff4ff]/60 hover:bg-[#eff4ff] border border-[#dce1ff] transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-[#0037b0] text-white flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                    <span className="material-symbols-outlined text-[20px]">mic</span>
+                  </div>
+                  <h4 className="font-bold text-[15px] text-[#0b1c30] mb-1">
+                    Luyện phỏng vấn thử 1-1
+                  </h4>
+                  <p className="text-[12px] text-[#565e74] leading-relaxed">
+                    Tập dượt trả lời các câu hỏi dựa trên lỗ hổng và từ khóa thực tế của vị trí này.
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center text-[12px] font-bold text-[#0037b0]">
+                  <span>Vào phòng phỏng vấn</span>
+                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </div>
+              </Link>
+
+              {/* Action 2 */}
+              <Link
+                href="/score"
+                className="group p-5 rounded-xl bg-white hover:bg-[#f8f9ff] border border-[#e5eeff] transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-[#e5eeff] text-[#0037b0] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                    <span className="material-symbols-outlined text-[20px]">refresh</span>
+                  </div>
+                  <h4 className="font-bold text-[15px] text-[#0b1c30] mb-1">
+                    Sửa CV &amp; Chấm điểm lại
+                  </h4>
+                  <p className="text-[12px] text-[#565e74] leading-relaxed">
+                    Bổ sung từ khóa gợi ý và tải lại CV bản mới để kiểm tra điểm số có tăng không.
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center text-[12px] font-bold text-[#0037b0]">
+                  <span>Chấm lại CV</span>
+                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </div>
+              </Link>
+
+              {/* Action 3 */}
+              <Link
+                href="/dashboard"
+                className="group p-5 rounded-xl bg-white hover:bg-[#f8f9ff] border border-[#e5eeff] transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-[#e5eeff] text-[#565e74] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                    <span className="material-symbols-outlined text-[20px]">dashboard</span>
+                  </div>
+                  <h4 className="font-bold text-[15px] text-[#0b1c30] mb-1">
+                    Về trang Dashboard
+                  </h4>
+                  <p className="text-[12px] text-[#565e74] leading-relaxed">
+                    Xem biểu đồ tiến trình năng lực, lịch sử phân tích và các chỉ số tích lũy.
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center text-[12px] font-bold text-[#565e74] group-hover:text-[#0b1c30]">
+                  <span>Về Dashboard</span>
+                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </div>
+              </Link>
+            </div>
+          </section>
         </section>
       </main>
 

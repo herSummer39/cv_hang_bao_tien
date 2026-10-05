@@ -234,19 +234,25 @@ export default function ScorePage() {
         {/* 50/50 Dual Column */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-2 flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-            {/* LEFT: CV Upload */}
-            <div className="flex flex-col bg-white rounded-xl shadow-sm p-6 relative">
+              {/* LEFT: CV Upload */}
+            <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-6 relative">
               <div className="flex items-center justify-between pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-[#e5eeff] text-[#0037b0] flex items-center justify-center text-[14px] font-semibold">
-                    1
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-[13px] font-bold ${
+                    cvReady ? "bg-[#85f8c4]/50 text-[#004f35]" : "bg-[#0037b0] text-white"
+                  }`}>
+                    {cvReady ? <span className="material-symbols-outlined text-[16px]">check</span> : "1"}
                   </span>
-                  <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-semibold text-[#0b1c30]">
-                    Hồ sơ ứng viên (CV)
-                  </h2>
+                  <div>
+                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
+                      Bước 1: Tải lên hồ sơ (CV)
+                    </h2>
+                  </div>
                 </div>
-                <span className="text-[11px] font-semibold text-[#565e74] bg-[#eff4ff] px-2 py-0.5 rounded-lg">
-                  Bắt buộc
+                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                  cvReady ? "bg-[#85f8c4]/40 text-[#004f35]" : "bg-[#ffe8b8] text-[#5c3b00]"
+                }`}>
+                  {cvReady ? "Đã sẵn sàng" : "Cần chọn file"}
                 </span>
               </div>
               <p className="text-[13px] text-[#565e74] mb-4">
@@ -379,18 +385,24 @@ export default function ScorePage() {
             </div>
 
             {/* RIGHT: JD */}
-            <div className="flex flex-col bg-white rounded-xl shadow-sm p-6 relative">
+            <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-6 relative">
               <div className="flex items-center justify-between pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-[#e5eeff] text-[#0037b0] flex items-center justify-center text-[14px] font-semibold">
-                    2
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-[13px] font-bold ${
+                    jdReady ? "bg-[#85f8c4]/50 text-[#004f35]" : "bg-[#0037b0] text-white"
+                  }`}>
+                    {jdReady ? <span className="material-symbols-outlined text-[16px]">check</span> : "2"}
                   </span>
-                  <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-semibold text-[#0b1c30]">
-                    Bản mô tả công việc &amp; Yêu cầu
-                  </h2>
+                  <div>
+                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
+                      Bước 2: Vị trí &amp; Mô tả công việc (JD)
+                    </h2>
+                  </div>
                 </div>
-                <span className="text-[11px] font-semibold text-[#565e74] bg-[#eff4ff] px-2 py-0.5 rounded-lg">
-                  Bắt buộc
+                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                  jdReady ? "bg-[#85f8c4]/40 text-[#004f35]" : "bg-[#ffe8b8] text-[#5c3b00]"
+                }`}>
+                  {jdReady ? "Đã sẵn sàng" : "Cần nhập JD"}
                 </span>
               </div>
               <p className="text-[13px] text-[#565e74] mb-4">
@@ -401,7 +413,7 @@ export default function ScorePage() {
               <div className="mb-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-[#565e74] uppercase tracking-wider mb-1" htmlFor="job-title">
-                    Chức danh công việc
+                    Chức danh công việc (Tùy chọn)
                   </label>
                   <div className="relative">
                     <input
@@ -428,22 +440,24 @@ export default function ScorePage() {
               {/* JD Textarea */}
               <div className="flex-1 flex flex-col min-h-[280px]">
                 <label className="block text-[11px] font-semibold text-[#565e74] uppercase tracking-wider mb-1" htmlFor="jd-content">
-                  Nội dung chi tiết (JD)
+                  Nội dung chi tiết (JD) <span className="text-[#ba1a1a]">*</span>
                 </label>
                 <div className="flex-1 relative flex flex-col">
                   <textarea
                     id="jd-content"
                     className="w-full flex-1 min-h-[220px] bg-[#eff4ff] rounded-xl p-4 text-[14px] text-[#0b1c30] placeholder:text-[#747686]/70 focus:outline-none focus:bg-[#e5eeff] transition-all resize-none"
-                    placeholder="Dán nội dung Bản mô tả công việc (Job Description) vào đây... Ví dụ: Yêu cầu chuyên môn, số năm kinh nghiệm, trách nhiệm chính và công nghệ áp dụng."
+                    placeholder="Dán nội dung Bản mô tả công việc (Job Description) vào đây... Hoặc chọn 1 vị trí mẫu ở đầu trang."
                     value={jdContent}
                     onChange={(e) => setJdContent(e.target.value)}
                   />
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[13px] text-[#565e74]">
                     <span className="inline-flex items-center gap-1 text-[#747686]">
                       <span className="material-symbols-outlined text-[14px]">info</span>
-                      Gợi ý: Bao gồm cả quyền lợi &amp; stack công nghệ
+                      Gợi ý: Tối thiểu 30 ký tự để AI phân tích chính xác
                     </span>
-                    <span className="text-[12px] text-[#747686]">{jdContent.length} ký tự</span>
+                    <span className={`text-[12px] font-medium ${jdReady ? "text-[#004f35]" : "text-[#747686]"}`}>
+                      {jdContent.length} ký tự {jdReady ? "✓" : "(cần ≥ 30)"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -463,41 +477,43 @@ export default function ScorePage() {
             </div>
           </div>
 
-          {/* Action Bar */}
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#e5eeff] flex items-center justify-center text-[#565e74] shrink-0">
-                <span className="material-symbols-outlined text-[20px]">psychology</span>
+          {/* Action Bar & Readiness Checklist */}
+          <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-[#e5eeff] shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+              <div className="w-12 h-12 rounded-2xl bg-[#eff4ff] flex items-center justify-center text-[#0037b0] shrink-0">
+                <span className="material-symbols-outlined text-[24px]">checklist</span>
               </div>
-              <div>
-                <h4 className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30]">
-                  Mô hình phân tích v3.8
+              <div className="space-y-1">
+                <h4 className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold text-[#0b1c30]">
+                  Điều kiện bắt đầu phân tích
                 </h4>
-                <p className="text-[13px] text-[#565e74]">
-                  Đã sẵn sàng đối chiếu 35 tham số năng lực và kinh nghiệm song song.
-                </p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
+                  <span className={`inline-flex items-center gap-1 font-medium ${cvReady ? "text-[#004f35]" : "text-[#ba1a1a]"}`}>
+                    <span className="material-symbols-outlined text-[16px]">{cvReady ? "check_circle" : "cancel"}</span>
+                    {cvReady ? "Đã có tệp CV / nội dung CV" : "Chưa tải file CV"}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 font-medium ${jdReady ? "text-[#004f35]" : "text-[#ba1a1a]"}`}>
+                    <span className="material-symbols-outlined text-[16px]">{jdReady ? "check_circle" : "cancel"}</span>
+                    {jdReady ? "Đã nhập nội dung JD" : "Chưa nhập JD (tối thiểu 30 ký tự)"}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:items-end w-full sm:w-auto">
+            <div className="flex flex-col sm:items-end w-full lg:w-auto shrink-0">
               <button
                 id="analyze-btn"
                 disabled={!formReady}
                 onClick={handleAnalyze}
-                className={`w-full sm:w-auto px-8 py-3 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold flex items-center justify-center gap-2 transition-all ${
+                className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[16px] font-bold flex items-center justify-center gap-2 transition-all ${
                   formReady
-                    ? "bg-[#1d4ed8] hover:bg-[#0037b0] text-white shadow-md cursor-pointer"
-                    : "bg-[#e5eeff] text-[#747686] cursor-not-allowed shadow-none"
+                    ? "bg-[#0037b0] hover:bg-[#1d4ed8] text-white shadow-lg shadow-[#0037b0]/20 cursor-pointer active:scale-[0.99]"
+                    : "bg-[#e5eeff] text-[#8fa5c0] cursor-not-allowed shadow-none"
                 }`}
               >
                 <span className="material-symbols-outlined text-[20px]">analytics</span>
-                <span>Phân tích độ phù hợp</span>
+                <span>Bắt đầu phân tích độ phù hợp</span>
               </button>
-              <p className={`text-[11px] mt-1 text-center sm:text-right ${formReady ? "text-[#004f35] font-medium" : "text-[#747686]"}`}>
-                {formReady
-                  ? "Đã chuẩn bị đầy đủ dữ liệu. Bấm để bắt đầu đối soát."
-                  : "Vui lòng cung cấp đủ CV và Mô tả công việc để kích hoạt"}
-              </p>
             </div>
           </div>
 
