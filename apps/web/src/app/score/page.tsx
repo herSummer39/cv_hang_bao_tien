@@ -237,6 +237,48 @@ export default function ScorePage() {
 
         {/* 50/50 Dual Column */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-2 flex-1">
+          {/* Thanh Checklist Điều kiện đặt ở đầu để dễ theo dõi */}
+          <div className="mb-4 px-4 py-3 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-[#eff4ff] text-[#0037b0] flex items-center justify-center">
+                <span className="material-symbols-outlined text-[16px]">rule</span>
+              </span>
+              <span className="text-[13px] font-bold text-[#0f172a]">
+                Tiêu chí sẵn sàng phân tích:
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-[12px] sm:text-[13px]">
+              {/* Check 1 */}
+              <div
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl font-semibold border transition-all ${
+                  cvReady
+                    ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#065f46]"
+                    : "bg-[#fef2f2] border-[#fecaca] text-[#991b1b]"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  {cvReady ? "check_circle" : "cancel"}
+                </span>
+                <span>Bước 1: {cvReady ? "Đã có tệp CV" : "Chưa tải lên CV"}</span>
+              </div>
+
+              {/* Check 2 */}
+              <div
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl font-semibold border transition-all ${
+                  jdReady
+                    ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#065f46]"
+                    : "bg-[#fef2f2] border-[#fecaca] text-[#991b1b]"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  {jdReady ? "check_circle" : "cancel"}
+                </span>
+                <span>Bước 2: {jdReady ? "Đã nhập JD" : "Cần nhập JD (≥ 30 ký tự)"}</span>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
               {/* LEFT: CV Upload */}
             <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-6 relative">
@@ -481,30 +523,29 @@ export default function ScorePage() {
             </div>
           </div>
 
-          {/* Action Bar & Readiness Checklist */}
-          <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-[#e5eeff] shadow-sm">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
-              <div className="w-12 h-12 rounded-2xl bg-[#eff4ff] flex items-center justify-center text-[#0037b0] shrink-0">
-                <span className="material-symbols-outlined text-[24px]">checklist</span>
+          {/* Action Bar dưới cùng */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-[#e5eeff] shadow-sm">
+            <div className="flex items-center gap-3.5">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-all ${
+                formReady ? "bg-[#85f8c4]/40 text-[#004f35]" : "bg-[#eff4ff] text-[#0037b0]"
+              }`}>
+                <span className="material-symbols-outlined text-[24px]">
+                  {formReady ? "task_alt" : "psychology"}
+                </span>
               </div>
-              <div className="space-y-1">
+              <div>
                 <h4 className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold text-[#0b1c30]">
-                  Điều kiện bắt đầu phân tích
+                  {formReady ? "Đã sẵn sàng phân tích!" : "Đang chờ hoàn thiện dữ liệu"}
                 </h4>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
-                  <span className={`inline-flex items-center gap-1 font-medium ${cvReady ? "text-[#004f35]" : "text-[#ba1a1a]"}`}>
-                    <span className="material-symbols-outlined text-[16px]">{cvReady ? "check_circle" : "cancel"}</span>
-                    {cvReady ? "Đã có tệp CV / nội dung CV" : "Chưa tải file CV"}
-                  </span>
-                  <span className={`inline-flex items-center gap-1 font-medium ${jdReady ? "text-[#004f35]" : "text-[#ba1a1a]"}`}>
-                    <span className="material-symbols-outlined text-[16px]">{jdReady ? "check_circle" : "cancel"}</span>
-                    {jdReady ? "Đã nhập nội dung JD" : "Chưa nhập JD (tối thiểu 30 ký tự)"}
-                  </span>
-                </div>
+                <p className="text-[13px] text-[#64748b]">
+                  {formReady
+                    ? "Dữ liệu hợp lệ. Bấm nút bên cạnh để AI bắt đầu quét 35 tham số đối soát."
+                    : "Vui lòng hoàn thành đủ Bước 1 (CV) và Bước 2 (JD) ở phía trên."}
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-col sm:items-end w-full lg:w-auto shrink-0">
+            <div className="shrink-0 w-full sm:w-auto">
               <button
                 id="analyze-btn"
                 disabled={!formReady}
@@ -512,7 +553,7 @@ export default function ScorePage() {
                 className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[16px] font-bold flex items-center justify-center gap-2 transition-all ${
                   formReady
                     ? "bg-[#0037b0] hover:bg-[#1d4ed8] text-white shadow-lg shadow-[#0037b0]/20 cursor-pointer active:scale-[0.99]"
-                    : "bg-[#e5eeff] text-[#8fa5c0] cursor-not-allowed shadow-none"
+                    : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed shadow-none"
                 }`}
               >
                 <span className="material-symbols-outlined text-[20px]">analytics</span>
