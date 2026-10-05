@@ -179,53 +179,57 @@ export default function ScorePage() {
         <ProgressStepper activeStep={1} />
 
         {/* Page Header */}
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-8 pb-4">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#dae2fd]/60 text-[#5c647a] text-[11px] font-semibold mb-2 uppercase tracking-wider">
-                <span className="material-symbols-outlined text-[14px]">tune</span>
-                Bộ lọc &amp; chuẩn đối sánh AI
+        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-7 pb-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
+            {/* Title & Description */}
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#eff4ff] border border-[#dce1ff] text-[#0037b0] text-[12px] font-bold mb-3 shadow-xs">
+                <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
+                <span>Động cơ AI đối soát kỹ năng &amp; Chuẩn ATS</span>
               </div>
-              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[36px] font-bold text-[#0b1c30] tracking-tight leading-[44px]">
-                Đánh giá mức độ phù hợp<br className="hidden lg:block" /> giữa CV &amp; Vị trí tuyển dụng
+              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[34px] font-extrabold text-[#0b1c30] tracking-tight leading-tight">
+                Đánh giá mức độ phù hợp giữa CV &amp; Vị trí tuyển dụng
               </h1>
-              <p className="text-[16px] text-[#565e74] mt-1 leading-[26px]">
-                Tải lên hồ sơ ứng viên (CV) và cung cấp tiêu chuẩn công việc để phân tích độ tương thích, khoảng trống kỹ năng và kinh nghiệm.
+              <p className="text-[14px] sm:text-[15px] text-[#475569] mt-2 leading-relaxed">
+                Tải lên CV và cung cấp yêu cầu công việc để AI phân tích tỷ lệ tương thích, phát hiện lỗ hổng kỹ năng và đề xuất tối ưu.
               </p>
             </div>
 
-            {/* Quick Preset Chips */}
-            <div className="flex flex-col items-start lg:items-end gap-1 shrink-0">
-              <span className="text-[11px] font-semibold text-[#747686] uppercase tracking-wider">
-                Khởi tạo nhanh theo vị trí mẫu
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {(["frontend", "pm", "sales"] as Preset[]).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => applyPreset(type)}
-                    className="group flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-[#eff4ff] text-[#0b1c30] rounded-xl shadow-sm transition-all text-left"
-                  >
-                    <span
-                      className={`material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform ${
-                        type === "frontend"
-                          ? "text-[#0037b0]"
-                          : type === "pm"
-                          ? "text-[#004f35]"
-                          : "text-[#565e74]"
+            {/* Quick Preset Card */}
+            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm shrink-0 lg:max-w-md w-full lg:w-auto">
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="material-symbols-outlined text-[16px] text-[#f59e0b]">lightbulb</span>
+                <span className="text-[12px] font-bold text-[#0f172a] uppercase tracking-wide">
+                  Chưa có sẵn JD? Thử ngay vị trí mẫu:
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {(["frontend", "pm", "sales"] as Preset[]).map((type) => {
+                  const isFE = type === "frontend";
+                  const isPM = type === "pm";
+
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => applyPreset(type)}
+                      type="button"
+                      className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-left border transition-all cursor-pointer ${
+                        isFE
+                          ? "bg-[#eff6ff] hover:bg-[#dbeafe] border-[#bfdbfe] text-[#1e40af]"
+                          : isPM
+                          ? "bg-[#f0fdf4] hover:bg-[#dcfce7] border-[#bbf7d0] text-[#166534]"
+                          : "bg-[#faf5ff] hover:bg-[#f3e8ff] border-[#e9d5ff] text-[#6b21a8]"
                       }`}
                     >
-                      {type === "frontend" ? "code" : type === "pm" ? "grid_view" : "trending_up"}
-                    </span>
-                    <span className="text-[13px] font-medium">
-                      {type === "frontend"
-                        ? "Kỹ sư Frontend Cao cấp"
-                        : type === "pm"
-                        ? "Trưởng nhóm Sản phẩm"
-                        : "Chuyên viên KD B2B"}
-                    </span>
-                  </button>
-                ))}
+                      <span className="material-symbols-outlined text-[18px] shrink-0 group-hover:scale-110 transition-transform">
+                        {isFE ? "terminal" : isPM ? "view_kanban" : "trending_up"}
+                      </span>
+                      <span className="text-[12px] font-bold leading-tight truncate">
+                        {isFE ? "Frontend" : isPM ? "Product Lead" : "Sales B2B"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
