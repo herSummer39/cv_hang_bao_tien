@@ -76,20 +76,16 @@ export default function AuthNav() {
 
   // Chưa đăng nhập
   return (
-    <div className="flex items-center gap-3">
-      <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-[#85f8c4]/40 text-[#002114] border border-[#68dba9]/40 rounded-full text-[11px] font-semibold">
-        <span className="material-symbols-outlined text-[#004f35] text-[14px] leading-none">auto_awesome</span>
-        <span>48 Lượt phân tích</span>
-      </div>
+    <div className="flex items-center gap-2.5">
       <Link
         href="/login"
-        className="px-4 py-2 rounded-xl text-[#434655] text-[13px] font-medium hover:bg-[#e5eeff] hover:text-[#0b1c30] transition-colors"
+        className="px-3.5 py-1.5 rounded-xl text-[#434655] text-[13px] font-medium hover:bg-[#eff4ff] hover:text-[#0b1c30] transition-colors whitespace-nowrap"
       >
         Đăng nhập
       </Link>
       <Link
         href="/register"
-        className="px-4 py-2 rounded-xl bg-[#0037b0] text-white text-[13px] font-semibold hover:bg-[#1d4ed8] transition-all shadow-sm"
+        className="px-4 py-1.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-semibold hover:bg-[#1d4ed8] transition-all shadow-sm whitespace-nowrap"
       >
         Đăng ký miễn phí
       </Link>
