@@ -5,24 +5,21 @@ type Step = {
   status: "done" | "active" | "pending";
 };
 
-const STEPS: Step[] = [
+const STEPS: Omit<Step, "status">[] = [
   {
     number: 1,
     label: "Bước 1: Tải lên & Thiết lập",
-    sublabel: "CV + Mô tả công việc",
-    status: "active",
+    sublabel: "Đính kèm CV + Nhập JD mục tiêu",
   },
   {
     number: 2,
-    label: "Bước 2: Hệ thống phân tích",
-    sublabel: "Tự động chuẩn hóa & đối soát",
-    status: "pending",
+    label: "Bước 2: AI Phân tích chuyên sâu",
+    sublabel: "Đối soát từ khóa & Độ khớp ATS",
   },
   {
     number: 3,
-    label: "Bước 3: Báo cáo đối soát",
-    sublabel: "Chỉ số phù hợp & khuyến nghị",
-    status: "pending",
+    label: "Bước 3: Báo cáo & Lộ trình",
+    sublabel: "Xem điểm số, lỗ hổng & Luyện phỏng vấn",
   },
 ];
 
@@ -32,7 +29,7 @@ type Props = {
 };
 
 export default function ProgressStepper({ activeStep, sessionId }: Props) {
-  const steps = STEPS.map((s) => ({
+  const steps: Step[] = STEPS.map((s) => ({
     ...s,
     status:
       s.number < activeStep
@@ -43,68 +40,82 @@ export default function ProgressStepper({ activeStep, sessionId }: Props) {
   }));
 
   return (
-    <section className="w-full bg-white shadow-sm py-3">
+    <section className="w-full bg-white border-b border-[#e2e8f0] py-4 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 lg:px-8">
         {sessionId && (
-          <div className="flex items-center gap-2 mb-2 text-[11px]">
-            <span className="uppercase tracking-wider text-[#565e74]">Mã phiên:</span>
-            <span className="font-semibold text-[#0037b0] bg-[#dce1ff]/50 px-2 py-0.5 rounded-full">
+          <div className="flex items-center gap-2 mb-3 text-[12px]">
+            <span className="font-semibold uppercase tracking-wider text-[#64748b]">Mã phiên làm việc:</span>
+            <span className="font-bold text-[#0037b0] bg-[#eff4ff] border border-[#dce1ff] px-2.5 py-0.5 rounded-lg font-mono">
               {sessionId}
             </span>
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          {steps.map((step) => (
-            <div
-              key={step.number}
-              className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
-                step.status === "active"
-                  ? "bg-[#eff4ff]"
-                  : step.status === "done"
-                  ? "bg-[#eff4ff]"
-                  : "opacity-60"
-              }`}
-            >
-              {/* Step indicator */}
-              {step.status === "done" ? (
-                <div className="w-7 h-7 rounded-full bg-[#004f35] text-white flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[16px] leading-none">
-                    check
-                  </span>
-                </div>
-              ) : step.status === "active" ? (
-                <div className="w-7 h-7 rounded-full bg-[#1d4ed8] text-white flex items-center justify-center shrink-0 shadow-sm relative">
-                  <span className="text-[13px] font-semibold">{step.number}</span>
-                  <span className="absolute inset-0 rounded-full bg-[#1d4ed8] animate-ping opacity-30" />
-                </div>
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-[#e5eeff] text-[#565e74] flex items-center justify-center shrink-0">
-                  <span className="text-[13px] font-semibold">{step.number}</span>
-                </div>
-              )}
 
-              <div className="min-w-0 flex flex-col">
-                <span
-                  className={`text-[13px] font-semibold truncate ${
-                    step.status === "active"
-                      ? "text-[#0037b0]"
-                      : step.status === "done"
-                      ? "text-[#004f35]"
-                      : "text-[#0b1c30]"
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {steps.map((step, idx) => {
+            const isActive = step.status === "active";
+            const isDone = step.status === "done";
+
+            return (
+              <div
+                key={step.number}
+                className={`relative flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all ${
+                  isActive
+                    ? "bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] text-white shadow-lg shadow-[#0037b0]/25 ring-2 ring-[#0037b0]/40 scale-[1.01]"
+                    : isDone
+                    ? "bg-[#ecfdf5] border-2 border-[#a7f3d0] text-[#065f46]"
+                    : "bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b]"
+                }`}
+              >
+                {/* Step Circle Badge */}
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-[15px] shadow-sm transition-all ${
+                    isActive
+                      ? "bg-white text-[#0037b0] ring-4 ring-white/30"
+                      : isDone
+                      ? "bg-[#10b981] text-white"
+                      : "bg-white border-2 border-[#cbd5e1] text-[#64748b]"
                   }`}
                 >
-                  {step.label}
-                </span>
-                <span className="text-[11px] text-[#565e74] truncate">
-                  {step.sublabel}
-                </span>
-              </div>
+                  {isDone ? (
+                    <span className="material-symbols-outlined text-[22px] font-bold">check</span>
+                  ) : (
+                    <span>{step.number}</span>
+                  )}
+                </div>
 
-              {step.status === "active" && (
-                <div className="ml-auto w-2 h-2 rounded-full bg-[#0037b0] animate-pulse" />
-              )}
-            </div>
-          ))}
+                {/* Step Text Info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[13px] font-bold leading-tight truncate ${
+                        isActive ? "text-white" : isDone ? "text-[#065f46]" : "text-[#1e293b]"
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                    {isActive && (
+                      <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#85f8c4] animate-ping shrink-0" />
+                    )}
+                  </div>
+                  <p
+                    className={`text-[11px] leading-tight mt-1 truncate ${
+                      isActive ? "text-white/85 font-medium" : isDone ? "text-[#047857]" : "text-[#64748b]"
+                    }`}
+                  >
+                    {step.sublabel}
+                  </p>
+                </div>
+
+                {/* Arrow indicator between steps */}
+                {idx < steps.length - 1 && (
+                  <div className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white border border-[#cbd5e1] shadow-xs items-center justify-center text-[#94a3b8]">
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

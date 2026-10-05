@@ -18,34 +18,34 @@ export default function Header() {
         </div>
 
         {/* Center: Navigation Menu */}
-        <nav className="hidden md:flex items-center justify-center gap-8 h-16">
+        <nav className="hidden md:flex items-center justify-center gap-2 h-16">
           <Link
             href="/score"
-            className="h-full flex items-center text-[#0037b0] text-[13px] font-semibold hover:text-[#1d4ed8] transition-colors whitespace-nowrap relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#0037b0]"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0037b0]/10 text-[#0037b0] text-[13px] font-bold border border-[#0037b0]/20 hover:bg-[#0037b0]/15 transition-all whitespace-nowrap shadow-xs"
           >
-            <span className="material-symbols-outlined text-[16px] mr-1.5">upload_file</span>
-            Đánh giá CV
+            <span className="material-symbols-outlined text-[17px] text-[#0037b0]">upload_file</span>
+            <span>Đánh giá CV</span>
           </Link>
           <Link
             href="/interview"
-            className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[#334155] text-[13px] font-medium hover:bg-[#f1f5f9] hover:text-[#0b1c30] transition-all whitespace-nowrap"
           >
-            <span className="material-symbols-outlined text-[16px] mr-1.5 text-[#8fa5c0]">record_voice_over</span>
-            Phỏng vấn AI
+            <span className="material-symbols-outlined text-[17px] text-[#64748b]">record_voice_over</span>
+            <span>Phỏng vấn AI</span>
           </Link>
           <Link
             href="/batch"
-            className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[#334155] text-[13px] font-medium hover:bg-[#f1f5f9] hover:text-[#0b1c30] transition-all whitespace-nowrap"
           >
-            <span className="material-symbols-outlined text-[16px] mr-1.5 text-[#8fa5c0]">compare_arrows</span>
-            So sánh CV
+            <span className="material-symbols-outlined text-[17px] text-[#64748b]">compare_arrows</span>
+            <span>So sánh CV</span>
           </Link>
           <Link
             href="/explore"
-            className="h-full flex items-center text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[#334155] text-[13px] font-medium hover:bg-[#f1f5f9] hover:text-[#0b1c30] transition-all whitespace-nowrap"
           >
-            <span className="material-symbols-outlined text-[16px] mr-1.5 text-[#8fa5c0]">explore</span>
-            Khám phá
+            <span className="material-symbols-outlined text-[17px] text-[#64748b]">explore</span>
+            <span>Khám phá</span>
           </Link>
         </nav>
 
