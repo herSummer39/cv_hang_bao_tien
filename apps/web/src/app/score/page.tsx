@@ -179,135 +179,59 @@ export default function ScorePage() {
         <ProgressStepper activeStep={1} />
 
         {/* Page Header */}
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-7 pb-3">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
-            {/* Title & Description */}
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#eff4ff] border border-[#dce1ff] text-[#0037b0] text-[12px] font-bold mb-3 shadow-xs">
-                <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
-                <span>Động cơ AI đối soát kỹ năng &amp; Chuẩn ATS</span>
-              </div>
-              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[34px] font-extrabold text-[#0b1c30] tracking-tight leading-tight">
-                Đánh giá mức độ phù hợp giữa CV &amp; Vị trí tuyển dụng
-              </h1>
-              <p className="text-[14px] sm:text-[15px] text-[#475569] mt-2 leading-relaxed">
-                Tải lên CV và cung cấp yêu cầu công việc để AI phân tích tỷ lệ tương thích, phát hiện lỗ hổng kỹ năng và đề xuất tối ưu.
-              </p>
+        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-7 pb-2">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#eff4ff] border border-[#dce1ff] text-[#0037b0] text-[12px] font-bold mb-3 shadow-xs">
+              <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
+              <span>Động cơ AI đối soát năng lực &amp; Chuẩn ATS</span>
             </div>
-
-            {/* Quick Preset Card */}
-            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm shrink-0 lg:max-w-md w-full lg:w-auto">
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <span className="material-symbols-outlined text-[16px] text-[#f59e0b]">lightbulb</span>
-                <span className="text-[12px] font-bold text-[#0f172a] uppercase tracking-wide">
-                  Chưa có sẵn JD? Thử ngay vị trí mẫu:
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {(["frontend", "pm", "sales"] as Preset[]).map((type) => {
-                  const isFE = type === "frontend";
-                  const isPM = type === "pm";
-
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => applyPreset(type)}
-                      type="button"
-                      className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-left border transition-all cursor-pointer ${
-                        isFE
-                          ? "bg-[#eff6ff] hover:bg-[#dbeafe] border-[#bfdbfe] text-[#1e40af]"
-                          : isPM
-                          ? "bg-[#f0fdf4] hover:bg-[#dcfce7] border-[#bbf7d0] text-[#166534]"
-                          : "bg-[#faf5ff] hover:bg-[#f3e8ff] border-[#e9d5ff] text-[#6b21a8]"
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[18px] shrink-0 group-hover:scale-110 transition-transform">
-                        {isFE ? "terminal" : isPM ? "view_kanban" : "trending_up"}
-                      </span>
-                      <span className="text-[12px] font-bold leading-tight truncate">
-                        {isFE ? "Frontend" : isPM ? "Product Lead" : "Sales B2B"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] font-extrabold text-[#0b1c30] tracking-tight leading-tight">
+              Đánh giá mức độ phù hợp giữa CV &amp; Vị trí tuyển dụng
+            </h1>
+            <p className="text-[14px] sm:text-[15px] text-[#475569] mt-2 leading-relaxed">
+              Tải lên CV của bạn và cung cấp yêu cầu tuyển dụng để AI phân tích độ tương thích, phát hiện lỗ hổng kỹ năng và đề xuất tối ưu.
+            </p>
           </div>
         </section>
 
         {/* 50/50 Dual Column */}
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-2 flex-1">
-          {/* Thanh Checklist Điều kiện đặt ở đầu để dễ theo dõi */}
-          <div className="mb-4 px-4 py-3 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-[#eff4ff] text-[#0037b0] flex items-center justify-center">
-                <span className="material-symbols-outlined text-[16px]">rule</span>
-              </span>
-              <span className="text-[13px] font-bold text-[#0f172a]">
-                Tiêu chí sẵn sàng phân tích:
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-[12px] sm:text-[13px]">
-              {/* Check 1 */}
-              <div
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl font-semibold border transition-all ${
-                  cvReady
-                    ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#065f46]"
-                    : "bg-[#fef2f2] border-[#fecaca] text-[#991b1b]"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {cvReady ? "check_circle" : "cancel"}
-                </span>
-                <span>Bước 1: {cvReady ? "Đã có tệp CV" : "Chưa tải lên CV"}</span>
-              </div>
-
-              {/* Check 2 */}
-              <div
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl font-semibold border transition-all ${
-                  jdReady
-                    ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#065f46]"
-                    : "bg-[#fef2f2] border-[#fecaca] text-[#991b1b]"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {jdReady ? "check_circle" : "cancel"}
-                </span>
-                <span>Bước 2: {jdReady ? "Đã nhập JD" : "Cần nhập JD (≥ 30 ký tự)"}</span>
-              </div>
-            </div>
-          </div>
-
+        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-3 flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-              {/* LEFT: CV Upload */}
-            <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-6 relative">
-              <div className="flex items-center justify-between pb-3">
-                <div className="flex items-center gap-2.5">
-                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-[13px] font-bold ${
-                    cvReady ? "bg-[#85f8c4]/50 text-[#004f35]" : "bg-[#0037b0] text-white"
+            {/* LEFT: CV Upload */}
+            <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 relative">
+              {/* Header Cột CV */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-[#f1f5f9] mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                    cvReady ? "bg-[#ecfdf5] text-[#059669]" : "bg-[#eff4ff] text-[#0037b0]"
                   }`}>
-                    {cvReady ? <span className="material-symbols-outlined text-[16px]">check</span> : "1"}
-                  </span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      {cvReady ? "task_alt" : "description"}
+                    </span>
+                  </div>
                   <div>
-                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
-                      Bước 1: Tải lên hồ sơ (CV)
+                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[16px] sm:text-[17px] font-bold text-[#0b1c30]">
+                      Hồ sơ của bạn (CV)
                     </h2>
+                    <p className="text-[12px] text-[#64748b]">Đính kèm file PDF hoặc DOCX</p>
                   </div>
                 </div>
-                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-                  cvReady ? "bg-[#85f8c4]/40 text-[#004f35]" : "bg-[#ffe8b8] text-[#5c3b00]"
-                }`}>
-                  {cvReady ? "Đã sẵn sàng" : "Cần chọn file"}
-                </span>
+
+                {cvReady ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]">
+                    <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                    Đã sẵn sàng
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-[#64748b] bg-[#f8fafc] border border-[#e2e8f0] px-2.5 py-1 rounded-full">
+                    PDF / DOCX
+                  </span>
+                )}
               </div>
-              <p className="text-[13px] text-[#565e74] mb-4">
-                Hệ thống sẽ trích xuất học vấn, lịch sử công tác, dự án và bộ kỹ năng cứng / mềm từ tài liệu.
-              </p>
 
               {/* Drop zone */}
               <div
-                className="relative flex-1 min-h-[380px] bg-[#eff4ff]/50 hover:bg-[#eff4ff] rounded-xl transition-all flex flex-col items-center justify-center p-8 text-center group cursor-pointer overflow-hidden shadow-inner"
+                className="relative flex-1 min-h-[360px] bg-[#f8fafc] hover:bg-[#eff4ff]/40 rounded-xl transition-all flex flex-col items-center justify-center p-6 text-center group cursor-pointer overflow-hidden border border-[#e2e8f0]"
                 id="cv-drop-zone"
               >
                 <input
@@ -318,87 +242,73 @@ export default function ScorePage() {
                   onChange={handleFileSelected}
                   type="file"
                 />
-                {/* Dashed SVG border */}
-                <svg
-                  className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] pointer-events-none rounded-lg"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect
-                    className={`transition-colors ${
-                      hasFile ? "text-[#004f35]" : "text-[#c4c5d7] group-hover:text-[#0037b0]"
-                    }`}
-                    fill="none"
-                    height="100%"
-                    rx="8"
-                    stroke="currentColor"
-                    strokeDasharray="6 6"
-                    strokeWidth="1.5"
-                    width="100%"
-                  />
-                </svg>
 
                 {!hasFile ? (
                   <>
-                    <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center text-[#0037b0] group-hover:scale-105 transition-transform mb-4 z-0">
-                      <span className="material-symbols-outlined text-[32px]">cloud_upload</span>
+                    <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-[#e2e8f0] flex items-center justify-center text-[#0037b0] group-hover:scale-110 group-hover:border-[#bfdbfe] transition-all mb-3 z-0">
+                      <span className="material-symbols-outlined text-[28px]">cloud_upload</span>
                     </div>
-                    <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30] mb-1 z-0">
-                      Kéo và thả tệp CV vào đây, hoặc Duyệt tệp
+                    <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-semibold text-[#0b1c30] mb-1 z-0">
+                      Kéo thả tệp CV vào đây, hoặc click để chọn
                     </h3>
-                    <p className="text-[13px] text-[#565e74] mb-4 max-w-sm z-0">
-                      Hỗ trợ định dạng PDF, DOCX tối đa 25MB. Hồ sơ được mã hóa và xóa bộ đệm sau phiên làm việc.
+                    <p className="text-[12px] text-[#64748b] mb-4 max-w-xs z-0 leading-relaxed">
+                      Hỗ trợ PDF hoặc DOCX (tối đa 25MB). Dữ liệu được bảo mật an toàn.
                     </p>
                     <button
-                      className="relative z-0 px-4 py-2 bg-white hover:bg-[#f8f9ff] text-[#0b1c30] text-[13px] font-medium rounded-xl shadow-sm transition-all flex items-center gap-1"
+                      className="relative z-0 px-4 py-2 bg-white hover:bg-[#f8fafc] text-[#0037b0] border border-[#dce1ff] text-[13px] font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[18px]">attachment</span>
-                      Chọn tài liệu từ thiết bị
+                      <span className="material-symbols-outlined text-[17px]">attach_file</span>
+                      Duyệt tệp từ máy
                     </button>
                   </>
                 ) : (
                   <div className="absolute inset-0 bg-white p-6 flex flex-col justify-between z-20 rounded-xl">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-[#dce1ff]/30 text-[#0037b0] flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[28px]">description</span>
+                        <div className="w-12 h-12 rounded-xl bg-[#ecfdf5] text-[#059669] flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[26px]">description</span>
                         </div>
                         <div className="text-left">
-                          <h4 className="font-semibold text-[16px] text-[#0b1c30] truncate max-w-[240px]">
+                          <h4 className="font-semibold text-[15px] text-[#0b1c30] truncate max-w-[220px]">
                             {fileName}
                           </h4>
-                          <p className="text-[13px] text-[#565e74]">{fileSize}</p>
+                          <p className="text-[12px] text-[#64748b]">{fileSize}</p>
                         </div>
                       </div>
                       <button
-                        className="p-1 rounded-lg hover:bg-[#e5eeff] text-[#565e74] hover:text-[#ba1a1a] transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-[#fee2e2] text-[#64748b] hover:text-[#dc2626] transition-colors"
                         onClick={removeFile}
                         type="button"
+                        title="Xóa tệp này"
                       >
-                        <span className="material-symbols-outlined text-[20px]">close</span>
+                        <span className="material-symbols-outlined text-[18px]">close</span>
                       </button>
                     </div>
-                    <div className="p-4 rounded-xl bg-[#eff4ff] text-left">
+
+                    <div className="p-3.5 rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] text-left">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-[#565e74] uppercase">
-                          Trạng thái trích xuất
+                        <span className="text-[11px] font-semibold text-[#166534] uppercase tracking-wider">
+                          Đã tải lên thành công
                         </span>
-                        <span className="text-[11px] font-semibold text-[#004f35] bg-[#85f8c4]/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                        <span className="text-[11px] font-semibold text-[#166534] bg-white px-2 py-0.5 rounded-full flex items-center gap-1 border border-[#bbf7d0]">
+                          <span className="material-symbols-outlined text-[13px]">check_circle</span>
                           Hợp lệ
                         </span>
                       </div>
-                      <p className="text-[13px] text-[#0b1c30]">
-                        Đã nhận diện: Cấu trúc hồ sơ 4 mục tiêu chuẩn, 12 từ khóa kỹ năng cốt lõi.
+                      <p className="text-[12px] text-[#166534]">
+                        Tệp đã sẵn sàng để đối soát nội dung với mô tả công việc.
                       </p>
                     </div>
+
                     <div className="flex justify-end">
                       <button
-                        className="text-[13px] text-[#565e74] hover:text-[#0037b0] transition-colors"
+                        className="text-[12px] font-semibold text-[#0037b0] hover:underline transition-colors flex items-center gap-1"
                         onClick={removeFile}
                         type="button"
                       >
-                        Thay đổi tệp khác
+                        <span className="material-symbols-outlined text-[14px]">sync</span>
+                        Chọn tệp khác
                       </button>
                     </div>
                   </div>
@@ -406,158 +316,189 @@ export default function ScorePage() {
               </div>
 
               {/* Raw text toggle */}
-              <div className="mt-4 pt-2 flex items-center justify-between">
+              <div className="mt-3 pt-2 flex items-center justify-between">
                 <button
-                  className="inline-flex items-center gap-1 text-[13px] text-[#565e74] hover:text-[#0037b0] transition-colors"
+                  className="inline-flex items-center gap-1 text-[12px] text-[#64748b] hover:text-[#0037b0] font-medium transition-colors"
                   onClick={() => setShowRawCV(!showRawCV)}
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                  <span>Hoặc dán văn bản thô từ CV</span>
+                  <span className="material-symbols-outlined text-[15px]">edit_note</span>
+                  <span>{showRawCV ? "Thu gọn ô dán văn bản" : "Hoặc dán trực tiếp nội dung văn bản CV"}</span>
                 </button>
-                <span className="text-[11px] text-[#747686]">OCR v4.2 chủ động trích xuất</span>
+                {rawCV.trim().length > 20 && !hasFile && (
+                  <span className="text-[11px] font-semibold text-[#059669] flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[13px]">check</span> Đã có văn bản
+                  </span>
+                )}
               </div>
+
               {showRawCV && (
                 <div className="mt-2">
                   <textarea
-                    className="w-full bg-[#eff4ff] rounded-xl p-3 text-[13px] text-[#0b1c30] placeholder:text-[#747686] focus:outline-none focus:bg-[#e5eeff] transition-all resize-none"
-                    rows={5}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 text-[13px] text-[#0b1c30] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all resize-none"
+                    rows={4}
                     value={rawCV}
                     onChange={(e) => setRawCV(e.target.value)}
-                    placeholder="Dán toàn bộ nội dung text của CV vào đây nếu không có file sẵn..."
+                    placeholder="Dán toàn bộ nội dung văn bản của CV vào đây nếu không có file sẵn..."
                   />
                 </div>
               )}
             </div>
 
             {/* RIGHT: JD */}
-            <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-6 relative">
-              <div className="flex items-center justify-between pb-3">
-                <div className="flex items-center gap-2.5">
-                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-[13px] font-bold ${
-                    jdReady ? "bg-[#85f8c4]/50 text-[#004f35]" : "bg-[#0037b0] text-white"
+            <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 relative">
+              {/* Header Cột JD */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-[#f1f5f9] mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                    jdReady ? "bg-[#ecfdf5] text-[#059669]" : "bg-[#eff4ff] text-[#0037b0]"
                   }`}>
-                    {jdReady ? <span className="material-symbols-outlined text-[16px]">check</span> : "2"}
-                  </span>
-                  <div>
-                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
-                      Bước 2: Vị trí &amp; Mô tả công việc (JD)
-                    </h2>
-                  </div>
-                </div>
-                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-                  jdReady ? "bg-[#85f8c4]/40 text-[#004f35]" : "bg-[#ffe8b8] text-[#5c3b00]"
-                }`}>
-                  {jdReady ? "Đã sẵn sàng" : "Cần nhập JD"}
-                </span>
-              </div>
-              <p className="text-[13px] text-[#565e74] mb-4">
-                Cung cấp tiêu chí kỳ vọng, yêu cầu kỹ thuật và bối cảnh nhóm để thiết lập thang đo phù hợp.
-              </p>
-
-              {/* Role + Industry */}
-              <div className="mb-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#565e74] uppercase tracking-wider mb-1" htmlFor="job-title">
-                    Chức danh công việc (Tùy chọn)
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="job-title"
-                      className="w-full bg-[#eff4ff] rounded-xl px-3 py-2 text-[14px] text-[#0b1c30] placeholder:text-[#747686] focus:outline-none focus:bg-[#e5eeff] transition-all"
-                      placeholder="VD: Senior Frontend Engineer..."
-                      value={jobTitle}
-                      onChange={(e) => setJobTitle(e.target.value)}
-                    />
-                    <span className="material-symbols-outlined text-[#747686] text-[18px] absolute right-3 top-2.5">
-                      badge
+                    <span className="material-symbols-outlined text-[20px]">
+                      {jdReady ? "task_alt" : "work_outline"}
                     </span>
                   </div>
+                  <div>
+                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[16px] sm:text-[17px] font-bold text-[#0b1c30]">
+                      Công việc mục tiêu (JD)
+                    </h2>
+                    <p className="text-[12px] text-[#64748b]">Vị trí và yêu cầu tuyển dụng cần đối soát</p>
+                  </div>
+                </div>
+
+                {jdReady ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]">
+                    <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                    Đã sẵn sàng
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-[#64748b] bg-[#f8fafc] border border-[#e2e8f0] px-2.5 py-1 rounded-full">
+                    Tối thiểu 30 ký tự
+                  </span>
+                )}
+              </div>
+
+              {/* Role input */}
+              <div className="mb-3">
+                <label className="block text-[11px] font-semibold text-[#64748b] uppercase tracking-wider mb-1" htmlFor="job-title">
+                  Chức danh công việc (Tùy chọn)
+                </label>
+                <div className="relative">
+                  <input
+                    id="job-title"
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-2 text-[13px] text-[#0b1c30] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all"
+                    placeholder="VD: Senior Frontend Engineer, Product Manager..."
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                  />
+                  <span className="material-symbols-outlined text-[#94a3b8] text-[18px] absolute right-3 top-2.5">
+                    badge
+                  </span>
                 </div>
               </div>
 
-              {/* Industry Select — 2-level dropdown */}
+              {/* Industry Select */}
               <IndustrySelect
                 value={selectedIndustryId}
                 onChange={setSelectedIndustryId}
                 className="mb-3"
               />
 
-              {/* JD Textarea */}
-              <div className="flex-1 flex flex-col min-h-[280px]">
-                <label className="block text-[11px] font-semibold text-[#565e74] uppercase tracking-wider mb-1" htmlFor="jd-content">
-                  Nội dung chi tiết (JD) <span className="text-[#ba1a1a]">*</span>
-                </label>
+              {/* JD Textarea with Inline Presets */}
+              <div className="flex-1 flex flex-col">
+                <div className="flex items-center justify-between flex-wrap gap-2 mb-1.5">
+                  <label className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider" htmlFor="jd-content">
+                    Bản mô tả công việc (JD) <span className="text-[#ba1a1a]">*</span>
+                  </label>
+
+                  {/* Inline Preset Pills */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-[#94a3b8] hidden sm:inline">Thử nhanh:</span>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset("frontend")}
+                      className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#eff6ff] hover:bg-[#dbeafe] text-[#1e40af] border border-[#bfdbfe] transition-colors"
+                      title="Nạp nhanh JD mẫu Frontend"
+                    >
+                      Frontend
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset("pm")}
+                      className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] transition-colors"
+                      title="Nạp nhanh JD mẫu Product Lead"
+                    >
+                      Product Lead
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset("sales")}
+                      className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#faf5ff] hover:bg-[#f3e8ff] text-[#6b21a8] border border-[#e9d5ff] transition-colors"
+                      title="Nạp nhanh JD mẫu Sales B2B"
+                    >
+                      Sales B2B
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex-1 relative flex flex-col">
                   <textarea
                     id="jd-content"
-                    className="w-full flex-1 min-h-[220px] bg-[#eff4ff] rounded-xl p-4 text-[14px] text-[#0b1c30] placeholder:text-[#747686]/70 focus:outline-none focus:bg-[#e5eeff] transition-all resize-none"
-                    placeholder="Dán nội dung Bản mô tả công việc (Job Description) vào đây... Hoặc chọn 1 vị trí mẫu ở đầu trang."
+                    className="w-full flex-1 min-h-[190px] bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 text-[13px] text-[#0b1c30] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all resize-none"
+                    placeholder="Dán nội dung yêu cầu tuyển dụng (JD) vào đây, hoặc click các nút 'Thử nhanh' ở trên để điền mẫu..."
                     value={jdContent}
                     onChange={(e) => setJdContent(e.target.value)}
                   />
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[13px] text-[#565e74]">
-                    <span className="inline-flex items-center gap-1 text-[#747686]">
-                      <span className="material-symbols-outlined text-[14px]">info</span>
-                      Gợi ý: Tối thiểu 30 ký tự để AI phân tích chính xác
+                  <div className="mt-2 flex items-center justify-between text-[12px] text-[#64748b]">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-[#94a3b8]">info</span>
+                      Tối thiểu 30 ký tự để AI phân tích chuẩn xác
                     </span>
-                    <span className={`text-[12px] font-medium ${jdReady ? "text-[#004f35]" : "text-[#747686]"}`}>
+                    <span className={`font-semibold ${jdReady ? "text-[#059669]" : "text-[#94a3b8]"}`}>
                       {jdContent.length} ký tự {jdReady ? "✓" : "(cần ≥ 30)"}
                     </span>
                   </div>
                 </div>
               </div>
-
-              {/* Matching config */}
-              <div className="mt-3 pt-2 bg-[#eff4ff]/40 rounded-xl p-2 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#565e74]">
-                  <span className="material-symbols-outlined text-[18px]">verified</span>
-                  <span className="text-[13px]">
-                    Độ khắt khe: <strong>Tiêu chuẩn (Khuyến nghị)</strong>
-                  </span>
-                </div>
-                <button className="text-[11px] text-[#0037b0] hover:underline" type="button">
-                  Tùy chỉnh
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Action Bar dưới cùng */}
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-[#e5eeff] shadow-sm">
-            <div className="flex items-center gap-3.5">
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-all ${
-                formReady ? "bg-[#85f8c4]/40 text-[#004f35]" : "bg-[#eff4ff] text-[#0037b0]"
+          {/* Action Bar trung tâm thân thiện */}
+          <div className="mt-6 p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 text-center sm:text-left">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                formReady ? "bg-[#ecfdf5] text-[#059669] ring-4 ring-[#ecfdf5]" : "bg-[#f1f5f9] text-[#94a3b8]"
               }`}>
                 <span className="material-symbols-outlined text-[24px]">
-                  {formReady ? "task_alt" : "psychology"}
+                  {formReady ? "verified" : "auto_awesome"}
                 </span>
               </div>
               <div>
-                <h4 className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold text-[#0b1c30]">
-                  {formReady ? "Đã sẵn sàng phân tích!" : "Đang chờ hoàn thiện dữ liệu"}
-                </h4>
+                <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold text-[#0b1c30]">
+                  {formReady ? "Đã sẵn sàng phân tích!" : "Sẵn sàng phân tích hồ sơ"}
+                </h3>
                 <p className="text-[13px] text-[#64748b]">
                   {formReady
-                    ? "Dữ liệu hợp lệ. Bấm nút bên cạnh để AI bắt đầu quét 35 tham số đối soát."
-                    : "Vui lòng hoàn thành đủ Bước 1 (CV) và Bước 2 (JD) ở phía trên."}
+                    ? "Dữ liệu hợp lệ. Nhấn nút bên cạnh để bắt đầu quá trình thẩm định AI."
+                    : "Đính kèm tệp CV và cung cấp mô tả công việc để kích hoạt phân tích."}
                 </p>
               </div>
             </div>
 
-            <div className="shrink-0 w-full sm:w-auto">
+            <div className="w-full sm:w-auto shrink-0">
               <button
                 id="analyze-btn"
                 disabled={!formReady}
                 onClick={handleAnalyze}
-                className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[16px] font-bold flex items-center justify-center gap-2 transition-all ${
+                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold flex items-center justify-center gap-2 transition-all ${
                   formReady
-                    ? "bg-[#0037b0] hover:bg-[#1d4ed8] text-white shadow-lg shadow-[#0037b0]/20 cursor-pointer active:scale-[0.99]"
+                    ? "bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] hover:shadow-lg hover:shadow-[#0037b0]/25 text-white cursor-pointer active:scale-[0.99]"
                     : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed shadow-none"
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px]">analytics</span>
-                <span>Bắt đầu phân tích độ phù hợp</span>
+                <span className="material-symbols-outlined text-[19px]">
+                  {formReady ? "bolt" : "lock"}
+                </span>
+                <span>Bắt đầu phân tích ngay</span>
               </button>
             </div>
           </div>
@@ -568,44 +509,34 @@ export default function ScorePage() {
               {
                 icon: "troubleshoot",
                 color: "text-[#0037b0]",
-                bg: "bg-[#dce1ff]/40",
+                bg: "bg-[#eff4ff]",
                 title: "Độ chuẩn xác đối chiếu kỹ năng",
                 desc: "Thuật toán ngữ nghĩa nhận diện tương đồng kỹ năng thực tế (Synonym Mapping), không chỉ so khớp từ khóa máy móc.",
-                link: "Khảo sát đối soát đa chiều",
-                linkColor: "text-[#0037b0]",
               },
               {
                 icon: "gavel",
-                color: "text-[#004f35]",
-                bg: "bg-[#85f8c4]/50",
-                title: "Tuân thủ không định kiến ISO-27001",
-                desc: "Ẩn danh thông tin nhân khẩu học (tuổi tác, giới tính, hình ảnh) đảm bảo phân tích hoàn toàn dựa trên năng lực khách quan.",
-                link: "Chuẩn mực thẩm định công bằng",
-                linkColor: "text-[#004f35]",
+                color: "text-[#059669]",
+                bg: "bg-[#ecfdf5]",
+                title: "Khách quan và không định kiến",
+                desc: "Ẩn danh thông tin nhân khẩu học (tuổi tác, giới tính, hình ảnh) đảm bảo phân tích hoàn toàn dựa trên năng lực chuyên môn.",
               },
               {
                 icon: "shield_lock",
-                color: "text-[#565e74]",
-                bg: "bg-[#dae2fd]/50",
+                color: "text-[#0284c7]",
+                bg: "bg-[#f0f9ff]",
                 title: "Bảo mật dữ liệu ứng viên 100%",
-                desc: "Hồ sơ nhân sự không được dùng để huấn luyện mô hình bên ngoài. Dữ liệu mã hóa AES-256 nội bộ trong suốt quá trình xử lý.",
-                link: "Chứng thực an toàn dữ liệu",
-                linkColor: "text-[#565e74]",
+                desc: "Hồ sơ của bạn không bao giờ được chia sẻ hay huấn luyện mô hình bên ngoài. Xử lý an toàn theo tiêu chuẩn bảo mật dữ liệu.",
               },
             ].map((card) => (
-              <div key={card.title} className="p-6 rounded-xl bg-white shadow-sm flex flex-col justify-between">
+              <div key={card.title} className="p-5 rounded-xl bg-white border border-[#e2e8f0] shadow-xs flex flex-col justify-between">
                 <div>
-                  <div className={`w-10 h-10 rounded-xl ${card.bg} ${card.color} flex items-center justify-center mb-3`}>
-                    <span className="material-symbols-outlined text-[24px]">{card.icon}</span>
+                  <div className={`w-9 h-9 rounded-xl ${card.bg} ${card.color} flex items-center justify-center mb-3`}>
+                    <span className="material-symbols-outlined text-[20px]">{card.icon}</span>
                   </div>
-                  <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30] mb-1">
+                  <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[14px] font-bold text-[#0b1c30] mb-1">
                     {card.title}
                   </h3>
-                  <p className="text-[13px] text-[#565e74] leading-relaxed">{card.desc}</p>
-                </div>
-                <div className={`mt-4 pt-2 text-[11px] font-semibold ${card.linkColor} flex items-center gap-1`}>
-                  <span>{card.link}</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  <p className="text-[12px] text-[#64748b] leading-relaxed">{card.desc}</p>
                 </div>
               </div>
             ))}
