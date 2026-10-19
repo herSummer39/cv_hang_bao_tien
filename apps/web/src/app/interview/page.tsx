@@ -392,16 +392,20 @@ export default function InterviewPage() {
   }, [currentIndex, questions, finishInterview, cancelVoiceRecording]);
 
   // ── Đếm ngược 3 phút (180s) / câu ────────────────────────────────────────
+  // TỰ ĐỘNG TẠM DỪNG khi hệ thống đang xử lý giọng nói (transcribing) để không
+  // làm mất thời gian quy định và không bị trừ điểm oan của ứng viên.
   useEffect(() => {
     if (phase !== "running") return;
+    if (voiceStatus === "transcribing") return; // Tạm dừng đếm thời gian khi AI đang nhận diện
+
     if (timeLeft <= 0) {
-      // Hết giờ hoàn toàn — câu này bị loại (0 điểm), không phụ thuộc nội dung đã gõ
+      // Hết giờ hoàn toàn — câu này bị loại (0 điểm)
       goToNext(TIME_PER_QUESTION_SEC, "timeout");
       return;
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, timeLeft, goToNext]);
+  }, [phase, timeLeft, goToNext, voiceStatus]);
 
   // Đọc câu hỏi bằng giọng người phỏng vấn (VieNeu-TTS trên worker.py local).
   // worker sinh TỪNG CÂU MỘT và cập nhật audio_urls ngay → chỉ cần chờ câu 1
@@ -661,13 +665,20 @@ export default function InterviewPage() {
                 <span className="text-[12px] font-semibold text-[#565e74] uppercase tracking-wider">
                   Câu {currentIndex + 1}/{questions.length} — {questions[currentIndex]?.category}
                 </span>
-                <span
-                  className={`px-3 py-1 rounded-full text-[13px] font-bold ${
-                    timeLeft <= 10 ? "bg-[#ffdad6] text-[#93000a]" : "bg-[#e5eeff] text-[#0037b0]"
-                  }`}
-                >
-                  {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}
-                </span>
+                {voiceStatus === "transcribing" ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-[#eff6ff] text-[#0037b0] border border-[#bfdbfe] shadow-xs">
+                    <span className="material-symbols-outlined text-[16px] animate-spin text-[#0037b0]">progress_activity</span>
+                    <span>{String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")} (Đang tạm dừng)</span>
+                  </span>
+                ) : (
+                  <span
+                    className={`px-3 py-1 rounded-full text-[13px] font-bold ${
+                      timeLeft <= 10 ? "bg-[#ffdad6] text-[#93000a]" : "bg-[#e5eeff] text-[#0037b0]"
+                    }`}
+                  >
+                    {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}
+                  </span>
+                )}
               </div>
 
               <div className="w-full h-1.5 bg-[#e5eeff] rounded-full overflow-hidden mb-6">
@@ -741,11 +752,21 @@ export default function InterviewPage() {
                 </span>
               </div>
 
-              <p className="mt-3 text-[11px] text-[#8fa5c0]">
-                {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
-                  ? "Đang trong phút đầu — trả lời giờ để được tính điểm đầy đủ."
-                  : "Đã qua phút đầu — điểm sẽ giảm dần theo thời gian đã dùng."}
-              </p>
+              {/* Thông báo thời gian & cơ chế tạm dừng bảo toàn điểm */}
+              <div className="mt-3">
+                {voiceStatus === "transcribing" ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#eff6ff] text-[#1e40af] border border-[#bfdbfe] font-medium text-[12px]">
+                    <span className="material-symbols-outlined text-[15px] text-[#0037b0] animate-spin">progress_activity</span>
+                    <span>Hệ thống đang chuyển giọng nói thành chữ: <strong>Thời gian làm bài tạm dừng</strong> để bảo toàn điểm số của bạn.</span>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-[#8fa5c0]">
+                    {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
+                      ? "Đang trong phút đầu — trả lời giờ để được tính điểm đầy đủ."
+                      : "Đã qua phút đầu — điểm sẽ giảm dần theo thời gian đã dùng."}
+                  </p>
+                )}
+              </div>
 
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] text-[#8fa5c0]">{answerDraft.trim().length} ký tự</span>
@@ -767,18 +788,33 @@ export default function InterviewPage() {
                     onClick={handleSubmitAnswer}
                     disabled={voiceStatus === "recording" || voiceStatus === "transcribing"}
                     className={`px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors ${
-                      voiceStatus === "recording" || voiceStatus === "transcribing"
+                      voiceStatus === "transcribing"
+                        ? "bg-[#e5eeff] text-[#64748b] cursor-wait"
+                        : voiceStatus === "recording"
                         ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
                         : "bg-[#1d4ed8] text-white hover:bg-[#0037b0]"
                     }`}
                     title={
                       voiceStatus === "recording"
                         ? "Hãy dừng ghi âm trước khi nộp câu trả lời"
+                        : voiceStatus === "transcribing"
+                        ? "Đang chờ chuyển đổi âm thanh..."
                         : undefined
                     }
                   >
-                    {currentIndex + 1 >= questions.length ? "Nộp & xem kết quả" : "Nộp & câu tiếp theo"}
-                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    {voiceStatus === "transcribing" && (
+                      <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                    )}
+                    <span>
+                      {voiceStatus === "transcribing"
+                        ? "Đang nhận diện..."
+                        : currentIndex + 1 >= questions.length
+                        ? "Nộp & xem kết quả"
+                        : "Nộp & câu tiếp theo"}
+                    </span>
+                    {voiceStatus !== "transcribing" && (
+                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    )}
                   </button>
                 </div>
               </div>
