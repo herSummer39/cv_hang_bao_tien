@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
     const rawMime = audioFile.type || "audio/webm";
     const mimeType = rawMime.split(";")[0].trim() || "audio/webm";
 
-    // Gọi Gemini 2.0 Flash REST API (hoặc fallback 1.5-flash nếu 2.0 chưa kích hoạt)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // Gọi Gemini 1.5 Flash REST API — model ổn định, hỗ trợ audio tiếng Việt chuẩn
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const promptText = `Bạn là hệ thống chuyển đổi giọng nói thành văn bản (Speech-to-Text) chuyên nghiệp dành cho phỏng vấn kỹ thuật và tuyển dụng.
 Nhiệm vụ của bạn: Hãy nghe kỹ đoạn âm thanh tiếng Việt này và chuyển lời nói của ứng viên thành văn bản tiếng Việt chính xác 100%.
@@ -68,9 +68,9 @@ QUY TẮC QUAN TRỌNG:
     });
 
     if (!response.ok) {
-      console.warn(`[Transcribe] ⚠️ Gemini 2.0-flash lỗi (${response.status}), thử fallback 1.5-flash...`);
-      // Nếu 2.0-flash lỗi, thử với 1.5-flash
-      const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      console.warn(`[Transcribe] ⚠️ Gemini 1.5-flash lỗi (${response.status}), thử fallback gemini-1.5-flash-8b...`);
+      // Nếu 1.5-flash lỗi, thử với 1.5-flash-8b
+      const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${apiKey}`;
       const fallbackRes = await fetch(fallbackUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,11 +93,11 @@ QUY TẮC QUAN TRỌNG:
       });
 
       if (!fallbackRes.ok) {
-        const errText = await response.text();
+        const errText = await fallbackRes.text(); // đọc từ fallbackRes, không phải response cũ
         console.error("[Gemini ASR Error]:", errText);
         return NextResponse.json(
-          { error: `Lỗi gọi Gemini API (${response.status}): ${errText}` },
-          { status: response.status }
+          { error: `Lỗi gọi Gemini API (${fallbackRes.status}): ${errText}` },
+          { status: fallbackRes.status }
         );
       }
 
