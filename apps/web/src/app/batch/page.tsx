@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState, useRef } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -125,17 +126,41 @@ export default function BatchPage() {
       <Header />
 
       <main className="flex-1 pt-16 flex flex-col">
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-8 pb-4">
-          <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#dae2fd]/60 text-[#5c647a] text-[11px] font-semibold mb-2 uppercase tracking-wider">
-            <span className="material-symbols-outlined text-[14px]">groups</span>
-            Dành cho nhà tuyển dụng
+        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-7 pb-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] text-[11px] font-bold mb-2 uppercase tracking-wider">
+                <span className="material-symbols-outlined text-[15px] text-[#0037b0]">groups</span>
+                <span>Công cụ dành cho Nhà tuyển dụng / HR / Team Lead</span>
+              </div>
+              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] font-bold text-[#0b1c30] tracking-tight leading-tight">
+                So sánh &amp; Xếp hạng nhiều hồ sơ cho 1 vị trí
+              </h1>
+              <p className="text-[14px] sm:text-[15px] text-[#64748b] mt-1.5 max-w-2xl leading-relaxed">
+                Tải lên đồng thời tối đa 20 CV và cung cấp 1 bản JD. AI sẽ quét và xếp hạng thứ tự phù hợp của các ứng viên theo độ khớp kỹ năng thực tế.
+              </p>
+            </div>
+
+            {/* Quick switcher for job seekers */}
+            <div className="bg-white border border-[#e2e8f0] p-4 rounded-2xl shadow-xs shrink-0 max-w-sm">
+              <div className="flex items-start gap-2.5">
+                <span className="material-symbols-outlined text-[20px] text-[#0037b0] shrink-0 mt-0.5">person_search</span>
+                <div>
+                  <h4 className="text-[13px] font-bold text-[#0b1c30]">Bạn là ứng viên tìm việc?</h4>
+                  <p className="text-[12px] text-[#64748b] mt-0.5 leading-relaxed">
+                    Hãy sử dụng công cụ Đánh giá 1-1 để nhận báo cáo tối ưu CV và câu hỏi phỏng vấn riêng.
+                  </p>
+                  <Link
+                    href="/score"
+                    className="inline-flex items-center gap-1 text-[12px] font-bold text-[#0037b0] hover:underline mt-2"
+                  >
+                    <span>Chuyển sang Đánh giá CV cá nhân</span>
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[36px] font-bold text-[#0b1c30] tracking-tight leading-[44px]">
-            So sánh &amp; xếp hạng nhiều CV cho 1 vị trí
-          </h1>
-          <p className="text-[16px] text-[#565e74] mt-1 leading-[26px] max-w-3xl">
-            Dán 1 bản mô tả công việc, tải lên nhiều CV cùng lúc — hệ thống chạy đúng pipeline AI đang dùng cho từng CV rồi xếp hạng theo điểm phù hợp.
-          </p>
         </section>
 
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-2 flex-1">

@@ -115,6 +115,88 @@ function scoreAnswer(answerText: string, expected: string[]): number {
   return Math.max(0, Math.min(100, lengthScore + keywordScore));
 }
 
+// Bộ câu hỏi phỏng vấn mẫu chất lượng cao cho chế độ Luyện tập Tự do (Demo Mode)
+const PRESET_INTERVIEWS: Record<string, { title: string; questions: ApiQuestion[] }> = {
+  frontend: {
+    title: "Kỹ sư Frontend (React / TypeScript)",
+    questions: [
+      {
+        id: "p_fe_1",
+        category: "Chuyên môn kỹ thuật",
+        duration: "3 phút",
+        weight: "Cao",
+        question: "Khi ứng dụng React bị giật lag do re-render quá nhiều component con, bạn sẽ dùng công cụ nào để chẩn đoán và những kỹ thuật nào để tối ưu hiệu năng?",
+        expected: ["React DevTools Profiler", "useMemo", "useCallback", "React.memo", "tách state xuống component con", "virtualize danh sách lớn"],
+        redFlags: ["Lạm dụng useMemo bừa bãi", "Không biết dùng Profiler"],
+      },
+      {
+        id: "p_fe_2",
+        category: "Kiến trúc & Tối ưu",
+        duration: "3 phút",
+        weight: "Trung bình",
+        question: "Hãy giải thích cách bạn tối ưu chỉ số Core Web Vitals (LCP, INP, CLS) cho một trang web thương mại điện tử hoặc tin tức?",
+        expected: ["Lazy loading hình ảnh", "Tối ưu web font", "Code-splitting qua dynamic import", "Giữ kích thước layout cố định tránh CLS", "CDN và caching"],
+        redFlags: ["Không phân biệt được LCP và CLS", "Chỉ trả lời chung chung"],
+      },
+      {
+        id: "p_fe_3",
+        category: "Xử lý tình huống",
+        duration: "3 phút",
+        weight: "Cao",
+        question: "Khi sản phẩm sắp đến hạn phát hành nhưng phát sinh xung đột giữa nợ kỹ thuật (technical debt) và tính năng mới từ Product Manager, bạn sẽ trao đổi và xử lý thế nào?",
+        expected: ["Trao đổi thẳng thắn với PM", "Phân loại mức độ rủi ro", "Đề xuất MVP khả thi", "Lên kế hoạch refactor sau release"],
+        redFlags: ["Tự ý cắt bớt test không báo", "Bất hợp tác thiếu chuyên nghiệp"],
+      },
+    ],
+  },
+  pm: {
+    title: "Trưởng nhóm Sản phẩm (Product Lead)",
+    questions: [
+      {
+        id: "p_pm_1",
+        category: "Tư duy sản phẩm",
+        duration: "3 phút",
+        weight: "Cao",
+        question: "Làm thế nào bạn quyết định ưu tiên một tính năng mà khách hàng doanh nghiệp lớn đòi hỏi, nhưng tính năng đó lại không nằm trong lộ trình (Roadmap) ban đầu của sản phẩm?",
+        expected: ["Đánh giá tác động doanh thu vs chi phí cơ hội", "Khảo sát tính đại diện cho thị trường", "Khung RICE hoặc MoSCoW", "Đàm phán giải pháp thay thế linh hoạt"],
+        redFlags: ["Ngay lập tức làm theo mà không tính toán", "Từ chối thẳng thừng làm mất khách"],
+      },
+      {
+        id: "p_pm_2",
+        category: "Phân tích dữ liệu",
+        duration: "3 phút",
+        weight: "Cao",
+        question: "Nếu sau khi ra mắt phiên bản mới, chỉ số Retention (tỷ lệ giữ chân người dùng) giảm 15%, các bước cụ thể bạn sẽ thực hiện để tìm nguyên nhân và khắc phục là gì?",
+        expected: ["Phân tích Funnel và Cohort", "Kiểm tra bug kỹ thuật và hiệu năng", "Khảo sát ý kiến người dùng rời bỏ (churn survey)", "A/B test thử nghiệm sửa đổi"],
+        redFlags: ["Đổ lỗi cho đội Dev", "Đoán mò không dựa vào số liệu"],
+      },
+    ],
+  },
+  sales: {
+    title: "Chuyên viên Kinh doanh B2B (Sales Specialist)",
+    questions: [
+      {
+        id: "p_sales_1",
+        category: "Kỹ năng đàm phán",
+        duration: "3 phút",
+        weight: "Cao",
+        question: "Khi khách hàng tiềm năng nhận xét: 'Giải pháp phần mềm của bạn rất hay nhưng giá cao hơn 30% so với đối thủ', bạn sẽ phản hồi và dẫn dắt cuộc đàm phán như thế nào?",
+        expected: ["Tập trung vào ROI và giá trị mang lại", "Làm rõ điểm khác biệt về chất lượng và dịch vụ", "Tùy biến gói triển khai linh hoạt", "Lắng nghe ngân sách thực tế"],
+        redFlags: ["Ngay lập tức giảm giá sâu", "Chê bai đối thủ thiếu chuyên nghiệp"],
+      },
+      {
+        id: "p_sales_2",
+        category: "Quản trị phễu",
+        duration: "3 phút",
+        weight: "Trung bình",
+        question: "Quy trình qualify (xác thực) một khách hàng tiềm năng qua mô hình BANT (Budget, Authority, Need, Timeline) của bạn diễn ra như thế nào?",
+        expected: ["Xác định đúng người có quyền quyết định", "Đánh giá mức độ cấp bách của nỗi đau", "Kiểm tra ngân sách dự toán", "Lộ trình triển khai cụ thể"],
+        redFlags: ["Theo đuổi lead ảo tốn tài nguyên", "Không hỏi về ngân sách"],
+      },
+    ],
+  },
+};
+
 export default function InterviewPage() {
   const router = useRouter();
   const [checkedAuth, setCheckedAuth] = useState(false);
@@ -122,6 +204,8 @@ export default function InterviewPage() {
   const [jobTitle, setJobTitle] = useState("");
   const [analysisJobId, setAnalysisJobId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<ApiQuestion[]>([]);
+  const [isPresetMode, setIsPresetMode] = useState(false);
+  const [activePresetKey, setActivePresetKey] = useState<"frontend" | "pm" | "sales">("frontend");
   const [loadError, setLoadError] = useState("");
 
   const [phase, setPhase] = useState<"intro" | "preparing" | "running" | "saving" | "finished">("intro");
@@ -130,6 +214,7 @@ export default function InterviewPage() {
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION_SEC);
   const [collected, setCollected] = useState<AnswerRecord[]>([]);
   const [saveError, setSaveError] = useState("");
+  const [guestResult, setGuestResult] = useState<{ totalScore: number; answers: AnswerRecord[] } | null>(null);
 
   // Đọc câu hỏi bằng giọng người phỏng vấn — VieNeu-TTS (7 giọng vùng miền),
   // sinh audio local qua worker.py lúc bấm "Bắt đầu", KHÔNG gọi API ngoài.
@@ -145,10 +230,6 @@ export default function InterviewPage() {
   answerDraftRef.current = answerDraft;
 
   // Trả lời bằng giọng nói — tuỳ chọn thêm bên cạnh gõ tay, không bắt buộc.
-  // Dùng model ASR THẬT (PhoWhisper tiếng Việt) chạy 100% trong trình duyệt,
-  // không gọi API ngoài — xem chi tiết ở useVoiceToText.ts / asr-worker.js.
-  // Văn bản nhận diện được nối thêm vào ô trả lời để người dùng vẫn xem/sửa
-  // lại trước khi nộp câu trả lời.
   const handleVoiceResult = useCallback((text: string) => {
     if (!text) return;
     setAnswerDraft((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
@@ -162,58 +243,74 @@ export default function InterviewPage() {
     cancelRecording: cancelVoiceRecording,
   } = useVoiceToText(handleVoiceResult);
 
-  // ── Auth + nạp dữ liệu câu hỏi thật từ kết quả phân tích gần nhất ──────────
+  // ── Auth + nạp dữ liệu câu hỏi (Từ kết quả phân tích CV hoặc Bộ câu hỏi mẫu) ──
   useEffect(() => {
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login?next=/interview");
-        return;
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        setCandidateName(profile?.full_name ?? user.email?.split("@")[0] ?? "");
+      } else {
+        setCandidateName("Bạn");
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
-      setCandidateName(profile?.full_name ?? user.email?.split("@")[0] ?? "");
 
       const raw = sessionStorage.getItem("cf_result");
       const jobId = sessionStorage.getItem("cf_job_id");
-      if (!raw) {
-        setLoadError("Không tìm thấy kết quả phân tích gần nhất trong phiên này. Hãy phân tích CV trước, sau đó mở phiếu phỏng vấn từ trang kết quả.");
-        setCheckedAuth(true);
-        return;
-      }
-      try {
-        const parsed = JSON.parse(raw);
-        const qs: ApiQuestion[] = parsed?.questions ?? [];
-        if (!qs.length) {
-          setLoadError("Kết quả phân tích này không có câu hỏi phỏng vấn gợi ý nào để giả lập.");
-        } else {
-          setQuestions(qs);
+
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          const qs: ApiQuestion[] = parsed?.questions ?? [];
+          if (qs.length > 0) {
+            setQuestions(qs);
+            setJobTitle(parsed?.job_title || "Vị trí ứng tuyển theo CV");
+            setAnalysisJobId(jobId);
+            setIsPresetMode(false);
+            setCheckedAuth(true);
+            return;
+          }
+        } catch {
+          // Bỏ qua lỗi parse, chuyển sang chế độ Preset mẫu
         }
-        setJobTitle(parsed?.job_title || "");
-        setAnalysisJobId(jobId);
-      } catch {
-        setLoadError("Không đọc được dữ liệu kết quả phân tích.");
       }
+
+      // Nếu chưa có kết quả phân tích CV: chuyển sang Chế độ Luyện tập Tự do (Preset)
+      setIsPresetMode(true);
+      const defaultPreset = PRESET_INTERVIEWS.frontend;
+      setQuestions(defaultPreset.questions);
+      setJobTitle(defaultPreset.title);
       setCheckedAuth(true);
     })();
-  }, [router]);
+  }, []);
+
+  function selectPreset(key: "frontend" | "pm" | "sales") {
+    setActivePresetKey(key);
+    const p = PRESET_INTERVIEWS[key];
+    setQuestions(p.questions);
+    setJobTitle(p.title);
+  }
 
   const finishInterview = useCallback(async (finalAnswers: AnswerRecord[]) => {
-    setPhase("saving");
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/login?next=/interview");
-      return;
-    }
-
     const totalScore = finalAnswers.length
       ? Math.round(finalAnswers.reduce((sum, a) => sum + a.question_score, 0) / finalAnswers.length)
       : 0;
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Nếu chưa đăng nhập: Hiển thị kết quả ngay tại chỗ, không bắt buộc redirect sang /login
+    if (!user) {
+      setGuestResult({ totalScore, answers: finalAnswers });
+      setPhase("finished");
+      return;
+    }
+
+    setPhase("saving");
     const submittedCount = finalAnswers.filter((a) => a.outcome === "submitted").length;
     const timeoutCount = finalAnswers.filter((a) => a.outcome === "timeout").length;
     const skippedCount = finalAnswers.filter((a) => a.outcome === "skipped").length;
@@ -241,7 +338,9 @@ export default function InterviewPage() {
       .single();
 
     if (error || !data?.id) {
-      setSaveError("Lưu kết quả phỏng vấn thất bại: " + (error?.message || "unknown"));
+      // Vẫn cho xem kết quả tại chỗ nếu lỗi ghi db
+      setGuestResult({ totalScore, answers: finalAnswers });
+      setSaveError("Không thể lưu trực tuyến: " + (error?.message || "unknown") + " — kết quả hiển thị bên dưới:");
       setPhase("finished");
       return;
     }
@@ -431,48 +530,104 @@ export default function InterviewPage() {
       <Header />
       <main className="flex-1 pt-16 flex flex-col">
         <section className="w-full max-w-3xl mx-auto px-4 lg:px-8 py-10 flex-1">
-          {loadError ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <span className="material-symbols-outlined text-[#ba1a1a] text-[40px] mb-3">error</span>
-              <p className="text-[#0b1c30] font-semibold mb-2">Không thể bắt đầu phỏng vấn</p>
-              <p className="text-[13px] text-[#565e74] mb-6">{loadError}</p>
-              <Link href="/score" className="px-5 py-2.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors">
-                Quay lại trang phân tích
-              </Link>
-            </div>
-          ) : phase === "intro" ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-[#0037b0]/10 flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-[#0037b0] text-[32px]">quiz</span>
-              </div>
-              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] font-bold text-[#0b1c30] mb-2">
-                Giả lập phỏng vấn — {jobTitle || "vị trí ứng tuyển"}
-              </h1>
-              <div className="text-[13px] text-[#565e74] mb-6 text-left bg-[#eff4ff] rounded-xl p-4 space-y-2">
-                <p>
-                  <strong className="text-[#0b1c30]">{questions.length} câu hỏi</strong> được tạo dựa trên khoảng
-                  trống năng lực thật của {candidateName || "bạn"}
-                  {questions.length !== TOTAL_QUESTIONS ? " (kết quả phân tích này chưa đủ 5 câu — hãy phân tích CV lại để có bộ câu hỏi mới nhất)." : "."}
-                  {" "}Mỗi câu có <strong className="text-[#0b1c30]">3 phút (180 giây)</strong> để trả lời.
+          {phase === "intro" ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 sm:p-8">
+              {/* Header Intro */}
+              <div className="text-center max-w-xl mx-auto mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-[#eff4ff] text-[#0037b0] flex items-center justify-center mx-auto mb-3 shadow-xs">
+                  <span className="material-symbols-outlined text-[28px]">record_voice_over</span>
+                </div>
+                <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] sm:text-[26px] font-bold text-[#0b1c30]">
+                  Phòng luyện phỏng vấn AI
+                </h1>
+                <p className="text-[13px] sm:text-[14px] text-[#64748b] mt-1.5 leading-relaxed">
+                  {isPresetMode
+                    ? "Luyện phản xạ phỏng vấn với các câu hỏi tình huống thực tế. Hỗ trợ trả lời bằng giọng nói và chấm điểm tự động."
+                    : `Câu hỏi được AI đối soát và cá nhân hóa theo khoảng trống năng lực trong CV của bạn cho vị trí ${jobTitle}.`}
                 </p>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>Trả lời trong <strong>phút đầu</strong>: điểm được tính đầy đủ.</li>
-                  <li>Trả lời ở <strong>phút 2–3</strong>: điểm giảm dần theo thời gian đã dùng.</li>
-                  <li><strong>Hết giờ</strong> mà chưa nộp: câu đó bị loại, 0 điểm.</li>
-                  <li>Bấm <strong>“Bỏ qua”</strong>: cũng bị mất điểm câu đó (0 điểm), khác với hết giờ.</li>
-                  <li>Có thể <strong>gõ tay</strong> hoặc bấm <strong>micro để trả lời bằng giọng nói</strong> (tự động chuyển thành văn bản) — tuỳ bạn chọn, có thể kết hợp cả hai.</li>
-                </ul>
-                <p>Kết quả (từng câu, điểm, thời gian dùng) sẽ được lưu lại vào hồ sơ để bạn xem lại sau.</p>
               </div>
 
-              <div className="mb-6 text-left">
-                <label className="block text-[12px] font-semibold text-[#565e74] uppercase tracking-wider mb-2">
-                  Giọng đọc câu hỏi (người phỏng vấn)
+              {/* Banner Chế độ Preset nếu chưa phân tích CV */}
+              {isPresetMode && (
+                <div className="mb-6 p-4 rounded-xl bg-[#eff6ff] border border-[#bfdbfe]/60">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px] text-[#0037b0]">tips_and_updates</span>
+                      <span className="text-[13px] font-bold text-[#1e40af]">
+                        Chọn vị trí mẫu để bắt đầu luyện tập:
+                      </span>
+                    </div>
+                    <Link
+                      href="/score"
+                      className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#0037b0] hover:underline"
+                    >
+                      <span>Hoặc tải CV để tạo câu hỏi riêng</span>
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </Link>
+                  </div>
+
+                  {/* Preset Pills */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {(
+                      [
+                        { key: "frontend", label: "Frontend Engineer", icon: "terminal" },
+                        { key: "pm", label: "Product Lead", icon: "view_kanban" },
+                        { key: "sales", label: "Sales B2B", icon: "trending_up" },
+                      ] as const
+                    ).map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => selectPreset(item.key)}
+                        className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all ${
+                          activePresetKey === item.key
+                            ? "bg-white border-[#0037b0] text-[#0037b0] shadow-sm ring-2 ring-[#0037b0]/20 font-bold"
+                            : "bg-white/60 border-[#dce1ff] text-[#475569] hover:bg-white font-medium"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
+                        <span className="text-[12px] truncate">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Thông tin bài thi & Quy chế */}
+              <div className="text-[13px] text-[#475569] mb-6 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between pb-2 border-b border-[#e2e8f0]">
+                  <span className="font-semibold text-[#0b1c30]">
+                    Vị trí: <span className="text-[#0037b0]">{jobTitle}</span>
+                  </span>
+                  <span className="text-[12px] bg-[#e2e8f0] px-2 py-0.5 rounded-md font-medium text-[#475569]">
+                    {questions.length} câu hỏi
+                  </span>
+                </div>
+                <ul className="space-y-1.5 text-[12px] leading-relaxed pt-1">
+                  <li className="flex items-start gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-[#059669] shrink-0 mt-0.5">timer</span>
+                    <span>Mỗi câu có tối đa <strong>3 phút (180s)</strong>. Nộp trong phút đầu để đạt điểm tối ưu.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-[#0037b0] shrink-0 mt-0.5">mic</span>
+                    <span>Bạn có thể <strong>gõ chữ</strong> hoặc bấm micro để <strong>trả lời bằng giọng nói tiếng Việt</strong>.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-[#0284c7] shrink-0 mt-0.5">volume_up</span>
+                    <span>Phỏng vấn viên sẽ tự động đọc câu hỏi bằng giọng nói tự nhiên (VieNeu-TTS).</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Cài đặt Giọng đọc */}
+              <div className="mb-6">
+                <label className="block text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  Giọng đọc phỏng vấn viên (VieNeu-TTS)
                 </label>
                 <select
                   value={selectedVoice}
                   onChange={(e) => setSelectedVoice(e.target.value)}
-                  className="w-full bg-[#eff4ff] rounded-xl px-4 py-2.5 text-[14px] text-[#0b1c30] focus:outline-none"
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#0b1c30] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all"
                 >
                   {VOICE_OPTIONS.map((v) => (
                     <option key={v.code || "none"} value={v.code}>
@@ -480,27 +635,28 @@ export default function InterviewPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-[12px] text-[#9aa0b4] mt-1">
-                  Giọng đọc thật (VieNeu-TTS), sinh cục bộ trên máy chạy worker.py — không gửi câu hỏi lên server ngoài nào.
-                </p>
               </div>
 
-              <button
-                onClick={handleStart}
-                className="px-6 py-3 rounded-xl bg-[#1d4ed8] text-white text-[15px] font-semibold hover:bg-[#0037b0] transition-colors flex items-center gap-2 mx-auto"
-              >
-                <span className="material-symbols-outlined text-[20px]">play_arrow</span>
-                Bắt đầu phỏng vấn
-              </button>
+              <div className="text-center pt-2">
+                <button
+                  onClick={handleStart}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] text-white text-[15px] font-bold hover:shadow-lg hover:shadow-[#0037b0]/25 transition-all flex items-center justify-center gap-2 mx-auto active:scale-[0.99] cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+                  Bắt đầu phỏng vấn ngay
+                </button>
+              </div>
             </div>
           ) : phase === "preparing" ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[32px] mb-3 block">progress_activity</span>
-              <p className="text-[#0b1c30] font-semibold mb-1">Đang chuẩn bị giọng đọc phỏng vấn viên...</p>
-              <p className="text-[13px] text-[#565e74]">Đang sinh giọng đọc câu hỏi đầu tiên (thường ~10 giây). Các câu sau sẽ được sinh tiếp trong lúc bạn trả lời.</p>
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-8 text-center max-w-md mx-auto">
+              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[36px] mb-3 block">progress_activity</span>
+              <p className="text-[#0b1c30] font-bold text-[16px] mb-1">Đang chuẩn bị giọng đọc phỏng vấn viên...</p>
+              <p className="text-[12px] text-[#64748b] leading-relaxed">
+                Đang nạp giọng đọc cho câu hỏi đầu tiên. Quá trình phỏng vấn sẽ bắt đầu sau giây lát.
+              </p>
             </div>
           ) : phase === "running" ? (
-            <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 lg:p-8">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[12px] font-semibold text-[#565e74] uppercase tracking-wider">
                   Câu {currentIndex + 1}/{questions.length} — {questions[currentIndex]?.category}
@@ -628,21 +784,107 @@ export default function InterviewPage() {
               </div>
             </div>
           ) : phase === "saving" ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[32px] mb-3">progress_activity</span>
-              <p className="text-[#0b1c30] font-medium">Đang lưu kết quả phỏng vấn...</p>
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-8 text-center max-w-md mx-auto">
+              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[36px] mb-3 block">progress_activity</span>
+              <p className="text-[#0b1c30] font-bold text-[16px]">Đang phân tích và tổng kết kết quả...</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <span className="material-symbols-outlined text-[#ba1a1a] text-[40px] mb-3">error</span>
-              <p className="text-[#0b1c30] font-semibold mb-2">Có lỗi khi lưu kết quả</p>
-              <p className="text-[13px] text-[#565e74] mb-6">{saveError}</p>
-              <button
-                onClick={() => finishInterview(collected)}
-                className="px-5 py-2.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors"
-              >
-                Thử lưu lại
-              </button>
+            /* Phase: Finished - Bảng tổng kết kết quả phỏng vấn */
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 sm:p-8">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-[#ecfdf5] text-[#059669] flex items-center justify-center mx-auto mb-3 ring-4 ring-[#ecfdf5]">
+                  <span className="material-symbols-outlined text-[32px]">military_tech</span>
+                </div>
+                <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[22px] font-bold text-[#0b1c30]">
+                  Kết quả phỏng vấn thử nghiệm
+                </h2>
+                <p className="text-[13px] text-[#64748b] mt-1">
+                  Vị trí: <strong className="text-[#0b1c30]">{jobTitle}</strong>
+                </p>
+              </div>
+
+              {/* Thẻ điểm tổng */}
+              {guestResult && (
+                <div className="mb-6 p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-extrabold text-[22px] ${
+                      guestResult.totalScore >= 70
+                        ? "bg-[#ecfdf5] text-[#059669]"
+                        : guestResult.totalScore >= 50
+                        ? "bg-[#fffbeb] text-[#d97706]"
+                        : "bg-[#fef2f2] text-[#dc2626]"
+                    }`}>
+                      {guestResult.totalScore}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-[15px] text-[#0b1c30]">
+                        Điểm đánh giá trung bình
+                      </h4>
+                      <p className="text-[12px] text-[#64748b]">
+                        Đã trả lời {guestResult.answers.length} câu hỏi theo thang điểm chuẩn năng lực.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/login?next=/interview"
+                    className="px-4 py-2.5 rounded-xl bg-[#0037b0] hover:bg-[#1d4ed8] text-white text-[13px] font-bold transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">save</span>
+                    Đăng nhập để lưu vào hồ sơ
+                  </Link>
+                </div>
+              )}
+
+              {/* Chi tiết từng câu */}
+              {guestResult && (
+                <div className="space-y-3 mb-6">
+                  <h4 className="font-bold text-[14px] text-[#0b1c30] mb-2">Chi tiết từng câu hỏi:</h4>
+                  {guestResult.answers.map((ans, idx) => (
+                    <div key={idx} className="p-4 rounded-xl border border-[#e2e8f0] bg-white text-[13px]">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <span className="font-semibold text-[#0b1c30]">
+                          Câu {idx + 1}: {ans.question}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                          ans.question_score >= 70
+                            ? "bg-[#ecfdf5] text-[#059669]"
+                            : ans.question_score >= 50
+                            ? "bg-[#fffbeb] text-[#d97706]"
+                            : "bg-[#fef2f2] text-[#dc2626]"
+                        }`}>
+                          {ans.question_score}/100 đ
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-[#64748b] bg-[#f8fafc] p-2.5 rounded-lg border border-[#f1f5f9]">
+                        <strong>Trả lời:</strong> {ans.answer_text || "(Không có nội dung trả lời / đã bỏ qua)"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-[#f1f5f9]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhase("intro");
+                    setGuestResult(null);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#e2e8f0] text-[#475569] hover:bg-[#f8fafc] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">replay</span>
+                  Luyện tập vị trí khác
+                </button>
+                <Link
+                  href="/score"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-bold hover:bg-[#1d4ed8] transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                  Tải CV lên phân tích chuyên sâu
+                </Link>
+              </div>
             </div>
           )}
         </section>

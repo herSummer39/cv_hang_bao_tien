@@ -1,7 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import AuthNav from "@/components/AuthNav";
 
 export default function Header() {
+  const pathname = usePathname();
+
+  const isScoreActive = pathname === "/score" || pathname.startsWith("/score/");
+  const isInterviewActive = pathname === "/interview" || pathname.startsWith("/dashboard/interview");
+  const isBatchActive = pathname === "/batch" || pathname.startsWith("/batch/");
+  const isExploreActive = pathname === "/explore";
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#c4c5d7]/30 shadow-[0_1px_4px_rgba(11,28,48,0.04)]">
       <div className="h-16 w-full max-w-7xl mx-auto px-4 lg:px-8 grid grid-cols-2 md:grid-cols-[auto_1fr_auto] items-center gap-4">
@@ -18,33 +28,63 @@ export default function Header() {
         </div>
 
         {/* Center: Navigation Menu */}
-        <nav className="hidden md:flex items-center justify-center gap-2 h-16">
+        <nav className="hidden md:flex items-center justify-center gap-1.5 h-16">
           <Link
             href="/score"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0037b0]/10 text-[#0037b0] text-[13px] font-bold border border-[#0037b0]/20 hover:bg-[#0037b0]/15 transition-all whitespace-nowrap shadow-xs"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap ${
+              isScoreActive
+                ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 shadow-xs"
+                : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0b1c30]"
+            }`}
           >
-            <span className="material-symbols-outlined text-[17px] text-[#0037b0]">upload_file</span>
+            <span className={`material-symbols-outlined text-[17px] ${isScoreActive ? "text-[#0037b0]" : "text-[#64748b]"}`}>
+              upload_file
+            </span>
             <span>Đánh giá CV</span>
           </Link>
+
           <Link
             href="/interview"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[#334155] text-[13px] font-medium hover:bg-[#f1f5f9] hover:text-[#0b1c30] transition-all whitespace-nowrap"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap ${
+              isInterviewActive
+                ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 shadow-xs"
+                : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0b1c30]"
+            }`}
           >
-            <span className="material-symbols-outlined text-[17px] text-[#64748b]">record_voice_over</span>
+            <span className={`material-symbols-outlined text-[17px] ${isInterviewActive ? "text-[#0037b0]" : "text-[#64748b]"}`}>
+              record_voice_over
+            </span>
             <span>Phỏng vấn AI</span>
           </Link>
+
           <Link
             href="/batch"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[#334155] text-[13px] font-medium hover:bg-[#f1f5f9] hover:text-[#0b1c30] transition-all whitespace-nowrap"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap ${
+              isBatchActive
+                ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 shadow-xs"
+                : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0b1c30]"
+            }`}
           >
-            <span className="material-symbols-outlined text-[17px] text-[#64748b]">compare_arrows</span>
+            <span className={`material-symbols-outlined text-[17px] ${isBatchActive ? "text-[#0037b0]" : "text-[#64748b]"}`}>
+              compare_arrows
+            </span>
             <span>So sánh CV</span>
+            <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-[#eff4ff] text-[#0037b0] border border-[#dce1ff]">
+              HR
+            </span>
           </Link>
+
           <Link
             href="/explore"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[#334155] text-[13px] font-medium hover:bg-[#f1f5f9] hover:text-[#0b1c30] transition-all whitespace-nowrap"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap ${
+              isExploreActive
+                ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 shadow-xs"
+                : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0b1c30]"
+            }`}
           >
-            <span className="material-symbols-outlined text-[17px] text-[#64748b]">explore</span>
+            <span className={`material-symbols-outlined text-[17px] ${isExploreActive ? "text-[#0037b0]" : "text-[#64748b]"}`}>
+              explore
+            </span>
             <span>Khám phá</span>
           </Link>
         </nav>

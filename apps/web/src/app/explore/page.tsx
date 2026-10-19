@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -192,6 +193,25 @@ export default function ExplorePage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* CTA Liên kết sang Đánh giá CV */}
+            <div className="mt-8 p-5 rounded-2xl bg-gradient-to-r from-[#eff6ff] to-[#f0fdf4] border border-[#bfdbfe]/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h4 className="font-bold text-[15px] text-[#0b1c30]">
+                  CV của bạn đã đáp ứng bao nhiêu % kỹ năng ngành {activeIndustry.name}?
+                </h4>
+                <p className="text-[12px] text-[#64748b] mt-0.5">
+                  Tải lên hồ sơ để AI đối soát tự động với bộ từ khóa chuyên môn của ngành này.
+                </p>
+              </div>
+              <Link
+                href="/score"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0037b0] hover:bg-[#1d4ed8] text-white text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs"
+              >
+                <span>Đối soát CV ngay</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </Link>
             </div>
           </div>
         </section>
