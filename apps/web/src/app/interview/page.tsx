@@ -444,8 +444,10 @@ export default function InterviewPage() {
       setAudioJobId(job.id);
       setAudioJobActive(true);
 
-      // Chỉ chờ audio CÂU 1 (tối đa 60s). Các câu sau poll tiếp trong nền.
-      const deadline = Date.now() + 60_000;
+      // Chờ audio CÂU 1 tối đa 5s (ping nhanh). Nếu worker.py không có mặt
+      // (môi trường Vercel) sẽ vào phòng phỏng vấn ngay, không chờ thêm.
+      // Các câu sau poll tiếp trong nền qua useEffect bên dưới.
+      const deadline = Date.now() + 5_000;
       while (Date.now() < deadline) {
         const { data: row } = await supabase
           .from("interview_audio_jobs")
