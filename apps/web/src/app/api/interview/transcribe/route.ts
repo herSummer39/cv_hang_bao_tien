@@ -1,22 +1,16 @@
 import { NextResponse } from "next/server";
 
 /**
- * @deprecated Audio-based Gemini STT has been deprecated in favor of client-side Web Speech API.
- * Web Speech API provides 0ms real-time latency, zero audio token consumption, and native Vietnamese transcription.
+ * @deprecated Endpoint nhận file audio đã ngừng dùng. Nhận diện giọng nói chạy
+ * trực tiếp trên trình duyệt bằng Web Speech API (xem hooks/useSpeechRecognition.ts),
+ * không còn upload audio hay gọi bất kỳ API ngoài nào.
  */
 export async function POST() {
-  try {
-    return NextResponse.json(
-      {
-        message: "Gemini Audio STT is deprecated. Please use client-side Web Speech API via useSpeechRecognition hook.",
-        text: "",
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal Server Error" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      message: "Audio STT endpoint is disabled. Use client-side Web Speech API (useSpeechRecognition).",
+      text: "",
+    },
+    { status: 200 }
+  );
 }

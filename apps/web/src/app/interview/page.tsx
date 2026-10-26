@@ -1,11 +1,12 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { normalizeTranscriptWithContext, type QuestionContext } from "@/utils/dynamicSpeechNormalizer";
 
 const TIME_PER_QUESTION_SEC = 180; // 3 phút / câu
 const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ, không giảm
@@ -33,7 +34,30 @@ type ApiQuestion = {
   question: string;
   expected: string[];
   redFlags: string[];
+  // Metadata tuỳ chọn từ ngân hàng câu hỏi (interview_questions) — dùng cho
+  // chuẩn hóa thuật ngữ phiên âm và chấm điểm theo rubric.
+  skill?: string;
+  skill_tag?: string;
+  sample_answer?: string;
 };
+
+// Lấy tên kỹ năng khớp/thiếu từ kết quả phân tích CV↔JD (chuỗi hoặc {name}).
+function extractSkillNames(parsed: unknown): string[] {
+  const p = parsed as { matched_skills?: unknown; missing_skills?: unknown } | null;
+  const toNames = (v: unknown): string[] =>
+    Array.isArray(v)
+      ? v
+          .map((x) =>
+            typeof x === "string"
+              ? x
+              : typeof x === "object" && x !== null && typeof (x as { name?: unknown }).name === "string"
+              ? (x as { name: string }).name
+              : ""
+          )
+          .filter(Boolean)
+      : [];
+  return [...toNames(p?.matched_skills), ...toNames(p?.missing_skills)];
+}
 
 type AnswerOutcome = "submitted" | "timeout" | "skipped";
 
@@ -218,6 +242,7 @@ export default function InterviewPage() {
   // Trạng thái phát âm của VietTTS (State Lock) và trạng thái đánh giá LLM
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [jdSkills, setJdSkills] = useState<string[]>([]);
 
   // Web Speech API Hook — nhận diện giọng nói native với latency 0ms
   const {
@@ -238,41 +263,49 @@ export default function InterviewPage() {
     answerDraftRef.current = answerDraft;
   }, [answerDraft]);
 
-  // Tự động nối kết quả nhận diện hoàn chỉnh vào văn bản answerDraft
+  // Ngữ cảnh câu hỏi đang trả lời — nguồn từ vựng đích cho bộ chuẩn hóa động
+  // (đúng cho cả 17 ngành vì lấy từ metadata của chính câu hỏi).
+  const questionContext = useMemo<QuestionContext>(() => {
+    const q = questions[currentIndex];
+    return {
+      question: q?.question,
+      skill_tag: q?.skill ?? q?.skill_tag,
+      expected: q?.expected,
+      sample_answer: q?.sample_answer,
+      red_flags: q?.redFlags,
+      jd_skills: jdSkills,
+    };
+  }, [questions, currentIndex, jdSkills]);
+  const questionContextRef = useRef<QuestionContext>(questionContext);
+  useEffect(() => {
+    questionContextRef.current = questionContext;
+  }, [questionContext]);
+
+  // Chữ đang nói (interim) cũng được chuẩn hóa để ứng viên thấy đúng thuật ngữ ngay lập tức
+  const normalizedInterim = useMemo(
+    () => normalizeTranscriptWithContext(interimTranscript, questionContext),
+    [interimTranscript, questionContext]
+  );
+
+  // Tự động nối kết quả nhận diện hoàn chỉnh vào answerDraft — đã chuẩn hóa thuật ngữ phiên âm
   useEffect(() => {
     if (!transcript) return;
     const added = transcript.slice(prevTranscriptRef.current.length);
     if (added) {
-      setAnswerDraft((prev) => (prev ? `${prev.trim()} ${added.trim()}` : added.trim()));
+      const normalized = normalizeTranscriptWithContext(added.trim(), questionContextRef.current);
+      setAnswerDraft((prev) => (prev ? `${prev.trim()} ${normalized}` : normalized));
       prevTranscriptRef.current = transcript;
     }
   }, [transcript]);
 
-  // State Lock: Khi VietTTS audio đang phát ra loa, khóa hoặc tạm dừng microphone
-  useEffect(() => {
-    const el = questionAudioRef.current;
-    if (!el) return;
-
-    const onPlay = () => {
-      setIsSpeaking(true);
-      stopListening();
-    };
-    const onEnded = () => setIsSpeaking(false);
-    const onPause = () => setIsSpeaking(false);
-    const onError = () => setIsSpeaking(false);
-
-    el.addEventListener("play", onPlay);
-    el.addEventListener("ended", onEnded);
-    el.addEventListener("pause", onPause);
-    el.addEventListener("error", onError);
-
-    return () => {
-      el.removeEventListener("play", onPlay);
-      el.removeEventListener("ended", onEnded);
-      el.removeEventListener("pause", onPause);
-      el.removeEventListener("error", onError);
-    };
-  }, [stopListening]);
+  // Echo Prevention Lock: khi VietTTS đang phát câu hỏi ra loa, tắt micro để
+  // không thu lại giọng AI. Gắn qua props của <audio> (phần tử này chỉ render
+  // khi có URL nên không thể gắn listener qua ref lúc mount).
+  const handleQuestionAudioPlay = () => {
+    setIsSpeaking(true);
+    if (isListening) stopListening();
+  };
+  const handleQuestionAudioStop = () => setIsSpeaking(false);
 
   // Auth + nạp dữ liệu câu hỏi (Từ kết quả phân tích CV hoặc Bộ câu hỏi mẫu)
   useEffect(() => {
@@ -301,6 +334,7 @@ export default function InterviewPage() {
             setQuestions(qs);
             setJobTitle(parsed?.job_title || "Vị trí ứng tuyển theo CV");
             setAnalysisJobId(jobId);
+            setJdSkills(extractSkillNames(parsed));
             setIsPresetMode(false);
             setCheckedAuth(true);
             return;
@@ -378,6 +412,7 @@ export default function InterviewPage() {
 
   const advanceToNext = useCallback((record: AnswerRecord) => {
     stopListening();
+    setIsSpeaking(false);
     resetTranscript();
     prevTranscriptRef.current = "";
 
@@ -411,14 +446,12 @@ export default function InterviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: q.question,
-          answerText,
-          expected: q.expected,
-          jdSkills: questions.map((item) => item.category),
-          cvSkills: [],
-          conversationHistory: collected.map((c) => ({
-            role: "candidate",
-            content: `Câu hỏi: ${c.question}\nTrả lời: ${c.answer_text}`,
-          })),
+          answer: answerText,
+          expected: q.expected || [],
+          sample_answer: q.sample_answer || "",
+          red_flags: q.redFlags || [],
+          skill_tag: q.skill || q.skill_tag || "",
+          jd_skills: jdSkills || [],
         }),
       });
 
@@ -788,7 +821,14 @@ export default function InterviewPage() {
 
               {audioUrls?.[currentIndex] && (
                 <div className="mb-4 flex items-center gap-2">
-                  <audio ref={questionAudioRef} className="hidden" />
+                  <audio
+                    ref={questionAudioRef}
+                    className="hidden"
+                    onPlay={handleQuestionAudioPlay}
+                    onEnded={handleQuestionAudioStop}
+                    onPause={handleQuestionAudioStop}
+                    onError={handleQuestionAudioStop}
+                  />
                   <button
                     type="button"
                     onClick={() => {
@@ -826,7 +866,7 @@ export default function InterviewPage() {
                     <span className="material-symbols-outlined text-[18px] text-[#0037b0] animate-pulse">mic</span>
                     <span className="font-semibold text-[#0037b0] shrink-0">Đang nghe trực tiếp:</span>
                     <span className="italic truncate text-[#1d4ed8]">
-                      {interimTranscript || "Đang chờ giọng nói của bạn (0ms latency)..."}
+                      {normalizedInterim || "Đang chờ giọng nói của bạn (0ms latency)..."}
                     </span>
                   </div>
                   <span className="text-[11px] font-semibold text-[#2563eb] bg-[#dbeafe] px-2 py-0.5 rounded-md shrink-0">

@@ -1,176 +1,325 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  normalizeTranscriptWithContext,
+  stripDiacritics,
+} from "@/utils/dynamicSpeechNormalizer";
 
-interface EvaluateRequest {
-  question: string;
-  answerText: string;
-  expected?: string[];
-  jdSkills?: string[];
-  cvSkills?: string[];
-  conversationHistory?: Array<{ role: "interviewer" | "candidate"; content: string }>;
+/**
+ * POST /api/interview/evaluate
+ * Chấm câu trả lời phỏng vấn 100% cục bộ (không gọi LLM/API ngoài), chạy được
+ * trên Next.js / Vercel Serverless và đúng cho cả 17 nhóm ngành vì mọi tiêu chí
+ * đều lấy từ metadata của chính câu hỏi (expected / sample_answer / red_flags).
+ *
+ * Thang điểm 0–100:
+ *   A. Phủ rubric expected[]              65đ (85đ nếu không có sample_answer)
+ *   B. Tương đồng sample_answer (cosine)  20đ
+ *   C. Độ sâu, ví dụ cụ thể, lập luận      15đ
+ *   D. Vi phạm red_flags[]                 −15đ / lỗi
+ */
+
+interface EvaluateBody {
+  question?: string;
+  answer?: string;
+  /** Tên cũ — giữ để tương thích ngược. */
+  answerText?: string;
+  expected?: unknown;
+  sample_answer?: string;
+  red_flags?: unknown;
+  skill_tag?: string;
+  jd_skills?: unknown;
 }
 
-function stripAccents(s: string): string {
-  return s
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
+// ─── Hàm hỗ trợ NLP tiếng Việt ───────────────────────────────────────────────
+
+const FILLERS = new Set(["ờ", "à", "ừm", "thì", "là", "mà", "của", "những", "các"]);
+
+// Hư từ / từ chỉ thị (đã bỏ dấu) — không mang nội dung khi so khớp tiêu chí.
+const STOP = new Set([
+  "va", "voi", "de", "cho", "co", "duoc", "trong", "khi", "nhu", "mot", "nay",
+  "do", "cac", "nhung", "ban", "hay", "nen", "can", "phai", "neu", "ro", "da",
+  "se", "rat", "la", "thi", "ma", "cua", "o", "a", "um", "khong", "vao", "ra",
+  "den", "tu", "theo", "tren", "duoi", "cung", "hoac", "bang", "tai", "ve",
+]);
+
+function normalizeVi(str: string): string {
+  return (str || "")
+    .normalize("NFC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}+#\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function calculateHeuristicScore(answerText: string, expected: string[] = []): number {
-  const trimmed = answerText.trim();
-  if (trimmed.length === 0) return 0;
+function stripAccent(str: string): string {
+  return stripDiacritics(str);
+}
 
-  const lengthScore = Math.min(30, Math.floor(trimmed.length / 10) * 3);
-  if (!expected || expected.length === 0) {
-    return Math.min(100, lengthScore + Math.min(40, Math.floor(trimmed.length / 15) * 4));
+/** Tách từ sau khi bỏ từ đệm (giữ dấu). */
+function tokenizeWords(str: string): string[] {
+  return normalizeVi(str)
+    .split(" ")
+    .filter((w) => w && !FILLERS.has(w));
+}
+
+/** Token nội dung, bỏ dấu, bỏ hư từ — dùng để so khớp. */
+function contentTokens(str: string): string[] {
+  return tokenizeWords(str)
+    .map(stripAccent)
+    .filter((t) => t.length >= 2 && !STOP.has(t));
+}
+
+function extractNgrams(words: string[], n: number): string[] {
+  const out: string[] = [];
+  for (let i = 0; i + n <= words.length; i++) out.push(words.slice(i, i + n).join(" "));
+  return out;
+}
+
+function tokenFound(token: string, set: Set<string>, tokens: string[]): boolean {
+  if (set.has(token)) return true;
+  if (token.length < 5) return false;
+  // Khớp gốc từ (vd "toi uu" ~ "toi uu hoa", "refactor" ~ "refactoring")
+  return tokens.some((a) => a.length >= 5 && (a.startsWith(token) || token.startsWith(a)));
+}
+
+/**
+ * Mức độ câu trả lời đáp ứng 1 tiêu chí (0.0 → 1.0): kết hợp chứa nguyên cụm,
+ * trùng token không dấu, và độ phủ bigram.
+ */
+function computeCriterionMatchScore(answerText: string, criterionText: string): number {
+  const ansNorm = stripAccent(normalizeVi(answerText));
+  const critNorm = stripAccent(normalizeVi(criterionText));
+  if (!ansNorm || !critNorm) return 0;
+  if (ansNorm.includes(critNorm)) return 1;
+
+  const ansTokens = contentTokens(answerText);
+  const ansSet = new Set(ansTokens);
+  const ansBigrams = new Set(extractNgrams(ansTokens, 2));
+
+  // Ý chính: tách tiêu chí theo , ; / hoặc - ( ) :
+  const concepts = criterionText
+    .split(/[,;/()\-–:]|\s+hoặc\s+/i)
+    .map((c) => c.trim())
+    .filter(Boolean);
+  const conceptScores: number[] = [];
+  for (const concept of concepts) {
+    const toks = contentTokens(concept);
+    if (toks.length === 0) continue;
+    if (ansNorm.includes(stripAccent(normalizeVi(concept)))) {
+      conceptScores.push(1);
+      continue;
+    }
+    const found = toks.filter((t) => tokenFound(t, ansSet, ansTokens)).length;
+    conceptScores.push(found / toks.length);
   }
+  const conceptCoverage = conceptScores.length
+    ? conceptScores.reduce((a, b) => a + b, 0) / conceptScores.length
+    : 0;
 
-  const answerNorm = stripAccents(trimmed);
-  const matched = expected.filter((k) => answerNorm.includes(stripAccents(k)));
-  const keywordScore = Math.round((matched.length / expected.length) * 70);
+  const critTokens = contentTokens(criterionText);
+  const overlapAll = critTokens.length
+    ? critTokens.filter((t) => tokenFound(t, ansSet, ansTokens)).length / critTokens.length
+    : 0;
 
-  return Math.max(0, Math.min(100, lengthScore + keywordScore));
+  const critBigrams = extractNgrams(critTokens, 2);
+  const bigramCoverage = critBigrams.length
+    ? critBigrams.filter((g) => ansBigrams.has(g)).length / critBigrams.length
+    : overlapAll;
+
+  return Math.min(1, Math.max(0, 0.45 * conceptCoverage + 0.35 * overlapAll + 0.2 * bigramCoverage));
 }
+
+function termFrequency(text: string): Map<string, number> {
+  const toks = contentTokens(text);
+  const tf = new Map<string, number>();
+  for (const t of [...toks, ...extractNgrams(toks, 2)]) tf.set(t, (tf.get(t) ?? 0) + 1);
+  return tf;
+}
+
+/** Cosine similarity trên vector TF của unigram + bigram. */
+function computeCosineSimilarity(textA: string, textB: string): number {
+  const a = termFrequency(textA);
+  const b = termFrequency(textB);
+  if (a.size === 0 || b.size === 0) return 0;
+  let dot = 0;
+  for (const [t, c] of a) dot += c * (b.get(t) ?? 0);
+  let na = 0;
+  for (const c of a.values()) na += c * c;
+  let nb = 0;
+  for (const c of b.values()) nb += c * c;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb) || 1);
+}
+
+function clamp01(x: number): number {
+  return Math.min(1, Math.max(0, x));
+}
+
+function asStringArray(v: unknown): string[] {
+  return Array.isArray(v)
+    ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((x) => x.trim())
+    : [];
+}
+
+// ─── Độ sâu & lập luận ───────────────────────────────────────────────────────
+
+const REASONING_MARKERS = [
+  "ví dụ", "cụ thể", "kết quả", "giải pháp", "nguyên nhân", "bởi vì",
+  "kinh nghiệm", "dự án",
+];
+
+function computeDepthScore(text: string): number {
+  const words = tokenizeWords(text).length;
+  const lengthFactor = words < 5 ? 0 : words < 10 ? 0.2 : words < 25 ? 0.2 + (0.8 * (words - 10)) / 15 : 1;
+  const norm = normalizeVi(text);
+  let markers = REASONING_MARKERS.filter((m) => norm.includes(m)).length;
+  if (/\d/.test(text) || text.includes("%")) markers += 1;
+  const markerFactor = Math.min(1, markers / 3);
+  return 15 * (0.7 * lengthFactor + 0.3 * markerFactor);
+}
+
+function shorten(s: string, max = 90): string {
+  return s.length > max ? `${s.slice(0, max - 1).trim()}…` : s;
+}
+
+function listItems(items: string[], max = 3): string {
+  return items.slice(0, max).map((i) => `“${shorten(i)}”`).join("; ");
+}
+
+// ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as EvaluateRequest;
-    const { question, answerText, expected = [], jdSkills = [], cvSkills = [], conversationHistory = [] } = body;
+    const body = (await req.json()) as EvaluateBody;
+    const question = (body.question || "").trim();
+    const answer = (body.answer ?? body.answerText ?? "").trim();
+    const expected = asStringArray(body.expected);
+    const redFlags = asStringArray(body.red_flags);
+    const jdSkills = asStringArray(body.jd_skills);
+    const sampleAnswer = (body.sample_answer || "").trim();
+    const skillTag = (body.skill_tag || "").trim();
 
     if (!question) {
       return NextResponse.json({ error: "Thiếu trường 'question' trong request body" }, { status: 400 });
     }
 
-    const trimmedAnswer = (answerText || "").trim();
-    if (!trimmedAnswer) {
+    if (!answer) {
       return NextResponse.json({
         score: 0,
-        feedback: "Ứng viên chưa cung cấp câu trả lời hoặc đã bỏ qua câu hỏi này.",
         correctedText: "",
-        strengths: [],
-        improvements: ["Cần chủ động đưa ra câu trả lời dựa trên kinh nghiệm thực tế."],
-        nextQuestion: "Bạn có thể chia sẻ một dự án tiêu biểu mà bạn từng tham gia không?",
+        feedback: "Nhận xét tổng quan: Bạn chưa đưa ra câu trả lời nào cho câu hỏi này.",
+        matchedExpected: [],
+        missingExpected: expected,
+        triggeredRedFlags: [],
       });
     }
 
-    // Gộp và làm sạch danh sách kỹ năng theo ngữ cảnh JD/CV
-    const combinedSkills = Array.from(
-      new Set(
-        [...jdSkills, ...cvSkills, ...expected].filter((s) => typeof s === "string" && s.trim().length > 0)
-      )
-    );
-    const skillsListText =
-      combinedSkills.length > 0
-        ? combinedSkills.join(", ")
-        : "React, Next.js, TypeScript, JavaScript, Python, FastAPI, Docker, PostgreSQL, MySQL, Redis, AWS, Git, CI/CD, OOP, REST API";
-
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-
-    // Nếu không có API Key, dùng heuristic scoring dự phòng
-    if (!apiKey) {
-      const fallbackScore = calculateHeuristicScore(trimmedAnswer, expected);
-      return NextResponse.json({
-        score: fallbackScore,
-        feedback: `Câu trả lời có độ dài ${trimmedAnswer.length} ký tự. Đã nhận diện các từ khoá chuyên môn cơ bản.`,
-        correctedText: trimmedAnswer,
-        strengths: ["Phản hồi kịp thời trong thời gian quy định."],
-        improvements: ["Có thể mở rộng thêm ví dụ dự án thực tế và số liệu định lượng."],
-        nextQuestion: "Bạn đã từng xử lý khó khăn kỹ thuật nào tương tự trong thực tế chưa?",
-      });
-    }
-
-    // Prompt chuẩn hóa và chấm điểm với STT Correction
-    const systemPrompt = `Bạn là chuyên gia phỏng vấn kỹ thuật và tuyển dụng nhân sự cấp cao.
-
-LƯU Ý QUAN TRỌNG VỀ DỮ LIỆU ĐẦU VÀO (STT CORRECTION):
-Câu trả lời của ứng viên được ghi nhận qua Web Speech API (tiếng Việt 'vi-VN'). Do đó, các thuật ngữ chuyên ngành tiếng Anh (ví dụ: React, Next.js, FastAPI, PostgreSQL, Docker, SOLID, OOP, hoặc các kỹ năng trong JD/CV: ${skillsListText}) có thể bị phiên âm sang tiếng Việt (ví dụ: "rì ác", "phát a pi ai", "pốt gre", v.v.) hoặc sai chính tả nhẹ.
-Nhiệm vụ của bạn:
-1. Tự động suy luận và chuẩn hóa ngầm các từ bị phiên âm về đúng thuật ngữ chuyên ngành dựa theo ngữ cảnh câu hỏi và danh sách kỹ năng (${skillsListText}).
-2. Tuyệt đối KHÔNG trừ điểm ứng viên vì lỗi phiên âm của công cụ Speech-to-Text.
-3. Đánh giá câu trả lời công tâm, đưa ra nhận xét ngắn gọn và sinh câu hỏi phỏng vấn tiếp theo.
-
-THÔNG TIN ĐẦU VÀO:
-- Câu hỏi phỏng vấn: ${question}
-- Tiêu chí kỳ vọng (Rubric): ${expected.join("; ") || "Chưa có rubric cụ thể"}
-- Kỹ năng mục tiêu (JD/CV): ${skillsListText}
-- Câu trả lời của ứng viên: "${trimmedAnswer}"
-${
-  conversationHistory.length > 0
-    ? `- Lịch sử các lượt trước: ${JSON.stringify(conversationHistory.slice(-4))}`
-    : ""
-}
-
-HÃY ĐÁNH GIÁ VÀ TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON (không bọc trong markdown code block, không thêm văn bản ngoài):
-{
-  "score": <Điểm từ 0 đến 100, số nguyên>,
-  "feedback": "<Nhận xét công tâm, súc tích trong 2-3 câu về câu trả lời>",
-  "correctedText": "<Văn bản câu trả lời sau khi chuẩn hóa thuật ngữ tiếng Anh>",
-  "strengths": ["<Điểm mạnh 1>", "<Điểm mạnh 2>"],
-  "improvements": ["<Điểm cần cải thiện 1>"],
-  "nextQuestion": "<1 câu hỏi phỏng vấn tiếp theo gợi mở, bám sát chuyên môn>"
-}`;
-
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-    const res = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: systemPrompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 1024,
-        },
-      }),
+    // 1. Chuẩn hóa thuật ngữ bị phiên âm theo ngữ cảnh câu hỏi
+    const correctedText = normalizeTranscriptWithContext(answer, {
+      question,
+      skill_tag: skillTag,
+      expected,
+      sample_answer: sampleAnswer,
+      red_flags: redFlags,
+      jd_skills: jdSkills,
     });
 
-    if (!res.ok) {
-      console.warn(`[Evaluate] Gemini API returned status ${res.status}, using heuristic fallback.`);
-      const fallbackScore = calculateHeuristicScore(trimmedAnswer, expected);
-      return NextResponse.json({
-        score: fallbackScore,
-        feedback: "Đánh giá sơ bộ dựa trên độ phù hợp của từ khóa chuyên môn với câu hỏi.",
-        correctedText: trimmedAnswer,
-        strengths: ["Trả lời đúng trọng tâm câu hỏi"],
-        improvements: ["Nên bổ sung thêm tình huống thực tế để tăng tính thuyết phục."],
-        nextQuestion: "Bạn có thể chia sẻ thêm giải pháp thay thế cho tình huống này không?",
-      });
+    // 2. Trọng số theo dữ liệu rubric thực có của câu hỏi
+    const hasExpected = expected.length > 0;
+    const hasSample = sampleAnswer.length > 0;
+    const weightA = hasExpected ? (hasSample ? 65 : 85) : 0;
+    const weightB = hasSample ? (hasExpected ? 20 : 70) : 0;
+    const weightRel = !hasExpected && !hasSample ? 55 : !hasExpected ? 15 : 0;
+    const weightSkill = !hasExpected && !hasSample ? 30 : 0;
+
+    // A. Phủ rubric expected[]
+    const matchedExpected: string[] = [];
+    const partiallyMatched: string[] = [];
+    const missingExpected: string[] = [];
+    let creditSum = 0;
+    for (const item of expected) {
+      const m = computeCriterionMatchScore(correctedText, item);
+      if (m >= 0.42) {
+        matchedExpected.push(item);
+        creditSum += 1;
+      } else if (m >= 0.22) {
+        partiallyMatched.push(item);
+        creditSum += 0.5;
+      } else {
+        missingExpected.push(item);
+      }
+    }
+    const rubricPoints = hasExpected ? weightA * (creditSum / expected.length) : 0;
+
+    // B. Tương đồng sample_answer: [0.10 → 0.65] → [0 → weightB]
+    let samplePoints = 0;
+    if (hasSample) {
+      const sim = computeCosineSimilarity(correctedText, sampleAnswer);
+      samplePoints = weightB * clamp01((sim - 0.1) / (0.65 - 0.1));
     }
 
-    const data = await res.json();
-    const rawOutput = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-
-    // Làm sạch JSON markdown fence nếu có
-    const cleanedJson = rawOutput
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    try {
-      const parsed = JSON.parse(cleanedJson);
-      return NextResponse.json({
-        score: typeof parsed.score === "number" ? Math.max(0, Math.min(100, Math.round(parsed.score))) : calculateHeuristicScore(trimmedAnswer, expected),
-        feedback: parsed.feedback || "Câu trả lời đáp ứng tốt yêu cầu câu hỏi.",
-        correctedText: parsed.correctedText || trimmedAnswer,
-        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
-        nextQuestion: parsed.nextQuestion || "Bạn có muốn bổ sung thêm chi tiết nào không?",
-      });
-    } catch {
-      // Fallback nếu output LLM không đúng định dạng JSON
-      const fallbackScore = calculateHeuristicScore(trimmedAnswer, expected);
-      return NextResponse.json({
-        score: fallbackScore,
-        feedback: rawOutput.slice(0, 300) || "Câu trả lời đã được ghi nhận.",
-        correctedText: trimmedAnswer,
-        strengths: [],
-        improvements: [],
-        nextQuestion: "Bạn có câu hỏi nào cho người phỏng vấn không?",
-      });
+    // R. Không có rubric đầy đủ → dùng độ liên quan tới câu hỏi + kỹ năng mục tiêu
+    let relevancePoints = 0;
+    if (weightRel > 0) {
+      const rel = clamp01((computeCosineSimilarity(correctedText, question) - 0.05) / 0.35);
+      relevancePoints += weightRel * rel;
     }
+    if (weightSkill > 0) {
+      const skills = [skillTag, ...jdSkills].filter(Boolean);
+      const cov = skills.length
+        ? skills.filter((s) => computeCriterionMatchScore(correctedText, s) >= 0.42).length / skills.length
+        : 0.5;
+      relevancePoints += weightSkill * cov;
+    }
+
+    // C. Độ sâu, ví dụ cụ thể, lập luận
+    const depthPoints = computeDepthScore(correctedText);
+
+    // D. Vi phạm red_flags[]
+    const triggeredRedFlags = redFlags.filter(
+      (flag) => computeCriterionMatchScore(correctedText, flag) >= 0.6
+    );
+    const penalty = triggeredRedFlags.length * 15;
+
+    const score = Math.round(
+      Math.min(100, Math.max(0, rubricPoints + samplePoints + relevancePoints + depthPoints - penalty))
+    );
+
+    // 3. Nhận xét tiếng Việt
+    const tier =
+      score >= 80
+        ? "Xuất sắc, bạn nắm vững chuyên môn."
+        : score >= 60
+        ? "Khá tốt, bạn đi đúng trọng tâm."
+        : score >= 40
+        ? "Bạn đã chạm tới một số ý cơ bản nhưng cần đào sâu hơn."
+        : "Câu trả lời còn sơ sài hoặc chưa trúng trọng tâm.";
+
+    const parts = [`Nhận xét tổng quan: ${tier}`];
+    if (matchedExpected.length) {
+      parts.push(`Điểm mạnh: Bạn đã đề cập tốt các ý trọng tâm: ${listItems(matchedExpected)}.`);
+    }
+    const toImprove = [...partiallyMatched, ...missingExpected];
+    if (toImprove.length) {
+      parts.push(`Điểm cần bổ sung: Để câu trả lời thuyết phục hơn, bạn nên làm rõ thêm: ${listItems(toImprove)}.`);
+    }
+    if (triggeredRedFlags.length) {
+      parts.push(`Cảnh báo: Lưu ý tránh: ${listItems(triggeredRedFlags)}.`);
+    }
+    if (tokenizeWords(correctedText).length < 10) {
+      parts.push("Gợi ý: Hãy trả lời chi tiết hơn, nêu ví dụ cụ thể hoặc số liệu từ kinh nghiệm thực tế.");
+    }
+    if (correctedText !== answer) {
+      parts.push("Ghi chú: Hệ thống đã tự chuẩn hóa các thuật ngữ bị phiên âm bằng giọng nói; bạn không bị trừ điểm vì lỗi nhận diện.");
+    }
+
+    return NextResponse.json({
+      score,
+      correctedText,
+      feedback: parts.join("\n"),
+      matchedExpected,
+      missingExpected,
+      triggeredRedFlags,
+      partiallyMatched,
+    });
   } catch (error) {
     console.error("[Interview Evaluate Route Error]:", error);
     return NextResponse.json(
