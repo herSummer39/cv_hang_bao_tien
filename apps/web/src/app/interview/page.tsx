@@ -5,12 +5,11 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/client";
-import { useVoiceToText } from "./useVoiceToText";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 const TIME_PER_QUESTION_SEC = 180; // 3 phút / câu
 const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ, không giảm
 const MIN_TIME_MULTIPLIER = 0.5; // sàn giảm điểm ở cuối phút thứ 3 (giây 180)
-const TOTAL_QUESTIONS = 5;
 
 // 7 giọng đọc VieNeu-TTS — ĐÚNG mã + tên hiển thị đã dùng ở tool video
 // (html-render-video-v2-react/ui/index.html), để nhất quán. "" = không
@@ -50,12 +49,13 @@ type AnswerRecord = {
   question_score: number;
   outcome: AnswerOutcome;
   answered_at: string;
+  feedback?: string;
+  corrected_text?: string;
 };
 
 // Hệ số giảm điểm theo thời gian dùng thật của câu trả lời:
-// 0–60s (phút đầu): hệ số 1 — điểm tính đầy đủ theo scoreAnswer().
+// 0–60s (phút đầu): hệ số 1 — điểm tính đầy đủ.
 // 60–180s (phút 2–3): giảm dần tuyến tính từ 1 xuống MIN_TIME_MULTIPLIER.
-// Hết giờ hoàn toàn (>=180s, không nộp) không đi qua hàm này — bị loại (0đ) ở goToNext.
 function timeMultiplier(timeUsedSec: number): number {
   if (timeUsedSec <= FULL_SCORE_WINDOW_SEC) return 1;
   if (timeUsedSec >= TIME_PER_QUESTION_SEC) return MIN_TIME_MULTIPLIER;
@@ -63,10 +63,7 @@ function timeMultiplier(timeUsedSec: number): number {
   return 1 - t * (1 - MIN_TIME_MULTIPLIER);
 }
 
-// Bỏ dấu tiếng Việt để so khớp từ khoá được rộng rãi hơn.
-// "đ"/"Đ" không tách được bằng NFD (không phải base + combining-mark),
-// phải thay thế trực tiếp trước khi normalize — bug đã gặp và fix ở backend,
-// áp dụng lại đúng cách ở đây.
+// Bỏ dấu tiếng Việt để so khớp từ khoá được rộng rãi hơn
 function stripAccents(s: string): string {
   return s
     .replace(/đ/g, "d")
@@ -83,24 +80,19 @@ const STOPWORDS = new Set([
   "have", "with", "that", "this", "from", "your", "what", "when", "will",
 ]);
 
-// Trích các từ khoá "có nghĩa" (đủ dài, không phải hư từ) từ danh sách tiêu chí
-// kỳ vọng thật (do pipeline M1/M2/M3 sinh ra từ đúng CV/JD của ứng viên này).
+// Trích các từ khoá "có nghĩa" từ danh sách tiêu chí kỳ vọng
 function extractKeywords(text: string): string[] {
   const normalized = stripAccents(text);
   const words = normalized.match(/[a-z0-9+#./-]{4,}/g) || [];
   return Array.from(new Set(words.filter((w) => !STOPWORDS.has(w))));
 }
 
-// Chấm điểm câu trả lời — heuristic dựa trên rubric thật (expected) của chính
-// câu hỏi này, KHÔNG gọi AI/API ngoài (đúng ràng buộc của đồ án).
+// Chấm điểm câu trả lời dự phòng bằng Heuristic matching khi không có LLM
 function scoreAnswer(answerText: string, expected: string[]): number {
   const trimmed = answerText.trim();
   if (trimmed.length === 0) return 0;
 
-  // Điểm cho việc trả lời có nội dung thực chất (tối đa 30đ, bão hoà ở ~100 ký tự)
   const lengthScore = Math.min(30, Math.floor(trimmed.length / 10) * 3);
-
-  // Điểm khớp từ khoá với tiêu chí kỳ vọng (tối đa 70đ)
   const keywords = extractKeywords(expected.join(" "));
   let keywordScore = 0;
   if (keywords.length > 0) {
@@ -108,7 +100,6 @@ function scoreAnswer(answerText: string, expected: string[]): number {
     const matched = keywords.filter((k) => answerNorm.includes(k));
     keywordScore = Math.round((matched.length / keywords.length) * 70);
   } else {
-    // Không có từ khoá để so khớp → chỉ tính theo độ dài, nới trần lên 70
     keywordScore = Math.min(40, Math.floor(trimmed.length / 15) * 4);
   }
 
@@ -206,8 +197,6 @@ export default function InterviewPage() {
   const [questions, setQuestions] = useState<ApiQuestion[]>([]);
   const [isPresetMode, setIsPresetMode] = useState(false);
   const [activePresetKey, setActivePresetKey] = useState<"frontend" | "pm" | "sales">("frontend");
-  const [loadError, setLoadError] = useState("");
-
   const [phase, setPhase] = useState<"intro" | "preparing" | "running" | "saving" | "finished">("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answerDraft, setAnswerDraft] = useState("");
@@ -226,24 +215,66 @@ export default function InterviewPage() {
   const [audioJobActive, setAudioJobActive] = useState(false);
   const playedAudioRef = useRef<Set<number>>(new Set());
 
-  const answerDraftRef = useRef(answerDraft);
-  answerDraftRef.current = answerDraft;
+  // Trạng thái phát âm của VietTTS (State Lock) và trạng thái đánh giá LLM
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
-  // Trả lời bằng giọng nói — tuỳ chọn thêm bên cạnh gõ tay, không bắt buộc.
-  const handleVoiceResult = useCallback((text: string) => {
-    if (!text) return;
-    setAnswerDraft((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
-  }, []);
+  // Web Speech API Hook — nhận diện giọng nói native với latency 0ms
   const {
-    status: voiceStatus,
-    modelProgressPct: voiceModelProgressPct,
-    errorMsg: voiceErrorMsg,
-    startRecording: startVoiceRecording,
-    stopRecording: stopVoiceRecording,
-    cancelRecording: cancelVoiceRecording,
-  } = useVoiceToText(handleVoiceResult);
+    isListening,
+    transcript,
+    interimTranscript,
+    isSupported: isSpeechSupported,
+    error: speechError,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useSpeechRecognition();
 
-  // ── Auth + nạp dữ liệu câu hỏi (Từ kết quả phân tích CV hoặc Bộ câu hỏi mẫu) ──
+  const prevTranscriptRef = useRef("");
+  const answerDraftRef = useRef(answerDraft);
+
+  useEffect(() => {
+    answerDraftRef.current = answerDraft;
+  }, [answerDraft]);
+
+  // Tự động nối kết quả nhận diện hoàn chỉnh vào văn bản answerDraft
+  useEffect(() => {
+    if (!transcript) return;
+    const added = transcript.slice(prevTranscriptRef.current.length);
+    if (added) {
+      setAnswerDraft((prev) => (prev ? `${prev.trim()} ${added.trim()}` : added.trim()));
+      prevTranscriptRef.current = transcript;
+    }
+  }, [transcript]);
+
+  // State Lock: Khi VietTTS audio đang phát ra loa, khóa hoặc tạm dừng microphone
+  useEffect(() => {
+    const el = questionAudioRef.current;
+    if (!el) return;
+
+    const onPlay = () => {
+      setIsSpeaking(true);
+      stopListening();
+    };
+    const onEnded = () => setIsSpeaking(false);
+    const onPause = () => setIsSpeaking(false);
+    const onError = () => setIsSpeaking(false);
+
+    el.addEventListener("play", onPlay);
+    el.addEventListener("ended", onEnded);
+    el.addEventListener("pause", onPause);
+    el.addEventListener("error", onError);
+
+    return () => {
+      el.removeEventListener("play", onPlay);
+      el.removeEventListener("ended", onEnded);
+      el.removeEventListener("pause", onPause);
+      el.removeEventListener("error", onError);
+    };
+  }, [stopListening]);
+
+  // Auth + nạp dữ liệu câu hỏi (Từ kết quả phân tích CV hoặc Bộ câu hỏi mẫu)
   useEffect(() => {
     (async () => {
       const supabase = createClient();
@@ -275,11 +306,10 @@ export default function InterviewPage() {
             return;
           }
         } catch {
-          // Bỏ qua lỗi parse, chuyển sang chế độ Preset mẫu
+          // Fallback sang Preset mẫu nếu không đọc được
         }
       }
 
-      // Nếu chưa có kết quả phân tích CV: chuyển sang Chế độ Luyện tập Tự do (Preset)
       setIsPresetMode(true);
       const defaultPreset = PRESET_INTERVIEWS.frontend;
       setQuestions(defaultPreset.questions);
@@ -303,7 +333,6 @@ export default function InterviewPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Nếu chưa đăng nhập: Hiển thị kết quả ngay tại chỗ, không bắt buộc redirect sang /login
     if (!user) {
       setGuestResult({ totalScore, answers: finalAnswers });
       setPhase("finished");
@@ -338,7 +367,6 @@ export default function InterviewPage() {
       .single();
 
     if (error || !data?.id) {
-      // Vẫn cho xem kết quả tại chỗ nếu lỗi ghi db
       setGuestResult({ totalScore, answers: finalAnswers });
       setSaveError("Không thể lưu trực tuyến: " + (error?.message || "unknown") + " — kết quả hiển thị bên dưới:");
       setPhase("finished");
@@ -348,35 +376,10 @@ export default function InterviewPage() {
     router.push(`/dashboard/interview/${data.id}`);
   }, [analysisJobId, candidateName, jobTitle, questions, router]);
 
-  const goToNext = useCallback((timeUsed: number, outcome: AnswerOutcome) => {
-    // Tắt mic ngay khi chuyển câu — tránh ghi âm/transcribe của câu cũ lỡ tay
-    // rơi vào ô trả lời của câu kế tiếp (vd hết giờ đúng lúc đang ghi âm).
-    cancelVoiceRecording();
-
-    const q = questions[currentIndex];
-    const answerText = answerDraftRef.current;
-
-    // Hết giờ hoàn toàn hoặc bấm "Bỏ qua" → câu đó bị loại, luôn 0 điểm
-    // (dù người dùng có kịp gõ gì đó, nội dung vẫn được lưu lại làm data thật
-    // để xem lại, nhưng không được tính điểm).
-    // Nộp trong thời gian → điểm thật từ scoreAnswer(), nhân hệ số theo mốc
-    // thời gian đã dùng (phút đầu giữ nguyên, phút 2-3 giảm dần).
-    const baseScore = outcome === "submitted" ? scoreAnswer(answerText, q.expected) : 0;
-    const finalScore = outcome === "submitted" ? Math.round(baseScore * timeMultiplier(timeUsed)) : 0;
-
-    const record: AnswerRecord = {
-      question_id: q.id,
-      category: q.category,
-      question: q.question,
-      expected: q.expected,
-      red_flags: q.redFlags,
-      time_limit_sec: TIME_PER_QUESTION_SEC,
-      time_used_sec: timeUsed,
-      answer_text: answerText.trim(),
-      question_score: finalScore,
-      outcome,
-      answered_at: new Date().toISOString(),
-    };
+  const advanceToNext = useCallback((record: AnswerRecord) => {
+    stopListening();
+    resetTranscript();
+    prevTranscriptRef.current = "";
 
     setCollected((prev) => {
       const next = [...prev, record];
@@ -389,28 +392,126 @@ export default function InterviewPage() {
       }
       return next;
     });
-  }, [currentIndex, questions, finishInterview, cancelVoiceRecording]);
+  }, [currentIndex, questions, finishInterview, stopListening, resetTranscript]);
 
-  // ── Đếm ngược 3 phút (180s) / câu ────────────────────────────────────────
-  // TỰ ĐỘNG TẠM DỪNG khi hệ thống đang xử lý giọng nói (transcribing) để không
-  // làm mất thời gian quy định và không bị trừ điểm oan của ứng viên.
+  const handleSubmitAnswer = async () => {
+    stopListening();
+    const timeUsed = TIME_PER_QUESTION_SEC - timeLeft;
+    const q = questions[currentIndex];
+    const answerText = answerDraftRef.current.trim();
+
+    setIsEvaluating(true);
+    let finalScore = 0;
+    let feedback = "";
+    let correctedText = answerText;
+
+    try {
+      const res = await fetch("/api/interview/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: q.question,
+          answerText,
+          expected: q.expected,
+          jdSkills: questions.map((item) => item.category),
+          cvSkills: [],
+          conversationHistory: collected.map((c) => ({
+            role: "candidate",
+            content: `Câu hỏi: ${c.question}\nTrả lời: ${c.answer_text}`,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const base = typeof data.score === "number" ? data.score : scoreAnswer(answerText, q.expected);
+        finalScore = Math.round(base * timeMultiplier(timeUsed));
+        feedback = data.feedback || "";
+        correctedText = data.correctedText || answerText;
+      } else {
+        const base = scoreAnswer(answerText, q.expected);
+        finalScore = Math.round(base * timeMultiplier(timeUsed));
+      }
+    } catch (err) {
+      console.warn("[Interview] Lỗi evaluate API, dùng fallback heuristic:", err);
+      const base = scoreAnswer(answerText, q.expected);
+      finalScore = Math.round(base * timeMultiplier(timeUsed));
+    } finally {
+      setIsEvaluating(false);
+    }
+
+    const record: AnswerRecord = {
+      question_id: q.id,
+      category: q.category,
+      question: q.question,
+      expected: q.expected,
+      red_flags: q.redFlags,
+      time_limit_sec: TIME_PER_QUESTION_SEC,
+      time_used_sec: timeUsed,
+      answer_text: answerText,
+      question_score: finalScore,
+      outcome: "submitted",
+      answered_at: new Date().toISOString(),
+      feedback,
+      corrected_text: correctedText,
+    };
+
+    advanceToNext(record);
+  };
+
+  const handleSkip = () => {
+    stopListening();
+    const timeUsed = TIME_PER_QUESTION_SEC - timeLeft;
+    const q = questions[currentIndex];
+    const record: AnswerRecord = {
+      question_id: q.id,
+      category: q.category,
+      question: q.question,
+      expected: q.expected,
+      red_flags: q.redFlags,
+      time_limit_sec: TIME_PER_QUESTION_SEC,
+      time_used_sec: timeUsed,
+      answer_text: answerDraftRef.current.trim(),
+      question_score: 0,
+      outcome: "skipped",
+      answered_at: new Date().toISOString(),
+    };
+    advanceToNext(record);
+  };
+
+  const handleTimeout = useCallback(() => {
+    stopListening();
+    const q = questions[currentIndex];
+    const record: AnswerRecord = {
+      question_id: q.id,
+      category: q.category,
+      question: q.question,
+      expected: q.expected,
+      red_flags: q.redFlags,
+      time_limit_sec: TIME_PER_QUESTION_SEC,
+      time_used_sec: TIME_PER_QUESTION_SEC,
+      answer_text: answerDraftRef.current.trim(),
+      question_score: 0,
+      outcome: "timeout",
+      answered_at: new Date().toISOString(),
+    };
+    advanceToNext(record);
+  }, [currentIndex, questions, advanceToNext, stopListening]);
+
+  // Đếm ngược 3 phút (180s) / câu — tạm dừng khi đang đánh giá kết quả
   useEffect(() => {
     if (phase !== "running") return;
-    if (voiceStatus === "transcribing") return; // Tạm dừng đếm thời gian khi AI đang nhận diện
+    if (isEvaluating) return;
 
     if (timeLeft <= 0) {
-      // Hết giờ hoàn toàn — câu này bị loại (0 điểm)
-      goToNext(TIME_PER_QUESTION_SEC, "timeout");
+      handleTimeout();
       return;
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, timeLeft, goToNext, voiceStatus]);
+  }, [phase, timeLeft, isEvaluating, handleTimeout]);
 
-  // Đọc câu hỏi bằng giọng người phỏng vấn (VieNeu-TTS trên worker.py local).
-  // worker sinh TỪNG CÂU MỘT và cập nhật audio_urls ngay → chỉ cần chờ câu 1
-  // rồi vào phỏng vấn, các câu sau tiếp tục được sinh trong nền (poll ở
-  // useEffect bên dưới). Lỗi/quá lâu không bao giờ chặn phỏng vấn.
+  // Đọc câu hỏi bằng giọng người phỏng vấn (VieNeu-TTS trên worker.py local)
   async function handleStart() {
     setCurrentIndex(0);
     setAnswerDraft("");
@@ -421,6 +522,9 @@ export default function InterviewPage() {
     setAudioJobId(null);
     setAudioJobActive(false);
     playedAudioRef.current = new Set();
+    stopListening();
+    resetTranscript();
+    prevTranscriptRef.current = "";
 
     if (!selectedVoice || questions.length === 0) {
       setPhase("running");
@@ -444,9 +548,6 @@ export default function InterviewPage() {
       setAudioJobId(job.id);
       setAudioJobActive(true);
 
-      // Chờ audio CÂU 1 tối đa 5s (ping nhanh). Nếu worker.py không có mặt
-      // (môi trường Vercel) sẽ vào phòng phỏng vấn ngay, không chờ thêm.
-      // Các câu sau poll tiếp trong nền qua useEffect bên dưới.
       const deadline = Date.now() + 5_000;
       while (Date.now() < deadline) {
         const { data: row } = await supabase
@@ -477,7 +578,7 @@ export default function InterviewPage() {
     }
   }
 
-  // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong từng câu.
+  // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong
   useEffect(() => {
     if (!audioJobId || !audioJobActive) return;
     if (phase !== "running" && phase !== "preparing") return;
@@ -500,8 +601,7 @@ export default function InterviewPage() {
     };
   }, [audioJobId, audioJobActive, phase]);
 
-  // Tự phát audio câu hiện tại đúng 1 lần (khi vào câu, hoặc khi audio của câu
-  // đó vừa sinh xong). Trình duyệt chặn autoplay thì có nút "Nghe lại câu hỏi".
+  // Tự phát audio câu hiện tại đúng 1 lần khi vào câu
   useEffect(() => {
     if (phase !== "running") return;
     const url = audioUrls?.[currentIndex];
@@ -509,19 +609,11 @@ export default function InterviewPage() {
     if (!url || !el || playedAudioRef.current.has(currentIndex)) return;
     playedAudioRef.current.add(currentIndex);
     el.src = url;
+    stopListening(); // Dừng micro khi audio bắt đầu phát
     el.play().catch(() => {
       // Tự phát bị chặn — người dùng bấm nút "Nghe lại câu hỏi".
     });
-  }, [phase, currentIndex, audioUrls]);
-
-  function handleSubmitAnswer() {
-    goToNext(TIME_PER_QUESTION_SEC - timeLeft, "submitted");
-  }
-
-  function handleSkip() {
-    // Bỏ qua chủ động — khác với hết giờ, nhưng cũng mất điểm câu này (0đ)
-    goToNext(TIME_PER_QUESTION_SEC - timeLeft, "skipped");
-  }
+  }, [phase, currentIndex, audioUrls, stopListening]);
 
   if (!checkedAuth) {
     return (
@@ -548,7 +640,7 @@ export default function InterviewPage() {
                 </h1>
                 <p className="text-[13px] sm:text-[14px] text-[#64748b] mt-1.5 leading-relaxed">
                   {isPresetMode
-                    ? "Luyện phản xạ phỏng vấn với các câu hỏi tình huống thực tế. Hỗ trợ trả lời bằng giọng nói và chấm điểm tự động."
+                    ? "Luyện phản xạ phỏng vấn với các câu hỏi tình huống thực tế. Hỗ trợ trả lời bằng giọng nói trực tiếp qua Web Speech API và chấm điểm tự động."
                     : `Câu hỏi được AI đối soát và cá nhân hóa theo khoảng trống năng lực trong CV của bạn cho vị trí ${jobTitle}.`}
                 </p>
               </div>
@@ -585,7 +677,7 @@ export default function InterviewPage() {
                         key={item.key}
                         type="button"
                         onClick={() => selectPreset(item.key)}
-                        className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all ${
+                        className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           activePresetKey === item.key
                             ? "bg-white border-[#0037b0] text-[#0037b0] shadow-sm ring-2 ring-[#0037b0]/20 font-bold"
                             : "bg-white/60 border-[#dce1ff] text-[#475569] hover:bg-white font-medium"
@@ -616,11 +708,11 @@ export default function InterviewPage() {
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="material-symbols-outlined text-[16px] text-[#0037b0] shrink-0 mt-0.5">mic</span>
-                    <span>Bạn có thể <strong>gõ chữ</strong> hoặc bấm micro để <strong>trả lời bằng giọng nói tiếng Việt</strong>.</span>
+                    <span>Bạn có thể <strong>gõ chữ</strong> hoặc bấm micro để <strong>trả lời bằng giọng nói trực tiếp (Web Speech API)</strong> với độ trễ 0ms.</span>
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="material-symbols-outlined text-[16px] text-[#0284c7] shrink-0 mt-0.5">volume_up</span>
-                    <span>Phỏng vấn viên sẽ tự động đọc câu hỏi bằng giọng nói tự nhiên (VieNeu-TTS).</span>
+                    <span>Phỏng vấn viên sẽ đọc câu hỏi bằng giọng nói tự nhiên (VieNeu-TTS). Micro sẽ tự khóa khi AI đang nói để chống vang.</span>
                   </li>
                 </ul>
               </div>
@@ -633,7 +725,7 @@ export default function InterviewPage() {
                 <select
                   value={selectedVoice}
                   onChange={(e) => setSelectedVoice(e.target.value)}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#0b1c30] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all"
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#0b1c30] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all cursor-pointer"
                 >
                   {VOICE_OPTIONS.map((v) => (
                     <option key={v.code || "none"} value={v.code}>
@@ -667,10 +759,10 @@ export default function InterviewPage() {
                 <span className="text-[12px] font-semibold text-[#565e74] uppercase tracking-wider">
                   Câu {currentIndex + 1}/{questions.length} — {questions[currentIndex]?.category}
                 </span>
-                {voiceStatus === "transcribing" ? (
+                {isEvaluating ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-[#eff6ff] text-[#0037b0] border border-[#bfdbfe] shadow-xs">
                     <span className="material-symbols-outlined text-[16px] animate-spin text-[#0037b0]">progress_activity</span>
-                    <span>{String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")} (Đang tạm dừng)</span>
+                    <span>Đang đánh giá câu trả lời...</span>
                   </span>
                 ) : (
                   <span
@@ -696,12 +788,14 @@ export default function InterviewPage() {
 
               {audioUrls?.[currentIndex] && (
                 <div className="mb-4 flex items-center gap-2">
-                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                   <audio ref={questionAudioRef} className="hidden" />
                   <button
                     type="button"
-                    onClick={() => questionAudioRef.current?.play().catch(() => {})}
-                    className="px-3 py-1.5 rounded-lg bg-[#eff4ff] text-[#0037b0] text-[12px] font-medium flex items-center gap-1.5 hover:bg-[#e5eeff] transition-colors"
+                    onClick={() => {
+                      stopListening();
+                      questionAudioRef.current?.play().catch(() => {});
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#eff4ff] text-[#0037b0] text-[12px] font-medium flex items-center gap-1.5 hover:bg-[#e5eeff] transition-colors cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[16px]">volume_up</span>
                     Nghe lại câu hỏi
@@ -715,6 +809,7 @@ export default function InterviewPage() {
                 <p className="text-[12px] text-[#9aa0b4] mb-3">{audioNote}</p>
               )}
 
+              {/* Ô soạn thảo câu trả lời — hỗ trợ vừa gõ vừa nói và chỉnh sửa tự do */}
               <textarea
                 autoFocus
                 className="w-full bg-[#eff4ff] rounded-xl p-4 text-[14px] text-[#0b1c30] placeholder:text-[#747686] focus:outline-none focus:bg-[#e5eeff] transition-all resize-none"
@@ -724,97 +819,129 @@ export default function InterviewPage() {
                 placeholder="Nhập câu trả lời của bạn tại đây, hoặc bấm micro để trả lời bằng giọng nói..."
               />
 
-              {/* Trả lời bằng giọng nói — tuỳ chọn, có thể dùng thay hoặc kết hợp với gõ tay */}
+              {/* Hiển thị nhận diện thời gian thực (0ms) với Web Speech API */}
+              {isListening && (
+                <div className="mt-2 px-3.5 py-2 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] text-[13px] flex items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-2 text-[#1e40af] overflow-hidden">
+                    <span className="material-symbols-outlined text-[18px] text-[#0037b0] animate-pulse">mic</span>
+                    <span className="font-semibold text-[#0037b0] shrink-0">Đang nghe trực tiếp:</span>
+                    <span className="italic truncate text-[#1d4ed8]">
+                      {interimTranscript || "Đang chờ giọng nói của bạn (0ms latency)..."}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-[#2563eb] bg-[#dbeafe] px-2 py-0.5 rounded-md shrink-0">
+                    Web Speech API
+                  </span>
+                </div>
+              )}
+
+              {/* Trả lời bằng giọng nói qua Web Speech API */}
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <button
-                  onClick={voiceStatus === "recording" ? stopVoiceRecording : startVoiceRecording}
-                  disabled={voiceStatus === "transcribing"}
-                  className={`px-4 py-2 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors shrink-0 ${
-                    voiceStatus === "recording"
-                      ? "bg-[#ba1a1a] text-white hover:bg-[#93000a]"
-                      : voiceStatus === "transcribing"
-                      ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
-                      : "bg-white border border-[#c4c5d7]/60 text-[#0037b0] hover:bg-[#eff4ff]"
+                  type="button"
+                  onClick={isListening ? stopListening : startListening}
+                  disabled={!isSpeechSupported || isSpeaking || isEvaluating}
+                  className={`px-4 py-2 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+                    isListening
+                      ? "bg-[#ba1a1a] text-white hover:bg-[#93000a] shadow-sm animate-pulse"
+                      : isSpeaking
+                      ? "bg-[#f1f5f9] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                      : !isSpeechSupported
+                      ? "bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                      : "bg-white border border-[#c4c5d7]/80 text-[#0037b0] hover:bg-[#eff4ff] hover:border-[#0037b0]"
                   }`}
+                  title={
+                    isSpeaking
+                      ? "Phỏng vấn viên đang đọc câu hỏi, microphone tạm khóa"
+                      : !isSpeechSupported
+                      ? "Trình duyệt không hỗ trợ Web Speech API"
+                      : isListening
+                      ? "Bấm để dừng thu âm"
+                      : "Bấm để bắt đầu trả lời bằng giọng nói"
+                  }
                 >
-                  <span className={`material-symbols-outlined text-[18px] ${voiceStatus === "recording" ? "animate-pulse" : ""}`}>
-                    {voiceStatus === "recording" ? "stop_circle" : "mic"}
+                  <span className={`material-symbols-outlined text-[18px] ${isListening ? "animate-pulse" : ""}`}>
+                    {isListening ? "stop_circle" : isSpeaking ? "volume_up" : "mic"}
                   </span>
-                  {voiceStatus === "recording" ? "Dừng ghi âm" : "Trả lời bằng giọng nói"}
+                  <span>
+                    {isListening
+                      ? "Dừng thu âm"
+                      : isSpeaking
+                      ? "Phỏng vấn viên đang nói..."
+                      : "Trả lời bằng giọng nói"}
+                  </span>
                 </button>
-                <span className="text-[12px] text-[#8fa5c0]">
-                  {voiceStatus === "recording" && "Đang ghi âm — bấm “Dừng ghi âm” khi trả lời xong."}
-                  {voiceStatus === "transcribing" &&
-                    (voiceModelProgressPct !== null && voiceModelProgressPct > 0 && voiceModelProgressPct < 100
-                      ? `Đang tải mô hình nhận diện giọng nói tiếng Việt (chỉ lần đầu)... ${voiceModelProgressPct}%`
-                      : "Đang chuyển giọng nói thành văn bản...")}
-                  {voiceStatus === "error" && <span className="text-[#ba1a1a]">{voiceErrorMsg}</span>}
-                  {voiceStatus === "idle" &&
-                    "Có thể ghi âm nhiều lần, văn bản sẽ được nối vào ô trả lời để bạn xem/sửa lại trước khi nộp."}
+
+                <span className="text-[12px] text-[#64748b]">
+                  {isSpeaking && (
+                    <span className="text-[#0284c7] font-medium flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">volume_up</span>
+                      Đang phát câu hỏi (VieNeu-TTS) — micro tạm khóa để chống lặp tiếng.
+                    </span>
+                  )}
+                  {!isSpeaking && isListening && "Web Speech API đang thu âm trực tiếp tiếng Việt. Bạn có thể nói tự nhiên."}
+                  {!isSpeaking && !isListening && speechError && (
+                    <span className="text-[#ba1a1a]">{speechError}</span>
+                  )}
+                  {!isSpeaking && !isListening && !speechError && isSpeechSupported && (
+                    "Có thể thu âm nhiều lần hoặc gõ phím bổ sung, chỉnh sửa nội dung thoải mái trước khi nộp."
+                  )}
                 </span>
               </div>
 
-              {/* Thông báo thời gian & cơ chế tạm dừng bảo toàn điểm */}
+              {/* Thông báo fallback khi trình duyệt không hỗ trợ Web Speech API */}
+              {!isSpeechSupported && (
+                <div className="mt-2.5 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-[12px] flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-[#d97706] shrink-0">info</span>
+                  <span>
+                    Trình duyệt hiện tại chưa hỗ trợ Web Speech API. Vui lòng sử dụng <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong> hoặc <strong>Cốc Cốc</strong> để trả lời bằng giọng nói, hoặc bạn vẫn có thể <strong>gõ phím trực tiếp</strong> vào ô trên.
+                  </span>
+                </div>
+              )}
+
+              {/* Thông báo mốc thời gian */}
               <div className="mt-3">
-                {voiceStatus === "transcribing" ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#eff6ff] text-[#1e40af] border border-[#bfdbfe] font-medium text-[12px]">
-                    <span className="material-symbols-outlined text-[15px] text-[#0037b0] animate-spin">progress_activity</span>
-                    <span>Hệ thống đang chuyển giọng nói thành chữ: <strong>Thời gian làm bài tạm dừng</strong> để bảo toàn điểm số của bạn.</span>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-[#8fa5c0]">
-                    {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
-                      ? "Đang trong phút đầu — trả lời giờ để được tính điểm đầy đủ."
-                      : "Đã qua phút đầu — điểm sẽ giảm dần theo thời gian đã dùng."}
-                  </p>
-                )}
+                <p className="text-[11px] text-[#8fa5c0]">
+                  {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
+                    ? "Đang trong phút đầu — nộp trong thời gian này để được tính điểm tối đa."
+                    : "Đã qua phút đầu — điểm sẽ giảm dần theo thời gian đã dùng."}
+                </p>
               </div>
 
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] text-[#8fa5c0]">{answerDraft.trim().length} ký tự</span>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={handleSkip}
-                    disabled={voiceStatus === "recording" || voiceStatus === "transcribing"}
-                    className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors ${
-                      voiceStatus === "recording" || voiceStatus === "transcribing"
-                        ? "bg-[#f0f0f0] text-[#c4c5d7] cursor-not-allowed"
-                        : "bg-white border border-[#c4c5d7]/60 text-[#565e74] hover:bg-[#f0f4ff]"
-                    }`}
+                    disabled={isEvaluating}
+                    className="px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors bg-white border border-[#c4c5d7]/60 text-[#565e74] hover:bg-[#f0f4ff] cursor-pointer"
                     title="Bỏ qua câu này — sẽ bị 0 điểm"
                   >
                     <span className="material-symbols-outlined text-[16px]">skip_next</span>
                     Bỏ qua
                   </button>
                   <button
+                    type="button"
                     onClick={handleSubmitAnswer}
-                    disabled={voiceStatus === "recording" || voiceStatus === "transcribing"}
-                    className={`px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors ${
-                      voiceStatus === "transcribing"
+                    disabled={isEvaluating}
+                    className={`px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                      isEvaluating
                         ? "bg-[#e5eeff] text-[#64748b] cursor-wait"
-                        : voiceStatus === "recording"
-                        ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
                         : "bg-[#1d4ed8] text-white hover:bg-[#0037b0]"
                     }`}
-                    title={
-                      voiceStatus === "recording"
-                        ? "Hãy dừng ghi âm trước khi nộp câu trả lời"
-                        : voiceStatus === "transcribing"
-                        ? "Đang chờ chuyển đổi âm thanh..."
-                        : undefined
-                    }
                   >
-                    {voiceStatus === "transcribing" && (
+                    {isEvaluating && (
                       <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                     )}
                     <span>
-                      {voiceStatus === "transcribing"
-                        ? "Đang nhận diện..."
+                      {isEvaluating
+                        ? "Đang đánh giá..."
                         : currentIndex + 1 >= questions.length
                         ? "Nộp & xem kết quả"
                         : "Nộp & câu tiếp theo"}
                     </span>
-                    {voiceStatus !== "transcribing" && (
+                    {!isEvaluating && (
                       <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     )}
                   </button>
@@ -839,6 +966,11 @@ export default function InterviewPage() {
                 <p className="text-[13px] text-[#64748b] mt-1">
                   Vị trí: <strong className="text-[#0b1c30]">{jobTitle}</strong>
                 </p>
+                {saveError && (
+                  <p className="text-[12px] text-amber-600 mt-2 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                    {saveError}
+                  </p>
+                )}
               </div>
 
               {/* Thẻ điểm tổng */}
@@ -874,10 +1006,10 @@ export default function InterviewPage() {
                 </div>
               )}
 
-              {/* Chi tiết từng câu */}
+              {/* Chi tiết từng câu và phản hồi AI */}
               {guestResult && (
                 <div className="space-y-3 mb-6">
-                  <h4 className="font-bold text-[14px] text-[#0b1c30] mb-2">Chi tiết từng câu hỏi:</h4>
+                  <h4 className="font-bold text-[14px] text-[#0b1c30] mb-2">Chi tiết từng câu hỏi & đánh giá AI:</h4>
                   {guestResult.answers.map((ans, idx) => (
                     <div key={idx} className="p-4 rounded-xl border border-[#e2e8f0] bg-white text-[13px]">
                       <div className="flex items-start justify-between gap-3 mb-2">
@@ -897,6 +1029,11 @@ export default function InterviewPage() {
                       <p className="text-[12px] text-[#64748b] bg-[#f8fafc] p-2.5 rounded-lg border border-[#f1f5f9]">
                         <strong>Trả lời:</strong> {ans.answer_text || "(Không có nội dung trả lời / đã bỏ qua)"}
                       </p>
+                      {ans.feedback && (
+                        <p className="mt-2 text-[12px] text-[#1e40af] bg-[#eff6ff] p-2.5 rounded-lg border border-[#bfdbfe]/60">
+                          <strong>Nhận xét chuyên gia AI:</strong> {ans.feedback}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -910,7 +1047,7 @@ export default function InterviewPage() {
                     setPhase("intro");
                     setGuestResult(null);
                   }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#e2e8f0] text-[#475569] hover:bg-[#f8fafc] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#e2e8f0] text-[#475569] hover:bg-[#f8fafc] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">replay</span>
                   Luyện tập vị trí khác

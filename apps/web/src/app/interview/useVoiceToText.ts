@@ -94,23 +94,6 @@ async function transcribeOnWorker(pcm: Float32Array): Promise<string> {
   throw new Error("quá thời gian chờ worker.py");
 }
 
-async function transcribeWithGemini(audioBlob: Blob): Promise<string> {
-  const formData = new FormData();
-  formData.append("audio", audioBlob, "answer.webm");
-
-  const res = await fetch("/api/interview/transcribe", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Lỗi kết nối Gemini API" }));
-    throw new Error(err.error || `Lỗi HTTP ${res.status}`);
-  }
-
-  const data = await res.json();
-  return (data.text as string) || "";
-}
 
 // Hook dùng chung cho "trả lời phỏng vấn bằng giọng nói" — ứng viên có thể ghi
 // âm (hook này) HOẶC gõ tay, tuỳ ý.
@@ -124,7 +107,9 @@ export function useVoiceToText(onResult: (text: string) => void) {
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const onResultRef = useRef(onResult);
-  onResultRef.current = onResult;
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
 
   // Mỗi lần huỷ (chuyển câu) tăng "thế hệ" — kết quả nhận diện về trễ của câu
   // cũ sẽ bị bỏ, không rơi nhầm vào ô trả lời của câu mới.
@@ -221,18 +206,7 @@ export function useVoiceToText(onResult: (text: string) => void) {
 
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
 
-      // ƯU TIÊN 1: Chuyển đổi bằng Google Gemini AI (nhận diện chuẩn 100% tiếng Việt + từ IT)
-      try {
-        const geminiText = await transcribeWithGemini(blob);
-        if (geminiText) {
-          deliver(gen, geminiText);
-          return;
-        }
-      } catch (geminiErr) {
-        console.warn("[voice] Gemini API chưa cấu hình hoặc lỗi, chuyển sang phương án dự phòng:", geminiErr);
-      }
-
-      // ƯU TIÊN 2: Chạy trên worker.py PhoWhisper (nếu đang chạy worker local)
+      // Chạy trên worker.py PhoWhisper (nếu đang chạy worker local)
       let pcm: Float32Array;
       try {
         pcm = await blobToPcm16k(blob);

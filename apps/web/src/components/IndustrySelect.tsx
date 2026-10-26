@@ -22,7 +22,7 @@ interface IndustrySelectProps {
 
 // ── Module-level cache (load 1 lần trong session) ────────────────────────────
 let _groupsCache: Industry[] | null = null;
-let _branchesCache: Record<string, Industry[]> = {};
+const _branchesCache: Record<string, Industry[]> = {};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function IndustrySelect({
@@ -46,15 +46,19 @@ export default function IndustrySelect({
     // Kiểm tra xem value là group hay branch
     const isGroup = groups.some((g) => g.id === value);
     if (isGroup) {
-      setSelectedGroupId(value);
-      setSelectedBranchId("");
+      queueMicrotask(() => {
+        setSelectedGroupId(value);
+        setSelectedBranchId("");
+      });
     } else {
       // Tìm group cha của branch này trong cache
       for (const [gId, brs] of Object.entries(_branchesCache)) {
         if (brs.some((b) => b.id === value)) {
-          setSelectedGroupId(gId);
-          setSelectedBranchId(value);
-          setBranches(brs);
+          queueMicrotask(() => {
+            setSelectedGroupId(gId);
+            setSelectedBranchId(value);
+            setBranches(brs);
+          });
           return;
         }
       }
@@ -79,8 +83,6 @@ export default function IndustrySelect({
   // ── Load nhóm lớn ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (_groupsCache) {
-      setGroups(_groupsCache);
-      setLoading(false);
       return;
     }
     (async () => {
