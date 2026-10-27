@@ -10,6 +10,24 @@ Worker tự poll Supabase mỗi 5 giây, lấy job pending → M1+M2+M3 → lưu
 import os, sys, time, json, logging, base64, tempfile, traceback
 from pathlib import Path
 from dotenv import load_dotenv
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+def safe_print(msg: str, end: str = "\n"):
+    try:
+        print(msg, end=end, flush=True)
+    except Exception:
+        try:
+            sys.stdout.buffer.write((msg + end).encode("utf-8", errors="replace"))
+            sys.stdout.buffer.flush()
+        except Exception:
+            pass
+
 import industry_lookup
 import interview_tts
 import interview_asr
@@ -272,6 +290,110 @@ _VN_STOPWORDS = {"và", "của", "cho", "về", "các", "những", "trong", "khi
                  "có", "được", "này", "đó", "với", "theo", "để", "một", "hay"}
 _SKILL_FILLER_PREFIXES = ("kỹ năng ", "khả năng ", "năng lực ")
 
+# ─── BỘ LỌC KỸ NĂNG CHUẨN XÁC — LOẠI BỎ TỪ RÁC / SUBWORD / TÊN CÔNG TY ─────────
+INVALID_SKILL_STOPWORDS = {
+    "yêu", "yêu cầu", "tham", "tham gia", "lại", "đi lại", "hàng", "khách", "khách hàng",
+    "phẩm", "sản phẩm", "động", "động sản", "bất động", "công", "công ty", "đơn vị",
+    "việc", "công việc", "tìm", "tìm kiếm", "phát", "phát triển", "hỗ", "hỗ trợ",
+    "giới", "giới thiệu", "tư", "tư vấn", "báo", "báo cáo", "đào", "đào tạo",
+    "các", "những", "cho", "với", "theo", "từ", "trên", "dưới", "trong", "ngoài",
+    "năm", "tháng", "ngày", "tuổi", "độ tuổi", "nam", "nữ", "tốt", "khá", "giỏi",
+    "cao", "cấp", "cao cấp", "cá nhân", "nhân viên", "chuyên viên", "ứng viên",
+    "kinh nghiệm", "kỹ năng", "trình độ", "bằng cấp", "liên hệ", "địa chỉ", "lương",
+    "thưởng", "hoa hồng", "phúc lợi", "môi trường", "hệ sinh thái", "dự án", "kênh",
+    "smartphone", "laptop", "xe máy", "ô tô", "phương tiện", "di chuyển", "điện thoại",
+    "cần", "sẽ", "phải", "được", "không", "nhiệt tình", "cầu tiến", "chân chính", "thực tế",
+    "nhà mẫu", "căn hộ", "tiện ích", "thời gian", "khác", "quy định", "chế độ",
+    "ngũ nhân", "đội ngũ", "nhân sự", "lộ trình", "bán hàng khác", "bền vững", "cơ hội",
+    "thu nhập", "hấp dẫn", "năng động", "chuyên nghiệp", "bài bản", "đội ngũ nhân sự"
+}
+
+VALID_SINGLE_WORD_SKILLS = {
+    "sql", "seo", "crm", "sap", "erp", "kpi", "roi", "b2b", "b2c", "git", "docker",
+    "react", "python", "excel", "word", "canva", "zalo", "tiktok", "facebook", "google",
+    "telesales", "sale", "sales", "marketing", "pr", "qa", "qc", "hr", "c#", "c++",
+    "java", "php", "go", "rust", "vue", "next", "node", "aws", "figma", "photoshop",
+    "autocad", "revit", "sketchup", "illustrator", "powerpoint", "powerbi", "tableau",
+    "jira", "trello", "scrum", "agile", "linux", "html", "css", "javascript",
+    "typescript", "swift", "kotlin", "flutter", "dart", "ruby", "rails", "django",
+    "fastapi", "flask", "spring", "angular", "kubernetes", "jenkins", "postman",
+    "redis", "mongodb", "postgresql", "mysql", "oracle", "nosql", "ci/cd", "devops",
+    "solidity", "graphql", "webpack", "vite", "tailwind", "sass", "boost", "pytorch",
+    "tensorflow", "keras", "opencv", "scikit-learn", "pandas", "numpy"
+}
+
+
+def detect_company_names(text: str) -> set[str]:
+    """Phát hiện các tên riêng công ty/tổ chức/dự án trong văn bản để không nhầm thành kỹ năng."""
+    companies = set()
+    patterns = [
+        r"(?i)(?:công\s+ty|tập\s+đoàn|hệ\s+sinh\s+thái|doanh\s+nghiệp|showroom|chi\s+nhánh|đại\s+học|trường)\s+(?:cổ\s+phần\s+|tnhh\s+|trách\s+nhiệm\s+hữu\s+hạn\s+|bất\s+động\s+sản\s+|nội\s+thất\s+|dịch\s+vụ\s+)*([A-Z0-9][A-Za-z0-9_\s&.\-]{1,30}?)(?=[,\n\r.;]|\s+(?:là|chuyên|thuộc|với|tuyển|cần|\())",
+        r"(?i)\bvề\s+([A-Z0-9][A-Za-z0-9_\s&.\-]{1,30}?)(?=[,\n\r.;]|\s+(?:là|chuyên|thuộc|với|tuyển|cần|\())",
+        r"\(([A-Z0-9]{2,10})\)",
+    ]
+    for pat in patterns:
+        for m in _re.finditer(pat, text):
+            raw = m.group(1).strip(" .,;:!?\r\n\t")
+            raw = _re.split(r"[\n\r]", raw)[0].strip()
+            name = _re.split(r"(?i)\s+(?:là|chuyên|thuộc|với|tuyển|cần|\()\b", raw)[0].strip()
+            if name and len(name) >= 2:
+                companies.add(name.lower())
+                for part in name.split():
+                    clean_part = part.strip(" .,;:!?")
+                    if len(clean_part) >= 2:
+                        companies.add(clean_part.lower())
+    return companies
+
+
+def is_valid_skill(token: str, full_text: str = "", known_companies: set | None = None) -> bool:
+    """Lọc triệt để các token rác, từ chức năng, động từ chung, tên công ty khỏi kỹ năng."""
+    if not token:
+        return False
+    clean = token.strip(".,;:!?()[]\"'/\\-•* \t\r\n")
+    if len(clean) < 2:
+        return False
+    low = clean.lower()
+    if low in INVALID_SKILL_STOPWORDS:
+        return False
+
+    # Kiểm tra tên công ty đã phát hiện
+    comps = known_companies if known_companies is not None else (detect_company_names(full_text) if full_text else set())
+    if low in comps:
+        return False
+
+    words = low.split()
+    if len(words) == 1:
+        # Từ đơn: chỉ chấp nhận nếu nằm trong danh sách thuật ngữ / từ viết tắt hợp lệ
+        if low in VALID_SINGLE_WORD_SKILLS:
+            return True
+        return False
+
+    # Cụm từ: loại bỏ nếu toàn bộ các từ trong cụm đều là stopwords rác
+    if all(w in INVALID_SKILL_STOPWORDS for w in words):
+        return False
+
+    return True
+
+
+def format_skill_name(skill: str) -> str:
+    """Chuẩn hóa viết hoa/thường đẹp mắt cho tên kỹ năng hiển thị."""
+    s = skill.strip()
+    if s.isupper():
+        return s
+    upper_map = {"sql", "crm", "seo", "sap", "erp", "kpi", "roi", "b2b", "b2c", "api", "aws", "qa", "qc", "hr", "pr", "ui", "ux", "ci/cd"}
+    if s.lower() in upper_map:
+        return s.upper()
+    special_map = {
+        "react": "React", "reactjs": "ReactJS", "nextjs": "Next.js", "vue": "Vue.js", "nodejs": "Node.js",
+        "python": "Python", "docker": "Docker", "facebook": "Facebook", "zalo": "Zalo", "google": "Google",
+        "tiktok": "TikTok", "telesales": "Telesales", "sale": "Sales", "sales": "Sales", "excel": "Excel",
+        "word": "Word", "canva": "Canva", "figma": "Figma", "git": "Git"
+    }
+    if s.lower() in special_map:
+        return special_map[s.lower()]
+    return " ".join(w.capitalize() for w in s.split())
+
+
 @_lru_cache(maxsize=None)
 def _keyword_tokens(keyword: str) -> tuple:
     """Tách 1 skill/keyword nhiều từ thành các từ có nghĩa để so khớp mềm."""
@@ -318,30 +440,61 @@ def keyword_extract_skills(text: str, domain_keywords: list | None = None) -> li
     return found
 
 def extract_skills(text: str, domain_keywords: list | None = None) -> list[str]:
-    """M1 NER + keyword fallback để đảm bảo luôn lấy được skill.
-
-    Args:
-        text: CV hoặc JD text
-        domain_keywords: danh sách keyword đặc thù ngành từ industry_lookup.
-            Nếu None → fallback về ALL_DOMAIN_KEYWORDS (hành vi cũ).
-    """
+    """M1 NER + keyword fallback để đảm bảo luôn lấy được skill chuẩn xác,
+    đã làm sạch subwords và loại bỏ hoàn toàn từ rác/cắt cụt/tên công ty."""
     if not text.strip():
         return []
     import unicodedata
     text = unicodedata.normalize("NFC", text)
-    # NER
+
+    # Nhận diện tên công ty/dự án để loại trừ khỏi kỹ năng
+    companies = detect_company_names(text)
+
+    # 1. NER PhoBERT (quét theo từng đoạn ngắn <= 600 ký tự để tuân thủ giới hạn 256 tokens của PhoBERT)
     ner_skills = []
     try:
-        entities = m1_ner(text[:3000])
-        ner_skills = list({e["word"].replace("##","").replace("@@","").strip()
-                           for e in entities
-                           if e.get("entity_group") in ("SKILL", "B-SKILL", "I-SKILL")
-                           and len(e["word"].strip()) > 1})
-    except Exception:
-        pass
-    # Keyword fallback — industry-aware nếu có, ngược lại dùng ALL_DOMAIN_KEYWORDS
-    kw_skills = keyword_extract_skills(text, domain_keywords)
-    return list(set(ner_skills) | set(kw_skills))
+        chunks = [c.strip() for c in _re.split(r"[\n\r]+", text) if c.strip()]
+        for chunk in chunks[:20]:
+            chunk_slice = chunk[:600]
+            try:
+                entities = m1_ner(chunk_slice)
+                for e in entities:
+                    if e.get("entity_group") in ("SKILL", "B-SKILL", "I-SKILL"):
+                        start = e.get("start")
+                        end = e.get("end")
+                        if (
+                            start is not None
+                            and end is not None
+                            and isinstance(start, int)
+                            and isinstance(end, int)
+                            and end <= len(chunk_slice)
+                        ):
+                            raw_word = chunk_slice[start:end]
+                        else:
+                            raw_word = e.get("word", "")
+                        cleaned = _re.sub(r"[#@_]+", " ", raw_word).strip(".,;:!?()[]\"'/\\-•* \t\r\n")
+                        if is_valid_skill(cleaned, text, companies):
+                            ner_skills.append(cleaned)
+            except Exception:
+                pass
+    except Exception as exc:
+        log.warning(f"  ⚠️ M1 NER lỗi hoặc bỏ qua: {exc}")
+
+    # 2. Keyword fallback — industry-aware nếu có, ngược lại dùng ALL_DOMAIN_KEYWORDS
+    kw_raw = keyword_extract_skills(text, domain_keywords)
+    kw_skills = [s.strip(".,;:!?()[]\"'/\\-•* \t\r\n") for s in kw_raw if is_valid_skill(s, text, companies)]
+
+    # Gộp và loại trùng, giữ chuẩn hóa
+    seen_lower = set()
+    unique_skills = []
+    for s in ner_skills + kw_skills:
+        s_clean = s.strip()
+        low = s_clean.lower()
+        if low not in seen_lower and is_valid_skill(s_clean, text, companies):
+            seen_lower.add(low)
+            unique_skills.append(s_clean)
+
+    return unique_skills
 
 def compute_similarity(text_a: str, text_b: str) -> float:
     """M2: tính cosine similarity giữa 2 đoạn text đầy đủ."""
@@ -441,8 +594,10 @@ def generate_cv_suggestions(missing: list, matched: list, exp_gap: float,
     """
     suggestions = []
 
-    # Bước 2: chèn từ khóa còn thiếu — tối đa 3 kỹ năng quan trọng nhất (giữ gọn UI)
-    for skill in missing[:3]:
+    # Bước 2: chèn từ khóa còn thiếu — tối đa 3 kỹ năng quan trọng nhất (giữ gọn UI, chỉ lấy skill hợp lệ)
+    valid_missing = [s for s in missing if is_valid_skill(s, job_title)]
+    for raw_skill in valid_missing[:3]:
+        skill = format_skill_name(raw_skill)
         suggestions.append({
             "type": "skill",
             "title": f'Bổ sung "{skill}" vào CV nếu bạn thực sự có kinh nghiệm',
@@ -987,8 +1142,9 @@ def main():
 
             job = jobs[0]
             job_id = job["id"]
-            print()  # newline sau các dấu chấm polling
-            log.info(f"🔔 Job mới: {job_id[:8]}... | Vị trí: {job.get('job_title','?')}")
+            job_title = job.get("job_title", "Vị trí không xác định")
+            safe_print(f"\n🚀 [WORKER] Đang xử lý CV Job ID: {job_id} | Vị trí: {job_title}...")
+            log.info(f"🔔 Job mới: {job_id[:8]}... | Vị trí: {job_title}")
 
             # Đánh dấu đang xử lý
             supabase.table("analysis_jobs").update({"status": "processing"}).eq("id", job_id).execute()
@@ -1089,9 +1245,12 @@ def main():
                 "result": result,
             }).eq("id", job_id).execute()
 
-            log.info(f"  ✅ Xong! Điểm: {result['score']}/100 | "
+            final_score = result.get("score", 0)
+            missing_skills = result.get("missing_skills", [])
+            safe_print(f"✅ [WORKER] Hoàn tất Job ID: {job_id} | Điểm: {final_score}/100 | Missing skills: {missing_skills}\n")
+            log.info(f"  ✅ Xong! Điểm: {final_score}/100 | "
                      f"Khớp: {len(result['matched_skills'])} kỹ năng | "
-                     f"Thiếu: {len(result['missing_skills'])} kỹ năng\n")
+                     f"Thiếu: {len(missing_skills)} kỹ năng\n")
 
         except KeyboardInterrupt:
             log.info("\n⏹ Worker dừng lại.")

@@ -36,7 +36,7 @@ _SPLIT_RE = re.compile(r"[\n\r]+|(?<=[.!?;])\s+(?=[A-ZĐÀ-Ỹ0-9•\-])|\s[•�
 _HEAD_SKIP = re.compile(
     r"^(quyền lợi|phúc lợi|benefits?|chế độ|đãi ngộ|thu nhập|mức lương|lương|địa điểm|nơi làm việc|"
     r"thời gian làm việc|giờ làm việc|liên hệ|hồ sơ|cách thức ứng tuyển|cách ứng tuyển|ứng tuyển|"
-    r"giới thiệu (?:công ty|về)|về chúng tôi|about|hạn nộp|thông tin (khác|chung|liên hệ)|why join|what we offer|tại sao)", re.I)
+    r"giới thiệu (?:công ty|về)|về chúng tôi|về\s+[A-Za-z0-9_\s&.\-]+|about|hạn nộp|thông tin (khác|chung|liên hệ)|why join|what we offer|tại sao)", re.I)
 _HEAD_RESP = re.compile(
     r"^(mô tả công việc|mô tả|chi tiết công việc|trách nhiệm|nhiệm vụ|responsibilit|job description|"
     r"công việc chính|bạn sẽ làm|what you.?ll do)", re.I)
@@ -60,6 +60,13 @@ _LINE_SKIP = re.compile(
     r"team ?building|đồng phục|công việc ổn định|salary|bonus|allowance|commission",
     re.I)
 _LEAD_RE = re.compile(r"^(?:[#*\-•▪►●○◦✓✔➢➤→=]+|\d{1,2}[.)]|[ivxIVX]{1,4}[.)])?\s*[^\wÀ-ỹ]*")
+
+# Phát hiện câu giới thiệu doanh nghiệp / công ty để không đưa vào yêu cầu bắt buộc
+_COMPANY_INTRO_RE = re.compile(
+    r"(?i)^(?:công\s+ty|tập\s+đoàn|chúng\s+tôi|về\s+chúng\s+tôi|về\s+[A-Za-z0-9_\s&.\-]+|doanh\s+nghiệp).*?"
+    r"(?:là\s+đơn\s+vị|là\s+doanh\s+nghiệp|chuyên\s+phân\s+phối|thuộc\s+hệ\s+sinh\s+thái|được\s+thành\s+lập|hoạt\s+động\s+trong|tự\s+hào|tiên\s+phong)",
+    re.I
+)
 
 
 def _norm(text: str) -> str:
@@ -94,9 +101,93 @@ def _clean(line: str) -> str:
     return _BULLET_RE.sub("", line).strip(" \t:;,.-")
 
 
+def parse_jd_age_range(text: str) -> tuple[float | None, float | None] | None:
+    """Trích xuất khoảng tuổi yêu cầu trong JD (min_age, max_age) hoặc None."""
+    if not re.search(r"(?i)\b(độ\s*tuổi|tuổi|năm\s*sinh|age)\b", text):
+        return None
+    m_range = re.search(r"(?i)(?:từ\s*)?(\d{2})\s*(?:-|–|đến|to)\s*(\d{2})\s*(?:tuổi)?", text)
+    if m_range:
+        return float(m_range.group(1)), float(m_range.group(2))
+    m_min = re.search(r"(?i)(?:từ|trên|tối thiểu|>=?)\s*(\d{2})\s*(?:tuổi)?", text)
+    if m_min:
+        return float(m_min.group(1)), None
+    m_max = re.search(r"(?i)(?:dưới|tối đa|<=?)\s*(\d{2})\s*(?:tuổi)?", text)
+    if m_max:
+        return None, float(m_max.group(1))
+    m_single = re.search(r"(?i)(\d{2})\s*tuổi", text)
+    if m_single:
+        return float(m_single.group(1)), None
+    return None
+
+
+def extract_candidate_age_and_evidence(cv_text: str) -> tuple[float | None, str | None]:
+    """Tìm năm sinh hoặc số tuổi trong CV, tính tuổi ứng viên (năm chuẩn 2026)."""
+    current_year = 2026
+    for raw in cv_text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        m_dob = re.search(r"(?i)(?:sinh|dob|birth|ngày\s*sinh|năm\s*sinh)[^0-9\n\r]*(\d{1,2}[/-]\d{1,2}[/-](19\d{2}|20\d{2}))", line)
+        if m_dob:
+            byear = int(m_dob.group(2))
+            return float(current_year - byear), line
+        m_year = re.search(r"(?i)(?:sinh|dob|birth|năm\s*sinh)[^0-9\n\r]*(19\d{2}|20\d{2})\b", line)
+        if m_year:
+            byear = int(m_year.group(1))
+            return float(current_year - byear), line
+        m_age = re.search(r"(?i)\b(\d{2})\s*tuổi\b", line)
+        if m_age:
+            age = float(m_age.group(1))
+            if 18 <= age <= 70:
+                return age, line
+    m_date = re.search(r"\b\d{1,2}[/-]\d{1,2}[/-](19\d{2}|200\d)\b", cv_text)
+    if m_date:
+        byear = int(m_date.group(1))
+        for line in cv_text.splitlines():
+            if m_date.group(0) in line:
+                return float(current_year - byear), line.strip()
+    return None, None
+
+
+def check_vehicle_equipment_match(req_text: str, cv_text: str) -> tuple[float, str | None] | None:
+    """Kiểm tra đối chiếu phương tiện đi lại và thiết bị/công cụ làm việc."""
+    req_lower = req_text.lower()
+    needs_vehicle = bool(re.search(r"(?i)(phương tiện|xe máy|ô tô|xe cá nhân|di chuyển|đi lại)", req_lower))
+    needs_laptop = bool(re.search(r"(?i)(laptop|máy tính)", req_lower))
+    needs_phone = bool(re.search(r"(?i)(smartphone|điện thoại)", req_lower))
+
+    if not (needs_vehicle or needs_laptop or needs_phone):
+        return None
+
+    cv_lower = cv_text.lower()
+    has_vehicle = bool(re.search(r"(?i)(phương tiện|xe máy|ô tô|xe cá nhân|di chuyển)", cv_lower))
+    has_laptop = bool(re.search(r"(?i)(laptop|máy tính)", cv_lower))
+    has_phone = bool(re.search(r"(?i)(smartphone|điện thoại|số điện thoại|zalo|hotline|\b0\d{9}\b)", cv_lower))
+
+    checks = []
+    if needs_vehicle:
+        checks.append(has_vehicle)
+    if needs_laptop:
+        checks.append(has_laptop)
+    if needs_phone:
+        checks.append(has_phone)
+
+    if checks and all(checks):
+        evidence = None
+        for line in cv_text.splitlines():
+            l_strip = line.strip()
+            if re.search(r"(?i)(phương tiện|laptop|xe máy|ô tô)", l_strip):
+                evidence = l_strip
+                break
+        return 0.90, evidence or "Có đầy đủ phương tiện đi lại, laptop và điện thoại/smartphone"
+    elif checks and any(checks):
+        return 0.60, None
+    return None
+
+
 def split_jd_requirements(jd_text: str) -> list[dict]:
     """Tách JD thành các dòng yêu cầu có nghĩa, gắn nhóm (requirement/responsibility)
-    và mức độ (required/preferred). Bỏ qua quyền lợi, lương, thông tin liên hệ..."""
+    và mức độ (required/preferred). Bỏ qua quyền lợi, lương, thông tin liên hệ, giới thiệu công ty..."""
     reqs, section = [], None
     for raw in _norm(jd_text).splitlines():
         line = raw.strip()
@@ -117,6 +208,9 @@ def split_jd_requirements(jd_text: str) -> list[dict]:
             if len(text) < 12 or len(text.split()) < 3 or len(text) > 320:
                 continue
             if _LINE_SKIP.search(text):
+                continue
+            # Bỏ qua câu giới thiệu công ty/tập đoàn nếu không chứa từ khóa yêu cầu ứng viên
+            if _COMPANY_INTRO_RE.search(text) and not re.search(r"(?i)\b(yêu cầu|ứng viên|cần có|tiêu chuẩn|kinh nghiệm|trách nhiệm|nhiệm vụ)\b", text):
                 continue
             reqs.append({
                 "text": text,
@@ -213,7 +307,13 @@ def analyze_detail(model, util, cv_text: str, jd_text: str, jd_skills: list, mat
         req_emb = model.encode(req_texts, convert_to_tensor=True, batch_size=32, show_progress_bar=False)
         sims = util.cos_sim(req_emb, cv_emb).cpu().numpy()
         for i, r in enumerate(reqs):
-            j = int(np.argmax(sims[i]))
+            # Ưu tiên câu kinh nghiệm thực tế hơn dòng tiêu đề ngắn
+            sims_row = sims[i].copy()
+            if r.get("section") == "responsibility":
+                for k, chunk in enumerate(cv_chunks):
+                    if re.search(r"(?i)^(vị trí ứng tuyển|mục tiêu nghề nghiệp|họ và tên|thông tin liên hệ)", chunk.strip()) or len(chunk.split()) <= 6:
+                        sims_row[k] -= 0.25
+            j = int(np.argmax(sims_row))
             score = float(sims[i][j])
             skills = sorted(set(skill_finder(r["text"])), key=str.lower)
             skill_items = [{"name": s, "matched": s.lower() in matched_lower} for s in skills]
@@ -233,12 +333,48 @@ def analyze_detail(model, util, cv_text: str, jd_text: str, jd_skills: list, mat
                     # Câu CV nghe giống nhưng không hề có kỹ năng JD nêu → chỉ "một phần"
                     status = "partial"
 
+            evidence_text = cv_chunks[j][:240] if status != "missing" else None
+            closest_text = cv_chunks[j][:240] if status == "missing" and score >= 0.3 else None
+
+            # ── Override 1: Đối chiếu độ tuổi (nếu JD nêu yêu cầu độ tuổi) ──
+            age_range = parse_jd_age_range(r["text"])
+            if age_range is not None:
+                min_a, max_a = age_range
+                cand_age, age_ev = extract_candidate_age_and_evidence(cv_text)
+                if cand_age is not None:
+                    is_ok = (min_a is None or cand_age >= min_a) and (max_a is None or cand_age <= max_a)
+                    if is_ok:
+                        score = 0.95
+                        status = "met"
+                        evidence_text = age_ev or f"Năm sinh ứng viên tương ứng {cand_age:.0f} tuổi (đạt yêu cầu)"
+                        closest_text = None
+                    else:
+                        score = 0.25
+                        status = "missing"
+                        evidence_text = None
+                        closest_text = age_ev or f"Ứng viên {cand_age:.0f} tuổi (chưa khớp yêu cầu)"
+
+            # ── Override 2: Đối chiếu phương tiện đi lại & công cụ/thiết bị ──
+            eq_match = check_vehicle_equipment_match(r["text"], cv_text)
+            if eq_match is not None:
+                eq_score, eq_ev = eq_match
+                if eq_score >= 0.85:
+                    score = eq_score
+                    status = "met"
+                    if eq_ev:
+                        evidence_text = eq_ev
+                    closest_text = None
+                elif eq_score >= 0.5:
+                    score = max(score, eq_score)
+                    if status == "missing":
+                        status = "partial"
+
             results.append({
                 **r,
                 "status": status,
                 "match": round(score, 3),
-                "evidence": cv_chunks[j][:240] if status != "missing" else None,
-                "closest": cv_chunks[j][:240] if status == "missing" and score >= 0.3 else None,
+                "evidence": evidence_text,
+                "closest": closest_text,
                 "skills": skill_items,
             })
 
