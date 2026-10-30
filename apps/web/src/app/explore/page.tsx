@@ -87,7 +87,7 @@ export default function ExplorePage() {
 
       <main className="flex-1 pt-16 flex flex-col">
         {/* Page Header */}
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-8 pb-4">
+        <section className="w-full px-4 sm:px-8 lg:px-12 pt-8 pb-4">
           <div className="max-w-3xl">
             <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[32px] md:text-[36px] font-bold text-[#0b1c30] tracking-tight leading-[1.2]">
               Khám phá hệ thống Kỹ năng
@@ -98,7 +98,7 @@ export default function ExplorePage() {
           </div>
         </section>
 
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-4 flex-1 flex flex-col md:flex-row gap-6">
+        <section className="w-full px-4 sm:px-8 lg:px-12 py-4 flex-1 flex flex-col md:flex-row gap-6">
           {/* Sidebar: Danh sách ngành & Tìm kiếm */}
           <div className="w-full md:w-[320px] lg:w-[360px] flex-shrink-0 flex flex-col gap-4">
             
@@ -206,7 +206,7 @@ export default function ExplorePage() {
                 </p>
               </div>
               <Link
-                href="/score"
+                href={`/score?industry=${encodeURIComponent(activeIndustry.name)}`}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0037b0] hover:bg-[#1d4ed8] text-white text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs"
               >
                 <span>Đối soát CV ngay</span>

@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -53,8 +53,13 @@ export default function ScorePage() {
   // ── State chọn ngành ─────────────────────────────────────────────────────
   const [selectedIndustryId, setSelectedIndustryId] = useState<string | null>(null);
 
-  // ── Prefill preferred_industry_id từ profile (nếu đã đăng nhập) ──────────
+  // ── Đọc query param ?industry= từ trang Khám phá ─────────────────────────
+  const searchParams = useSearchParams();
+  const industryNameFromExplore = searchParams.get("industry") ?? "";
+
+  // ── Prefill preferred_industry_id từ profile (nếu đã đăng nhập, chỉ khi không có URL param) ─
   useEffect(() => {
+    if (industryNameFromExplore) return; // URL param ưu tiên hơn, để IndustrySelect tự xử lý
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -68,6 +73,7 @@ export default function ScorePage() {
         setSelectedIndustryId(profile.preferred_industry_id);
       }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -179,7 +185,7 @@ export default function ScorePage() {
         <ProgressStepper activeStep={1} />
 
         {/* Page Header */}
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-7 pb-2">
+        <section className="w-full px-4 sm:px-8 lg:px-12 pt-7 pb-2">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#eff4ff] border border-[#dce1ff] text-[#0037b0] text-[12px] font-bold mb-3 shadow-xs">
               <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
@@ -195,7 +201,7 @@ export default function ScorePage() {
         </section>
 
         {/* 50/50 Dual Column */}
-        <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-3 flex-1">
+        <section className="w-full px-4 sm:px-8 lg:px-12 py-3 flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
             {/* LEFT: CV Upload */}
             <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 relative">
@@ -400,6 +406,7 @@ export default function ScorePage() {
               <IndustrySelect
                 value={selectedIndustryId}
                 onChange={setSelectedIndustryId}
+                defaultName={industryNameFromExplore}
                 className="mb-3"
               />
 

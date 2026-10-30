@@ -16,6 +16,8 @@ interface IndustrySelectProps {
   value: string | null;
   /** Callback khi thay đổi, truyền null nếu user chọn "tự đoán" */
   onChange: (id: string | null) => void;
+  /** Tên ngành muốn pre-select (vd: từ URL param). Sẽ tự tìm UUID tương ứng sau khi load. */
+  defaultName?: string;
   /** Lớp CSS bổ sung cho wrapper */
   className?: string;
 }
@@ -28,6 +30,7 @@ const _branchesCache: Record<string, Industry[]> = {};
 export default function IndustrySelect({
   value,
   onChange,
+  defaultName = "",
   className = "",
 }: IndustrySelectProps) {
   const supabase = useRef(createClient()).current;
@@ -79,6 +82,18 @@ export default function IndustrySelect({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups, value]);
+
+  // ── Auto-select theo defaultName (từ URL param ?industry=) ────────────────
+  // Chạy sau khi groups load xong, chỉ khi chưa có value được set từ ngoài
+  useEffect(() => {
+    if (!groups.length || !defaultName || value) return;
+    const normalize = (s: string) => s.trim().toLowerCase();
+    const matched = groups.find((g) => normalize(g.name) === normalize(defaultName));
+    if (matched) {
+      onChange(matched.id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, defaultName]);
 
   // ── Load nhóm lớn ─────────────────────────────────────────────────────────
   useEffect(() => {

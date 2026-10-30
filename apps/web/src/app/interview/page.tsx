@@ -12,19 +12,10 @@ const TIME_PER_QUESTION_SEC = 180; // 3 phút / câu
 const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ, không giảm
 const MIN_TIME_MULTIPLIER = 0.5; // sàn giảm điểm ở cuối phút thứ 3 (giây 180)
 
-// 7 giọng đọc VieNeu-TTS — ĐÚNG mã + tên hiển thị đã dùng ở tool video
-// (html-render-video-v2-react/ui/index.html), để nhất quán. "" = không
-// đọc giọng (chỉ hiện chữ như trước đây), phòng khi máy chưa cài vieneu.
-const VOICE_OPTIONS: { code: string; label: string }[] = [
-  { code: "Ly", label: "Trúc Ly — nữ, miền Bắc (mặc định)" },
-  { code: "Ngoc", label: "Bích Ngọc — nữ, miền Bắc" },
-  { code: "Doan", label: "Thục Đoan — nữ, miền Nam" },
-  { code: "Binh", label: "Thanh Bình — nam, miền Bắc" },
-  { code: "Tuyen", label: "Phạm Tuyên — nam, miền Bắc" },
-  { code: "Vinh", label: "Xuân Vĩnh — nam, miền Nam" },
-  { code: "Son", label: "Thái Sơn — nam, miền Nam" },
-  { code: "", label: "Không đọc giọng (chỉ hiện chữ)" },
-];
+// Giọng đọc mặc định cố định: Giọng nữ Hà Nội chuẩn (Trúc Ly — VieNeu-TTS / Web Speech)
+const DEFAULT_VOICE_LABEL = "Nữ Hà Nội chuẩn";
+const DEFAULT_VOICE_CODE = "Ly";
+
 
 type ApiQuestion = {
   id: string;
@@ -229,9 +220,8 @@ export default function InterviewPage() {
   const [saveError, setSaveError] = useState("");
   const [guestResult, setGuestResult] = useState<{ totalScore: number; answers: AnswerRecord[] } | null>(null);
 
-  // Đọc câu hỏi bằng giọng người phỏng vấn — VieNeu-TTS (7 giọng vùng miền),
-  // sinh audio local qua worker.py lúc bấm "Bắt đầu", KHÔNG gọi API ngoài.
-  const [selectedVoice, setSelectedVoice] = useState("Ly");
+  // Cố định giọng phỏng vấn viên: Giọng nữ Hà Nội chuẩn (VieNeu-TTS / Web Speech)
+  const selectedVoice = DEFAULT_VOICE_CODE;
   const [audioUrls, setAudioUrls] = useState<string[] | null>(null);
   const [audioNote, setAudioNote] = useState("");
   const questionAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -239,7 +229,7 @@ export default function InterviewPage() {
   const [audioJobActive, setAudioJobActive] = useState(false);
   const playedAudioRef = useRef<Set<number>>(new Set());
 
-  // Trạng thái phát âm của VietTTS (State Lock) và trạng thái đánh giá LLM
+  // Trạng thái phát âm của VietTTS / Web Speech và trạng thái đánh giá LLM
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [jdSkills, setJdSkills] = useState<string[]>([]);
@@ -255,6 +245,98 @@ export default function InterviewPage() {
     stopListening,
     resetTranscript,
   } = useSpeechRecognition();
+
+  // Dừng mọi âm thanh câu hỏi đang phát
+  const stopAllAudio = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
+    }
+    if (questionAudioRef.current) {
+      try {
+        questionAudioRef.current.pause();
+        questionAudioRef.current.currentTime = 0;
+      } catch {}
+    }
+    setIsSpeaking(false);
+  }, []);
+
+  // Hàm đọc to câu hỏi bằng tiếng Việt — Giọng Nữ Hà Nội chuẩn:
+  // Ưu tiên audio URL từ VieNeu-TTS nếu có, tự động fallback sang Web Speech Synthesis tiếng Việt chuẩn
+  const playQuestionAudio = useCallback((index: number) => {
+    if (typeof window === "undefined") return;
+    const qText = questions[index]?.question;
+    if (!qText) return;
+
+    // Ngắt micro tạm thời để không bị vang tiếng AI vào ô trả lời
+    stopListening();
+    stopAllAudio();
+    setIsSpeaking(true);
+
+    const url = audioUrls?.[index];
+    const el = questionAudioRef.current;
+
+    // 1. Nếu có file âm thanh từ VieNeu-TTS
+    if (url && el) {
+      el.src = url;
+      el.play()
+        .then(() => {
+          setIsSpeaking(true);
+        })
+        .catch(() => {
+          // Bị chặn autoplay hoặc lỗi -> phát bằng Speech Synthesis
+          speakViaSpeechSynthesis(qText);
+        });
+      return;
+    }
+
+    // 2. Mặc định phát trực tiếp bằng Web Speech API tiếng Việt giọng nữ
+    speakViaSpeechSynthesis(qText);
+
+    function speakViaSpeechSynthesis(text: string) {
+      if (!("speechSynthesis" in window)) {
+        setIsSpeaking(false);
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "vi-VN";
+      utterance.rate = 0.94; // Tốc độ vừa vặn, phát âm rõ ràng, chuẩn ngữ điệu
+      utterance.pitch = 1.05; // Cao độ nữ tính, thanh lịch
+
+      const voices = window.speechSynthesis.getVoices();
+      // Ưu tiên giọng nữ tiếng Việt chuẩn (HoaiMy, Linh, Mai, vi-VN, Female)
+      const vietnameseVoice =
+        voices.find(
+          (v) =>
+            (v.lang === "vi-VN" || v.lang.startsWith("vi")) &&
+            (v.name.toLowerCase().includes("hoaimy") ||
+              v.name.toLowerCase().includes("female") ||
+              v.name.toLowerCase().includes("mai") ||
+              v.name.toLowerCase().includes("linh") ||
+              v.name.toLowerCase().includes("natural"))
+        ) || voices.find((v) => v.lang === "vi-VN" || v.lang.startsWith("vi"));
+
+      if (vietnameseVoice) {
+        utterance.voice = vietnameseVoice;
+      }
+
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        stopListening();
+      };
+      utterance.onend = () => {
+        setIsSpeaking(false);
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [questions, audioUrls, stopListening, stopAllAudio]);
 
   const prevTranscriptRef = useRef("");
   const answerDraftRef = useRef(answerDraft);
@@ -298,9 +380,7 @@ export default function InterviewPage() {
     }
   }, [transcript]);
 
-  // Echo Prevention Lock: khi VietTTS đang phát câu hỏi ra loa, tắt micro để
-  // không thu lại giọng AI. Gắn qua props của <audio> (phần tử này chỉ render
-  // khi có URL nên không thể gắn listener qua ref lúc mount).
+  // Echo Prevention Lock: khi phát câu hỏi ra loa, tắt micro để không thu lại giọng AI
   const handleQuestionAudioPlay = () => {
     setIsSpeaking(true);
     if (isListening) stopListening();
@@ -412,7 +492,7 @@ export default function InterviewPage() {
 
   const advanceToNext = useCallback((record: AnswerRecord) => {
     stopListening();
-    setIsSpeaking(false);
+    stopAllAudio();
     resetTranscript();
     prevTranscriptRef.current = "";
 
@@ -427,7 +507,7 @@ export default function InterviewPage() {
       }
       return next;
     });
-  }, [currentIndex, questions, finishInterview, stopListening, resetTranscript]);
+  }, [currentIndex, questions, finishInterview, stopListening, resetTranscript, stopAllAudio]);
 
   const handleSubmitAnswer = async () => {
     stopListening();
@@ -544,8 +624,8 @@ export default function InterviewPage() {
     return () => clearTimeout(t);
   }, [phase, timeLeft, isEvaluating, handleTimeout]);
 
-  // Đọc câu hỏi bằng giọng người phỏng vấn (VieNeu-TTS trên worker.py local)
-  async function handleStart() {
+  // Bắt đầu phỏng vấn — tự động phát âm thanh câu hỏi số 1 ngay lập tức
+  function handleStart() {
     setCurrentIndex(0);
     setAnswerDraft("");
     setTimeLeft(TIME_PER_QUESTION_SEC);
@@ -556,18 +636,24 @@ export default function InterviewPage() {
     setAudioJobActive(false);
     playedAudioRef.current = new Set();
     stopListening();
+    stopAllAudio();
     resetTranscript();
     prevTranscriptRef.current = "";
 
-    if (!selectedVoice || questions.length === 0) {
-      setPhase("running");
-      return;
-    }
+    if (questions.length === 0) return;
 
-    setPhase("preparing");
+    // Chuyển thẳng vào running để bắt đầu ngay tức thì, không bắt user chờ
+    setPhase("running");
+
+    // Tự động phát âm thanh câu hỏi đầu tiên bằng tiếng Việt (Nữ Hà Nội chuẩn)
+    setTimeout(() => {
+      playQuestionAudio(0);
+    }, 350);
+
+    // Kích hoạt ngầm audio job nếu Supabase có cấu hình
     try {
       const supabase = createClient();
-      const { data: job, error: insertError } = await supabase
+      supabase
         .from("interview_audio_jobs")
         .insert({
           analysis_job_id: analysisJobId,
@@ -575,43 +661,20 @@ export default function InterviewPage() {
           questions: questions.map((q) => q.question),
         })
         .select("id")
-        .single();
-      if (insertError || !job?.id) throw new Error(insertError?.message || "tạo audio job thất bại");
-
-      setAudioJobId(job.id);
-      setAudioJobActive(true);
-
-      const deadline = Date.now() + 5_000;
-      while (Date.now() < deadline) {
-        const { data: row } = await supabase
-          .from("interview_audio_jobs")
-          .select("status, audio_urls")
-          .eq("id", job.id)
-          .single();
-        const urls = (row?.audio_urls as string[] | null) || null;
-        if (urls && urls.length > 0) {
-          setAudioUrls(urls);
-          if (row?.status === "done") setAudioJobActive(false);
-          break;
-        }
-        if (row?.status === "error") {
-          setAudioJobActive(false);
-          setAudioNote("Không tạo được giọng đọc (worker báo lỗi) — vẫn tiếp tục phỏng vấn, chỉ hiện chữ.");
-          break;
-        }
-        await new Promise((r) => setTimeout(r, 1000));
-      }
-    } catch (e) {
-      setAudioJobActive(false);
-      setAudioNote(
-        "Không tạo được giọng đọc: " + (e instanceof Error ? e.message : "unknown") + " — vẫn tiếp tục phỏng vấn, chỉ hiện chữ."
-      );
-    } finally {
-      setPhase("running");
-    }
+        .single()
+        .then(
+          ({ data: job }) => {
+            if (job?.id) {
+              setAudioJobId(job.id);
+              setAudioJobActive(true);
+            }
+          },
+          () => {}
+        );
+    } catch {}
   }
 
-  // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong
+  // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong (nếu có worker chạy)
   useEffect(() => {
     if (!audioJobId || !audioJobActive) return;
     if (phase !== "running" && phase !== "preparing") return;
@@ -634,19 +697,18 @@ export default function InterviewPage() {
     };
   }, [audioJobId, audioJobActive, phase]);
 
-  // Tự phát audio câu hiện tại đúng 1 lần khi vào câu
+  // Tự động phát âm thanh đọc câu hỏi khi chuyển sang câu mới
   useEffect(() => {
-    if (phase !== "running") return;
-    const url = audioUrls?.[currentIndex];
-    const el = questionAudioRef.current;
-    if (!url || !el || playedAudioRef.current.has(currentIndex)) return;
+    if (phase !== "running" || questions.length === 0) return;
+    if (playedAudioRef.current.has(currentIndex)) return;
     playedAudioRef.current.add(currentIndex);
-    el.src = url;
-    stopListening(); // Dừng micro khi audio bắt đầu phát
-    el.play().catch(() => {
-      // Tự phát bị chặn — người dùng bấm nút "Nghe lại câu hỏi".
-    });
-  }, [phase, currentIndex, audioUrls, stopListening]);
+
+    const timer = setTimeout(() => {
+      playQuestionAudio(currentIndex);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [phase, currentIndex, questions, playQuestionAudio]);
 
   if (!checkedAuth) {
     return (
@@ -660,354 +722,454 @@ export default function InterviewPage() {
     <div className="bg-[#f8f9ff] min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 pt-16 flex flex-col">
-        <section className="w-full max-w-3xl mx-auto px-4 lg:px-8 py-10 flex-1">
+        <section className="w-full px-4 sm:px-8 lg:px-12 py-8 flex-1">
           {phase === "intro" ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 sm:p-8">
+            <div className="space-y-6">
               {/* Header Intro */}
-              <div className="text-center max-w-xl mx-auto mb-6">
+              <div className="text-center max-w-3xl mx-auto mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-[#eff4ff] text-[#0037b0] flex items-center justify-center mx-auto mb-3 shadow-xs">
                   <span className="material-symbols-outlined text-[28px]">record_voice_over</span>
                 </div>
-                <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] sm:text-[26px] font-bold text-[#0b1c30]">
+                <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] font-extrabold text-[#0b1c30] tracking-tight">
                   Phòng luyện phỏng vấn AI
                 </h1>
-                <p className="text-[13px] sm:text-[14px] text-[#64748b] mt-1.5 leading-relaxed">
+                <p className="text-[14px] sm:text-[15px] text-[#64748b] mt-2 leading-relaxed">
                   {isPresetMode
                     ? "Luyện phản xạ phỏng vấn với các câu hỏi tình huống thực tế. Hỗ trợ trả lời bằng giọng nói trực tiếp qua Web Speech API và chấm điểm tự động."
                     : `Câu hỏi được AI đối soát và cá nhân hóa theo khoảng trống năng lực trong CV của bạn cho vị trí ${jobTitle}.`}
                 </p>
               </div>
 
-              {/* Banner Chế độ Preset nếu chưa phân tích CV */}
-              {isPresetMode && (
-                <div className="mb-6 p-4 rounded-xl bg-[#eff6ff] border border-[#bfdbfe]/60">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[20px] text-[#0037b0]">tips_and_updates</span>
-                      <span className="text-[13px] font-bold text-[#1e40af]">
-                        Chọn vị trí mẫu để bắt đầu luyện tập:
-                      </span>
+              {/* Grid 2 cột toàn màn hình */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                {/* Cột trái: Chọn vị trí mẫu + Quy chế thi & Hướng dẫn */}
+                <div className="lg:col-span-7 flex flex-col gap-6">
+                  {/* Banner Chế độ Preset nếu chưa phân tích CV */}
+                  {isPresetMode && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[20px] text-[#0037b0]">tips_and_updates</span>
+                          <span className="text-[14px] font-bold text-[#0b1c30]">
+                            Chọn vị trí mẫu để bắt đầu luyện tập:
+                          </span>
+                        </div>
+                        <Link
+                          href="/score"
+                          className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#0037b0] hover:underline"
+                        >
+                          <span>Hoặc tải CV để tạo câu hỏi riêng</span>
+                          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                        </Link>
+                      </div>
+
+                      {/* Preset Pills */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {(
+                          [
+                            { key: "frontend", label: "Frontend Engineer", icon: "terminal", desc: "React, TS, Tối ưu Web" },
+                            { key: "pm", label: "Product Lead", icon: "view_kanban", desc: "Roadmap, Agile, Metric" },
+                            { key: "sales", label: "Sales B2B", icon: "trending_up", desc: "Đàm phán, Chốt deal" },
+                          ] as const
+                        ).map((item) => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => selectPreset(item.key)}
+                            className={`flex flex-col gap-1.5 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                              activePresetKey === item.key
+                                ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] shadow-sm ring-2 ring-[#0037b0]/20 font-bold"
+                                : "bg-[#f8fafc] border-[#e2e8f0] text-[#475569] hover:bg-white hover:border-[#cbd5e1] font-medium"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                              <span className="text-[13px] truncate">{item.label}</span>
+                            </div>
+                            <span className="text-[11px] text-[#64748b]">{item.desc}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <Link
-                      href="/score"
-                      className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#0037b0] hover:underline"
+                  )}
+
+                  {/* Thông tin bài thi & Quy chế */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-[14px] font-bold text-[#0b1c30] flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined text-[18px] text-[#059669]">verified_user</span>
+                        Quy chế phỏng vấn & Hướng dẫn tương tác
+                      </h3>
+                      <div className="space-y-3 text-[13px] text-[#475569] leading-relaxed">
+                        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#f8fafc] border border-[#f1f5f9]">
+                          <span className="material-symbols-outlined text-[18px] text-[#059669] shrink-0 mt-0.5">timer</span>
+                          <div>
+                            <strong className="text-[#0b1c30]">Thời gian & Thang điểm:</strong> Mỗi câu có tối đa <strong>3 phút (180s)</strong>. Nộp bài trong phút đầu tiên để đạt điểm tối ưu (100%), từ phút thứ 2 hệ số điểm sẽ giảm dần theo thời gian.
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#f8fafc] border border-[#f1f5f9]">
+                          <span className="material-symbols-outlined text-[18px] text-[#0037b0] shrink-0 mt-0.5">mic</span>
+                          <div>
+                            <strong className="text-[#0b1c30]">Trả lời bằng giọng nói (0ms latency):</strong> Bấm micro để trả lời trực tiếp qua <strong>Web Speech API</strong> tiếng Việt thời gian thực, hoặc gõ văn bản tùy thích.
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#f8fafc] border border-[#f1f5f9]">
+                          <span className="material-symbols-outlined text-[18px] text-[#0284c7] shrink-0 mt-0.5">volume_up</span>
+                          <div>
+                            <strong className="text-[#0b1c30]">Phỏng vấn viên AI (VieNeu-TTS):</strong> Đọc câu hỏi bằng giọng nói tự nhiên. Micro được tự động tạm khóa trong lúc AI đang đọc để chống hú vang.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cột phải: Cấu hình giọng đọc & Nút bắt đầu */}
+                <div className="lg:col-span-5 flex flex-col justify-between bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 lg:p-7">
+                  <div className="space-y-6">
+                    <div className="pb-4 border-b border-[#f1f5f9]">
+                      <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Phiên phỏng vấn hiện tại</span>
+                      <h2 className="text-[18px] font-bold text-[#0b1c30] mt-1">{jobTitle}</h2>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-[12px] bg-[#eff4ff] text-[#0037b0] px-2.5 py-1 rounded-md font-semibold border border-[#dce1ff]">
+                          <span className="material-symbols-outlined text-[14px]">help</span>
+                          {questions.length} câu hỏi
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[12px] bg-[#f8fafc] text-[#475569] px-2.5 py-1 rounded-md font-medium border border-[#e2e8f0]">
+                          <span className="material-symbols-outlined text-[14px]">schedule</span>
+                          ~{questions.length * 3} phút
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="p-4 rounded-xl bg-[#eff6ff] border border-[#bfdbfe]/80 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#0037b0] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                          <span className="material-symbols-outlined text-[22px]">record_voice_over</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[13px] font-bold text-[#0b1c30]">Giọng đọc phỏng vấn:</span>
+                            <span className="text-[11px] font-extrabold text-[#0037b0] bg-[#dbeafe] px-2 py-0.5 rounded">
+                              {DEFAULT_VOICE_LABEL}
+                            </span>
+                          </div>
+                          <p className="text-[12px] text-[#475569] mt-1.5 leading-relaxed">
+                            Mặc định cố định giọng nữ Hà Nội chuẩn tự nhiên. Hệ thống tự động đọc to từng câu hỏi bằng tiếng Việt ngay khi bắt đầu.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 mt-6 border-t border-[#f1f5f9]">
+                    <button
+                      onClick={handleStart}
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] text-white text-[15px] font-bold hover:shadow-lg hover:shadow-[#0037b0]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                     >
-                      <span>Hoặc tải CV để tạo câu hỏi riêng</span>
-                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                    </Link>
-                  </div>
-
-                  {/* Preset Pills */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {(
-                      [
-                        { key: "frontend", label: "Frontend Engineer", icon: "terminal" },
-                        { key: "pm", label: "Product Lead", icon: "view_kanban" },
-                        { key: "sales", label: "Sales B2B", icon: "trending_up" },
-                      ] as const
-                    ).map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => selectPreset(item.key)}
-                        className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                          activePresetKey === item.key
-                            ? "bg-white border-[#0037b0] text-[#0037b0] shadow-sm ring-2 ring-[#0037b0]/20 font-bold"
-                            : "bg-white/60 border-[#dce1ff] text-[#475569] hover:bg-white font-medium"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
-                        <span className="text-[12px] truncate">{item.label}</span>
-                      </button>
-                    ))}
+                      <span className="material-symbols-outlined text-[22px]">play_arrow</span>
+                      Bắt đầu phỏng vấn ngay
+                    </button>
+                    <p className="text-center text-[11px] text-[#94a3b8] mt-2.5">
+                      Hỗ trợ cả trả lời bằng micro trực tiếp lẫn nhập liệu bàn phím
+                    </p>
                   </div>
                 </div>
-              )}
-
-              {/* Thông tin bài thi & Quy chế */}
-              <div className="text-[13px] text-[#475569] mb-6 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-4 space-y-2">
-                <div className="flex items-center justify-between pb-2 border-b border-[#e2e8f0]">
-                  <span className="font-semibold text-[#0b1c30]">
-                    Vị trí: <span className="text-[#0037b0]">{jobTitle}</span>
-                  </span>
-                  <span className="text-[12px] bg-[#e2e8f0] px-2 py-0.5 rounded-md font-medium text-[#475569]">
-                    {questions.length} câu hỏi
-                  </span>
-                </div>
-                <ul className="space-y-1.5 text-[12px] leading-relaxed pt-1">
-                  <li className="flex items-start gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-[#059669] shrink-0 mt-0.5">timer</span>
-                    <span>Mỗi câu có tối đa <strong>3 phút (180s)</strong>. Nộp trong phút đầu để đạt điểm tối ưu.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-[#0037b0] shrink-0 mt-0.5">mic</span>
-                    <span>Bạn có thể <strong>gõ chữ</strong> hoặc bấm micro để <strong>trả lời bằng giọng nói trực tiếp (Web Speech API)</strong> với độ trễ 0ms.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-[#0284c7] shrink-0 mt-0.5">volume_up</span>
-                    <span>Phỏng vấn viên sẽ đọc câu hỏi bằng giọng nói tự nhiên (VieNeu-TTS). Micro sẽ tự khóa khi AI đang nói để chống vang.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Cài đặt Giọng đọc */}
-              <div className="mb-6">
-                <label className="block text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Giọng đọc phỏng vấn viên (VieNeu-TTS)
-                </label>
-                <select
-                  value={selectedVoice}
-                  onChange={(e) => setSelectedVoice(e.target.value)}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#0b1c30] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all cursor-pointer"
-                >
-                  {VOICE_OPTIONS.map((v) => (
-                    <option key={v.code || "none"} value={v.code}>
-                      {v.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="text-center pt-2">
-                <button
-                  onClick={handleStart}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] text-white text-[15px] font-bold hover:shadow-lg hover:shadow-[#0037b0]/25 transition-all flex items-center justify-center gap-2 mx-auto active:scale-[0.99] cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[20px]">play_arrow</span>
-                  Bắt đầu phỏng vấn ngay
-                </button>
               </div>
             </div>
           ) : phase === "preparing" ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-8 text-center max-w-md mx-auto">
-              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[36px] mb-3 block">progress_activity</span>
-              <p className="text-[#0b1c30] font-bold text-[16px] mb-1">Đang chuẩn bị giọng đọc phỏng vấn viên...</p>
-              <p className="text-[12px] text-[#64748b] leading-relaxed">
-                Đang nạp giọng đọc cho câu hỏi đầu tiên. Quá trình phỏng vấn sẽ bắt đầu sau giây lát.
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-12 text-center max-w-lg mx-auto my-12">
+              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[40px] mb-4 block">progress_activity</span>
+              <p className="text-[#0b1c30] font-bold text-[18px] mb-2">Đang chuẩn bị giọng đọc phỏng vấn viên...</p>
+              <p className="text-[13px] text-[#64748b] leading-relaxed">
+                Đang nạp giọng đọc cho câu hỏi đầu tiên (VieNeu-TTS). Quá trình phỏng vấn sẽ bắt đầu sau giây lát.
               </p>
             </div>
           ) : phase === "running" ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 lg:p-8">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[12px] font-semibold text-[#565e74] uppercase tracking-wider">
-                  Câu {currentIndex + 1}/{questions.length} — {questions[currentIndex]?.category}
-                </span>
-                {isEvaluating ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-[#eff6ff] text-[#0037b0] border border-[#bfdbfe] shadow-xs">
-                    <span className="material-symbols-outlined text-[16px] animate-spin text-[#0037b0]">progress_activity</span>
-                    <span>Đang đánh giá câu trả lời...</span>
-                  </span>
-                ) : (
-                  <span
-                    className={`px-3 py-1 rounded-full text-[13px] font-bold ${
-                      timeLeft <= 10 ? "bg-[#ffdad6] text-[#93000a]" : "bg-[#e5eeff] text-[#0037b0]"
-                    }`}
-                  >
-                    {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}
-                  </span>
-                )}
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Cột chính (8 cols): Nội dung câu hỏi và khu vực trả lời */}
+              <div className="lg:col-span-8 flex flex-col gap-5">
+                <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 lg:p-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="inline-flex items-center gap-2 text-[12px] font-bold text-[#0037b0] bg-[#eff4ff] px-3 py-1 rounded-md border border-[#dce1ff]">
+                      <span className="material-symbols-outlined text-[15px]">quiz</span>
+                      Câu {currentIndex + 1}/{questions.length} — {questions[currentIndex]?.category}
+                    </span>
+                    {isEvaluating && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-[#eff6ff] text-[#0037b0] border border-[#bfdbfe] shadow-xs">
+                        <span className="material-symbols-outlined text-[16px] animate-spin text-[#0037b0]">progress_activity</span>
+                        <span>Đang đánh giá câu trả lời...</span>
+                      </span>
+                    )}
+                  </div>
 
-              <div className="w-full h-1.5 bg-[#e5eeff] rounded-full overflow-hidden mb-6">
-                <div
-                  className={`h-full rounded-full transition-all duration-1000 ${timeLeft <= 10 ? "bg-[#ba1a1a]" : "bg-[#1d4ed8]"}`}
-                  style={{ width: `${(timeLeft / TIME_PER_QUESTION_SEC) * 100}%` }}
-                />
-              </div>
+                  <p className="font-[family-name:var(--font-plus-jakarta)] text-[18px] sm:text-[20px] font-bold text-[#0b1c30] leading-relaxed mb-4">
+                    {questions[currentIndex]?.question}
+                  </p>
 
-              <p className="font-[family-name:var(--font-plus-jakarta)] text-[17px] font-semibold text-[#0b1c30] leading-relaxed mb-4">
-                {questions[currentIndex]?.question}
-              </p>
-
-              {audioUrls?.[currentIndex] && (
-                <div className="mb-4 flex items-center gap-2">
-                  <audio
-                    ref={questionAudioRef}
-                    className="hidden"
-                    onPlay={handleQuestionAudioPlay}
-                    onEnded={handleQuestionAudioStop}
-                    onPause={handleQuestionAudioStop}
-                    onError={handleQuestionAudioStop}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      stopListening();
-                      questionAudioRef.current?.play().catch(() => {});
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-[#eff4ff] text-[#0037b0] text-[12px] font-medium flex items-center gap-1.5 hover:bg-[#e5eeff] transition-colors cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">volume_up</span>
-                    Nghe lại câu hỏi
-                  </button>
-                </div>
-              )}
-              {!audioUrls?.[currentIndex] && audioJobActive && (
-                <p className="text-[12px] text-[#9aa0b4] mb-3">Đang tạo giọng đọc cho câu này, sẽ tự phát khi xong...</p>
-              )}
-              {audioNote && (
-                <p className="text-[12px] text-[#9aa0b4] mb-3">{audioNote}</p>
-              )}
-
-              {/* Ô soạn thảo câu trả lời — hỗ trợ vừa gõ vừa nói và chỉnh sửa tự do */}
-              <textarea
-                autoFocus
-                className="w-full bg-[#eff4ff] rounded-xl p-4 text-[14px] text-[#0b1c30] placeholder:text-[#747686] focus:outline-none focus:bg-[#e5eeff] transition-all resize-none"
-                rows={8}
-                value={answerDraft}
-                onChange={(e) => setAnswerDraft(e.target.value)}
-                placeholder="Nhập câu trả lời của bạn tại đây, hoặc bấm micro để trả lời bằng giọng nói..."
-              />
-
-              {/* Hiển thị nhận diện thời gian thực (0ms) với Web Speech API */}
-              {isListening && (
-                <div className="mt-2 px-3.5 py-2 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] text-[13px] flex items-center justify-between gap-3 shadow-xs">
-                  <div className="flex items-center gap-2 text-[#1e40af] overflow-hidden">
-                    <span className="material-symbols-outlined text-[18px] text-[#0037b0] animate-pulse">mic</span>
-                    <span className="font-semibold text-[#0037b0] shrink-0">Đang nghe trực tiếp:</span>
-                    <span className="italic truncate text-[#1d4ed8]">
-                      {normalizedInterim || "Đang chờ giọng nói của bạn (0ms latency)..."}
+                  {/* Thanh nghe lại câu hỏi — tự động đọc to và bấm để nghe lại bất cứ lúc nào */}
+                  <div className="mb-4 flex flex-wrap items-center gap-2.5">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <audio
+                      ref={questionAudioRef}
+                      className="hidden"
+                      onPlay={handleQuestionAudioPlay}
+                      onEnded={handleQuestionAudioStop}
+                      onPause={handleQuestionAudioStop}
+                      onError={handleQuestionAudioStop}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => playQuestionAudio(currentIndex)}
+                      className={`px-3.5 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
+                        isSpeaking
+                          ? "bg-[#0037b0] text-white shadow-sm ring-2 ring-[#0037b0]/20 animate-pulse"
+                          : "bg-[#eff4ff] text-[#0037b0] hover:bg-[#dbeafe] border border-[#bfdbfe]"
+                      }`}
+                      title="Bấm để nghe đọc lại câu hỏi bằng giọng nữ Hà Nội chuẩn"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        {isSpeaking ? "graphic_eq" : "volume_up"}
+                      </span>
+                      <span>{isSpeaking ? "Đang đọc câu hỏi..." : "Nghe lại câu hỏi"}</span>
+                    </button>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-[#1e40af] bg-[#eff6ff] px-2.5 py-1 rounded-lg font-semibold border border-[#bfdbfe]/60">
+                      <span className={`w-2 h-2 rounded-full ${isSpeaking ? "bg-[#2563eb] animate-ping" : "bg-[#10b981]"}`}></span>
+                      Giọng đọc: {DEFAULT_VOICE_LABEL}
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-[#2563eb] bg-[#dbeafe] px-2 py-0.5 rounded-md shrink-0">
-                    Web Speech API
-                  </span>
+
+                  {/* Ô soạn thảo câu trả lời */}
+                  <textarea
+                    autoFocus
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-4 text-[15px] text-[#0b1c30] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#0037b0] focus:bg-white transition-all resize-none leading-relaxed"
+                    rows={9}
+                    value={answerDraft}
+                    onChange={(e) => setAnswerDraft(e.target.value)}
+                    placeholder="Nhập câu trả lời của bạn tại đây, hoặc bấm nút micro bên dưới để trả lời bằng giọng nói..."
+                  />
+
+                  {/* Hiển thị nhận diện thời gian thực (0ms) với Web Speech API */}
+                  {isListening && (
+                    <div className="mt-3 px-3.5 py-2.5 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] text-[13px] flex items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-2 text-[#1e40af] overflow-hidden">
+                        <span className="material-symbols-outlined text-[18px] text-[#0037b0] animate-pulse">mic</span>
+                        <span className="font-semibold text-[#0037b0] shrink-0">Đang nghe trực tiếp:</span>
+                        <span className="italic truncate text-[#1d4ed8]">
+                          {normalizedInterim || "Đang chờ giọng nói của bạn (0ms latency)..."}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#2563eb] bg-[#dbeafe] px-2 py-0.5 rounded-md shrink-0">
+                        Web Speech API
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Trả lời bằng giọng nói qua Web Speech API */}
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#f1f5f9]">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={isListening ? stopListening : startListening}
+                        disabled={!isSpeechSupported || isSpeaking || isEvaluating}
+                        className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+                          isListening
+                            ? "bg-[#ba1a1a] text-white hover:bg-[#93000a] shadow-sm animate-pulse"
+                            : isSpeaking
+                            ? "bg-[#f1f5f9] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                            : !isSpeechSupported
+                            ? "bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                            : "bg-white border border-[#c4c5d7]/80 text-[#0037b0] hover:bg-[#eff4ff] hover:border-[#0037b0]"
+                        }`}
+                        title={
+                          isSpeaking
+                            ? "Phỏng vấn viên đang đọc câu hỏi, microphone tạm khóa"
+                            : !isSpeechSupported
+                            ? "Trình duyệt không hỗ trợ Web Speech API"
+                            : isListening
+                            ? "Bấm để dừng thu âm"
+                            : "Bấm để bắt đầu trả lời bằng giọng nói"
+                        }
+                      >
+                        <span className={`material-symbols-outlined text-[18px] ${isListening ? "animate-pulse" : ""}`}>
+                          {isListening ? "stop_circle" : isSpeaking ? "volume_up" : "mic"}
+                        </span>
+                        <span>
+                          {isListening
+                            ? "Dừng thu âm"
+                            : isSpeaking
+                            ? "Phỏng vấn viên đang nói..."
+                            : "Trả lời bằng giọng nói"}
+                        </span>
+                      </button>
+
+                      <span className="text-[12px] text-[#64748b]">
+                        {isSpeaking && (
+                          <span className="text-[#0284c7] font-medium flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">volume_up</span>
+                            Đang phát câu hỏi — micro tạm khóa để chống lặp tiếng.
+                          </span>
+                        )}
+                        {!isSpeaking && isListening && "Web Speech API đang thu âm trực tiếp tiếng Việt. Bạn có thể nói tự nhiên."}
+                        {!isSpeaking && !isListening && speechError && (
+                          <span className="text-[#ba1a1a]">{speechError}</span>
+                        )}
+                        {!isSpeaking && !isListening && !speechError && isSpeechSupported && (
+                          "Có thể thu âm nhiều lần hoặc gõ phím bổ sung tùy ý."
+                        )}
+                      </span>
+                    </div>
+
+                    <span className="text-[12px] text-[#8fa5c0] font-medium">{answerDraft.trim().length} ký tự</span>
+                  </div>
+
+                  {/* Fallback khi trình duyệt không hỗ trợ */}
+                  {!isSpeechSupported && (
+                    <div className="mt-2.5 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-[12px] flex items-start gap-2">
+                      <span className="material-symbols-outlined text-[18px] text-[#d97706] shrink-0">info</span>
+                      <span>
+                        Trình duyệt hiện tại chưa hỗ trợ Web Speech API. Vui lòng sử dụng <strong>Chrome</strong> hoặc <strong>Edge</strong> để trả lời bằng giọng nói, hoặc gõ phím trực tiếp.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Nút Skip & Submit */}
+                  <div className="mt-5 pt-4 border-t border-[#f1f5f9] flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={handleSkip}
+                      disabled={isEvaluating}
+                      className="px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-1.5 transition-colors bg-white border border-[#c4c5d7]/60 text-[#565e74] hover:bg-[#f0f4ff] cursor-pointer"
+                      title="Bỏ qua câu này — sẽ bị 0 điểm"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">skip_next</span>
+                      Bỏ qua câu này
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSubmitAnswer}
+                      disabled={isEvaluating}
+                      className={`px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
+                        isEvaluating
+                          ? "bg-[#e5eeff] text-[#64748b] cursor-wait"
+                          : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] hover:shadow-md"
+                      }`}
+                    >
+                      {isEvaluating && (
+                        <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      )}
+                      <span>
+                        {isEvaluating
+                          ? "Đang đánh giá..."
+                          : currentIndex + 1 >= questions.length
+                          ? "Nộp & xem kết quả"
+                          : "Nộp & câu tiếp theo"}
+                      </span>
+                      {!isEvaluating && (
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              )}
-
-              {/* Trả lời bằng giọng nói qua Web Speech API */}
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={!isSpeechSupported || isSpeaking || isEvaluating}
-                  className={`px-4 py-2 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
-                    isListening
-                      ? "bg-[#ba1a1a] text-white hover:bg-[#93000a] shadow-sm animate-pulse"
-                      : isSpeaking
-                      ? "bg-[#f1f5f9] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
-                      : !isSpeechSupported
-                      ? "bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
-                      : "bg-white border border-[#c4c5d7]/80 text-[#0037b0] hover:bg-[#eff4ff] hover:border-[#0037b0]"
-                  }`}
-                  title={
-                    isSpeaking
-                      ? "Phỏng vấn viên đang đọc câu hỏi, microphone tạm khóa"
-                      : !isSpeechSupported
-                      ? "Trình duyệt không hỗ trợ Web Speech API"
-                      : isListening
-                      ? "Bấm để dừng thu âm"
-                      : "Bấm để bắt đầu trả lời bằng giọng nói"
-                  }
-                >
-                  <span className={`material-symbols-outlined text-[18px] ${isListening ? "animate-pulse" : ""}`}>
-                    {isListening ? "stop_circle" : isSpeaking ? "volume_up" : "mic"}
-                  </span>
-                  <span>
-                    {isListening
-                      ? "Dừng thu âm"
-                      : isSpeaking
-                      ? "Phỏng vấn viên đang nói..."
-                      : "Trả lời bằng giọng nói"}
-                  </span>
-                </button>
-
-                <span className="text-[12px] text-[#64748b]">
-                  {isSpeaking && (
-                    <span className="text-[#0284c7] font-medium flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">volume_up</span>
-                      Đang phát câu hỏi (VieNeu-TTS) — micro tạm khóa để chống lặp tiếng.
-                    </span>
-                  )}
-                  {!isSpeaking && isListening && "Web Speech API đang thu âm trực tiếp tiếng Việt. Bạn có thể nói tự nhiên."}
-                  {!isSpeaking && !isListening && speechError && (
-                    <span className="text-[#ba1a1a]">{speechError}</span>
-                  )}
-                  {!isSpeaking && !isListening && !speechError && isSpeechSupported && (
-                    "Có thể thu âm nhiều lần hoặc gõ phím bổ sung, chỉnh sửa nội dung thoải mái trước khi nộp."
-                  )}
-                </span>
               </div>
 
-              {/* Thông báo fallback khi trình duyệt không hỗ trợ Web Speech API */}
-              {!isSpeechSupported && (
-                <div className="mt-2.5 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-[12px] flex items-start gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-[#d97706] shrink-0">info</span>
-                  <span>
-                    Trình duyệt hiện tại chưa hỗ trợ Web Speech API. Vui lòng sử dụng <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong> hoặc <strong>Cốc Cốc</strong> để trả lời bằng giọng nói, hoặc bạn vẫn có thể <strong>gõ phím trực tiếp</strong> vào ô trên.
-                  </span>
-                </div>
-              )}
-
-              {/* Thông báo mốc thời gian */}
-              <div className="mt-3">
-                <p className="text-[11px] text-[#8fa5c0]">
-                  {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
-                    ? "Đang trong phút đầu — nộp trong thời gian này để được tính điểm tối đa."
-                    : "Đã qua phút đầu — điểm sẽ giảm dần theo thời gian đã dùng."}
-                </p>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-[12px] text-[#8fa5c0]">{answerDraft.trim().length} ký tự</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSkip}
-                    disabled={isEvaluating}
-                    className="px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors bg-white border border-[#c4c5d7]/60 text-[#565e74] hover:bg-[#f0f4ff] cursor-pointer"
-                    title="Bỏ qua câu này — sẽ bị 0 điểm"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">skip_next</span>
-                    Bỏ qua
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmitAnswer}
-                    disabled={isEvaluating}
-                    className={`px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                      isEvaluating
-                        ? "bg-[#e5eeff] text-[#64748b] cursor-wait"
-                        : "bg-[#1d4ed8] text-white hover:bg-[#0037b0]"
-                    }`}
-                  >
-                    {isEvaluating && (
-                      <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                    )}
-                    <span>
-                      {isEvaluating
-                        ? "Đang đánh giá..."
-                        : currentIndex + 1 >= questions.length
-                        ? "Nộp & xem kết quả"
-                        : "Nộp & câu tiếp theo"}
+              {/* Cột phụ (4 cols): Đồng hồ thời gian & Tiến trình bài thi */}
+              <div className="lg:col-span-4 flex flex-col gap-5">
+                {/* Card Đồng hồ đếm ngược */}
+                <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[12px] font-bold text-[#64748b] uppercase tracking-wider">Thời gian còn lại</span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-[14px] font-mono font-bold ${
+                        timeLeft <= 10 ? "bg-[#ffdad6] text-[#93000a] animate-pulse" : "bg-[#e5eeff] text-[#0037b0]"
+                      }`}
+                    >
+                      {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}
                     </span>
-                    {!isEvaluating && (
-                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    )}
-                  </button>
+                  </div>
+
+                  <div className="w-full h-2 bg-[#e5eeff] rounded-full overflow-hidden mb-3">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ${timeLeft <= 10 ? "bg-[#ba1a1a]" : "bg-[#1d4ed8]"}`}
+                      style={{ width: `${(timeLeft / TIME_PER_QUESTION_SEC) * 100}%` }}
+                    />
+                  </div>
+
+                  <p className="text-[12px] text-[#64748b] leading-relaxed">
+                    {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
+                      ? "⚡ Đang trong phút đầu — nộp trong giai đoạn này để được trọn vẹn điểm tối đa (100%)."
+                      : "⏱️ Đã qua 1 phút — điểm số sẽ giảm dần theo thời lượng trả lời."}
+                  </p>
+                </div>
+
+                {/* Card Tiến trình câu hỏi */}
+                <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6">
+                  <h4 className="text-[13px] font-bold text-[#0b1c30] mb-3 flex items-center justify-between">
+                    <span>Tiến trình phỏng vấn</span>
+                    <span className="text-[#0037b0] font-bold">{currentIndex + 1}/{questions.length}</span>
+                  </h4>
+                  <div className="space-y-2">
+                    {questions.map((q, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-xl text-[12px] flex items-center justify-between border transition-all ${
+                          idx === currentIndex
+                            ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] font-bold shadow-xs"
+                            : idx < currentIndex
+                            ? "bg-[#f8fafc] border-[#e2e8f0] text-[#059669]"
+                            : "bg-white border-[#f1f5f9] text-[#94a3b8]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="material-symbols-outlined text-[16px] shrink-0">
+                            {idx < currentIndex ? "check_circle" : idx === currentIndex ? "radio_button_checked" : "radio_button_unchecked"}
+                          </span>
+                          <span className="truncate">Câu {idx + 1}: {q.category}</span>
+                        </div>
+                        <span className="text-[11px] shrink-0 font-medium">
+                          {idx === currentIndex ? "Đang làm" : idx < currentIndex ? "Đã xong" : "Chờ"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mẹo phỏng vấn STAR */}
+                <div className="bg-gradient-to-br from-[#eff6ff] to-[#f8f9ff] rounded-2xl border border-[#bfdbfe]/60 p-5">
+                  <h4 className="text-[13px] font-bold text-[#1e40af] flex items-center gap-1.5 mb-2">
+                    <span className="material-symbols-outlined text-[16px] text-[#0037b0]">lightbulb</span>
+                    Gợi ý cấu trúc trả lời (STAR)
+                  </h4>
+                  <ul className="text-[12px] text-[#334155] space-y-1.5 leading-relaxed">
+                    <li><strong>S (Situation):</strong> Nêu bối cảnh hoặc tình huống thực tế.</li>
+                    <li><strong>T (Task):</strong> Nhiệm vụ cụ thể cần giải quyết.</li>
+                    <li><strong>A (Action):</strong> Các bước hành động kỹ thuật bạn đã thực hiện.</li>
+                    <li><strong>R (Result):</strong> Kết quả đạt được (số liệu định lượng).</li>
+                  </ul>
                 </div>
               </div>
             </div>
           ) : phase === "saving" ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-8 text-center max-w-md mx-auto">
-              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[36px] mb-3 block">progress_activity</span>
-              <p className="text-[#0b1c30] font-bold text-[16px]">Đang phân tích và tổng kết kết quả...</p>
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-12 text-center max-w-lg mx-auto my-12">
+              <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[40px] mb-4 block">progress_activity</span>
+              <p className="text-[#0b1c30] font-bold text-[18px]">Đang phân tích và tổng kết kết quả...</p>
+              <p className="text-[13px] text-[#64748b] mt-1">Hệ thống AI đang chấm điểm chi tiết theo thang năng lực.</p>
             </div>
           ) : (
-            /* Phase: Finished - Bảng tổng kết kết quả phỏng vấn */
-            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 sm:p-8">
-              <div className="text-center mb-6">
+            /* Phase: Finished - Bảng tổng kết kết quả phỏng vấn full màn hình */
+            <div className="bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 sm:p-10">
+              <div className="text-center max-w-2xl mx-auto mb-8">
                 <div className="w-16 h-16 rounded-2xl bg-[#ecfdf5] text-[#059669] flex items-center justify-center mx-auto mb-3 ring-4 ring-[#ecfdf5]">
                   <span className="material-symbols-outlined text-[32px]">military_tech</span>
                 </div>
-                <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[22px] font-bold text-[#0b1c30]">
+                <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] sm:text-[28px] font-extrabold text-[#0b1c30]">
                   Kết quả phỏng vấn thử nghiệm
                 </h2>
-                <p className="text-[13px] text-[#64748b] mt-1">
+                <p className="text-[14px] text-[#64748b] mt-1">
                   Vị trí: <strong className="text-[#0b1c30]">{jobTitle}</strong>
                 </p>
                 {saveError && (
-                  <p className="text-[12px] text-amber-600 mt-2 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                  <p className="text-[12px] text-amber-600 mt-2 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
                     {saveError}
                   </p>
                 )}
@@ -1015,9 +1177,9 @@ export default function InterviewPage() {
 
               {/* Thẻ điểm tổng */}
               {guestResult && (
-                <div className="mb-6 p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-extrabold text-[22px] ${
+                <div className="mb-8 p-6 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs">
+                  <div className="flex items-center gap-5">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-[26px] shadow-sm ${
                       guestResult.totalScore >= 70
                         ? "bg-[#ecfdf5] text-[#059669]"
                         : guestResult.totalScore >= 50
@@ -1027,20 +1189,20 @@ export default function InterviewPage() {
                       {guestResult.totalScore}
                     </div>
                     <div>
-                      <h4 className="font-bold text-[15px] text-[#0b1c30]">
+                      <h4 className="font-bold text-[17px] text-[#0b1c30]">
                         Điểm đánh giá trung bình
                       </h4>
-                      <p className="text-[12px] text-[#64748b]">
-                        Đã trả lời {guestResult.answers.length} câu hỏi theo thang điểm chuẩn năng lực.
+                      <p className="text-[13px] text-[#64748b] mt-0.5">
+                        Đã trả lời {guestResult.answers.length} câu hỏi theo thang điểm chuẩn năng lực ngành nghề.
                       </p>
                     </div>
                   </div>
 
                   <Link
                     href="/login?next=/interview"
-                    className="px-4 py-2.5 rounded-xl bg-[#0037b0] hover:bg-[#1d4ed8] text-white text-[13px] font-bold transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
+                    className="px-5 py-3 rounded-xl bg-[#0037b0] hover:bg-[#1d4ed8] text-white text-[13px] font-bold transition-all flex items-center gap-2 shrink-0 shadow-sm"
                   >
-                    <span className="material-symbols-outlined text-[16px]">save</span>
+                    <span className="material-symbols-outlined text-[18px]">save</span>
                     Đăng nhập để lưu vào hồ sơ
                   </Link>
                 </div>
@@ -1048,55 +1210,57 @@ export default function InterviewPage() {
 
               {/* Chi tiết từng câu và phản hồi AI */}
               {guestResult && (
-                <div className="space-y-3 mb-6">
-                  <h4 className="font-bold text-[14px] text-[#0b1c30] mb-2">Chi tiết từng câu hỏi & đánh giá AI:</h4>
-                  {guestResult.answers.map((ans, idx) => (
-                    <div key={idx} className="p-4 rounded-xl border border-[#e2e8f0] bg-white text-[13px]">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <span className="font-semibold text-[#0b1c30]">
-                          Câu {idx + 1}: {ans.question}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
-                          ans.question_score >= 70
-                            ? "bg-[#ecfdf5] text-[#059669]"
-                            : ans.question_score >= 50
-                            ? "bg-[#fffbeb] text-[#d97706]"
-                            : "bg-[#fef2f2] text-[#dc2626]"
-                        }`}>
-                          {ans.question_score}/100 đ
-                        </span>
-                      </div>
-                      <p className="text-[12px] text-[#64748b] bg-[#f8fafc] p-2.5 rounded-lg border border-[#f1f5f9]">
-                        <strong>Trả lời:</strong> {ans.answer_text || "(Không có nội dung trả lời / đã bỏ qua)"}
-                      </p>
-                      {ans.feedback && (
-                        <p className="mt-2 text-[12px] text-[#1e40af] bg-[#eff6ff] p-2.5 rounded-lg border border-[#bfdbfe]/60">
-                          <strong>Nhận xét chuyên gia AI:</strong> {ans.feedback}
+                <div className="space-y-4 mb-8">
+                  <h4 className="font-bold text-[16px] text-[#0b1c30] mb-3">Chi tiết từng câu hỏi & Đánh giá chuyên sâu:</h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    {guestResult.answers.map((ans, idx) => (
+                      <div key={idx} className="p-5 rounded-2xl border border-[#e2e8f0] bg-white text-[13px] shadow-xs">
+                        <div className="flex items-start justify-between gap-3 mb-2.5">
+                          <span className="font-bold text-[14px] text-[#0b1c30]">
+                            Câu {idx + 1}: {ans.question}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-[12px] font-extrabold shrink-0 ${
+                            ans.question_score >= 70
+                              ? "bg-[#ecfdf5] text-[#059669]"
+                              : ans.question_score >= 50
+                              ? "bg-[#fffbeb] text-[#d97706]"
+                              : "bg-[#fef2f2] text-[#dc2626]"
+                          }`}>
+                            {ans.question_score}/100 đ
+                          </span>
+                        </div>
+                        <p className="text-[13px] text-[#475569] bg-[#f8fafc] p-3 rounded-xl border border-[#f1f5f9] leading-relaxed">
+                          <strong className="text-[#0b1c30]">Trả lời của bạn:</strong> {ans.answer_text || "(Không có nội dung trả lời / đã bỏ qua)"}
                         </p>
-                      )}
-                    </div>
-                  ))}
+                        {ans.feedback && (
+                          <p className="mt-2.5 text-[13px] text-[#1e40af] bg-[#eff6ff] p-3 rounded-xl border border-[#bfdbfe]/60 leading-relaxed">
+                            <strong className="text-[#0037b0]">Nhận xét chuyên gia AI:</strong> {ans.feedback}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* Action buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-[#f1f5f9]">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 border-t border-[#f1f5f9]">
                 <button
                   type="button"
                   onClick={() => {
                     setPhase("intro");
                     setGuestResult(null);
                   }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#e2e8f0] text-[#475569] hover:bg-[#f8fafc] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl border border-[#e2e8f0] text-[#475569] hover:bg-[#f8fafc] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[16px]">replay</span>
+                  <span className="material-symbols-outlined text-[18px]">replay</span>
                   Luyện tập vị trí khác
                 </button>
                 <Link
                   href="/score"
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-bold hover:bg-[#1d4ed8] transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-auto px-7 py-3 rounded-xl bg-[#0037b0] text-white text-[13px] font-bold hover:bg-[#1d4ed8] transition-colors flex items-center justify-center gap-2 shadow-xs"
                 >
-                  <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                  <span className="material-symbols-outlined text-[18px]">upload_file</span>
                   Tải CV lên phân tích chuyên sâu
                 </Link>
               </div>

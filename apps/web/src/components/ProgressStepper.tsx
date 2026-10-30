@@ -41,7 +41,7 @@ export default function ProgressStepper({ activeStep, sessionId }: Props) {
 
   return (
     <section className="w-full bg-white border-b border-[#e2e8f0] py-4 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8">
+      <div className="w-full px-4 sm:px-8 lg:px-12">
         {sessionId && (
           <div className="flex items-center gap-2 mb-3 text-[12px]">
             <span className="font-semibold uppercase tracking-wider text-[#64748b]">Mã phiên làm việc:</span>
