@@ -735,7 +735,7 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="bg-[#f8f9ff] min-h-screen flex flex-col">
+    <div className="bg-[#f8f9fc] min-h-screen flex flex-col selection:bg-[#c026d3]/20 selection:text-[#0037b0]">
       <Header />
       <main className="flex-1 pt-16 flex flex-col">
         <section className="w-full px-4 sm:px-8 lg:px-12 py-8 flex-1">
@@ -881,7 +881,7 @@ export default function InterviewPage() {
                   <div className="pt-6 mt-6 border-t border-[#f1f5f9]">
                     <button
                       onClick={handleStart}
-                      className="w-full py-4 rounded-xl bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] text-white text-[15px] font-bold hover:shadow-lg hover:shadow-[#0037b0]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      className="w-full py-4 rounded-xl btn-gradient-cta text-[15px] cursor-pointer active:scale-[0.99]"
                     >
                       <span className="material-symbols-outlined text-[22px]">play_arrow</span>
                       Bắt đầu phỏng vấn ngay
@@ -1061,7 +1061,7 @@ export default function InterviewPage() {
                       type="button"
                       onClick={handleSkip}
                       disabled={isEvaluating}
-                      className="px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-1.5 transition-colors bg-white border border-[#c4c5d7]/60 text-[#565e74] hover:bg-[#f0f4ff] cursor-pointer"
+                      className="btn-secondary px-4 py-2.5 text-[13px] flex items-center gap-1.5 cursor-pointer"
                       title="Bỏ qua câu này — sẽ bị 0 điểm"
                     >
                       <span className="material-symbols-outlined text-[16px]">skip_next</span>

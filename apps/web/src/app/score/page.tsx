@@ -216,7 +216,7 @@ export default function ScorePage() {
   }
 
   return (
-    <div className="bg-[#f8f9ff] min-h-screen flex flex-col">
+    <div className="bg-[#f8f9fc] min-h-screen flex flex-col selection:bg-[#c026d3]/20 selection:text-[#0037b0]">
       <Header />
 
       <main className="flex-1 pt-16 flex flex-col">
@@ -497,7 +497,7 @@ export default function ScorePage() {
                     <button
                       type="button"
                       onClick={() => applyPreset("frontend")}
-                      className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#eff6ff] hover:bg-[#dbeafe] text-[#1e40af] border border-[#bfdbfe] transition-colors"
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-blue-50 text-[#0037b0] border border-slate-200 hover:border-blue-200 transition-all cursor-pointer"
                       title="Nạp nhanh JD mẫu Frontend"
                     >
                       Frontend
@@ -505,7 +505,7 @@ export default function ScorePage() {
                     <button
                       type="button"
                       onClick={() => applyPreset("pm")}
-                      className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] transition-colors"
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-fuchsia-50 text-[#c026d3] border border-slate-200 hover:border-fuchsia-200 transition-all cursor-pointer"
                       title="Nạp nhanh JD mẫu Product Lead"
                     >
                       Product Lead
@@ -513,7 +513,7 @@ export default function ScorePage() {
                     <button
                       type="button"
                       onClick={() => applyPreset("sales")}
-                      className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#faf5ff] hover:bg-[#f3e8ff] text-[#6b21a8] border border-[#e9d5ff] transition-colors"
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-orange-50 text-[#ea580c] border border-slate-200 hover:border-orange-200 transition-all cursor-pointer"
                       title="Nạp nhanh JD mẫu Sales B2B"
                     >
                       Sales B2B
@@ -577,9 +577,9 @@ export default function ScorePage() {
                 id="analyze-btn"
                 disabled={!formReady}
                 onClick={handleAnalyze}
-                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold flex items-center justify-center gap-2 transition-all ${formReady
-                    ? "bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] hover:shadow-lg hover:shadow-[#0037b0]/25 text-white cursor-pointer active:scale-[0.99]"
-                    : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed shadow-none"
+                className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold flex items-center justify-center gap-2 transition-all ${formReady
+                    ? "btn-gradient-cta shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]"
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
                   }`}
               >
                 <span className="material-symbols-outlined text-[19px]">

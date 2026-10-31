@@ -160,7 +160,7 @@ export default function ExplorePage() {
     industries.find((ind) => ind.id === activeIndId) || filteredIndustries[0] || industries[0];
 
   return (
-    <div className="bg-[#f8f9ff] min-h-screen flex flex-col">
+    <div className="bg-[#f8f9fc] min-h-screen flex flex-col selection:bg-[#c026d3]/20 selection:text-[#0037b0]">
       <Header />
 
       <main className="flex-1 pt-16 flex flex-col">
@@ -335,7 +335,7 @@ export default function ExplorePage() {
                 </div>
                 <Link
                   href={`/score?industry=${encodeURIComponent(activeIndustry.name)}`}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0037b0] hover:bg-[#1d4ed8] text-white text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs"
+                  className="w-full sm:w-auto btn-primary px-5 py-2.5 text-[13px] font-bold shadow-sm hover:shadow-md shrink-0"
                 >
                   <span>Đối soát CV ngay</span>
                   <span className="material-symbols-outlined text-[16px]">arrow_forward</span>

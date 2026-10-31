@@ -15,6 +15,18 @@
 }
 
 @theme {
+  /* CareerFit Brand Tokens */
+  --color-brand-blue: #0037b0;
+  --color-brand-blue-hover: #002b8c;
+  --color-brand-indigo: #3724c9;
+  --color-brand-magenta: #c026d3;
+  --color-brand-pink: #df2365;
+  --color-brand-orange: #ff791b;
+  --color-brand-amber: #f59e0b;
+  --color-brand-cyan: #06b6d4;
+  --color-brand-emerald: #10b981;
+  --color-brand-bg: #f8f9fc;
+
   /* Colors */
   --color-primary: #0037b0;
   --color-primary-container: #1d4ed8;
@@ -96,4 +108,113 @@
   --font-family-body: "Inter", sans-serif;
   --font-family-label: "Inter", sans-serif;
   --font-family-code: "Inter", monospace;
+}
+
+
+/* ==========================================================================
+   CareerFit Design System Utilities
+   Consistency & Accessibility Standards
+   ========================================================================== */
+
+/* Brand Gradients (Logo Alignment: Blue -> Indigo -> Magenta -> Warm Orange) */
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #0037b0 0%, #3724c9 32%, #c026d3 68%, #ff791b 100%);
+}
+
+.bg-brand-gradient-hover:hover {
+  background: linear-gradient(135deg, #002b8c 0%, #2d1ba8 32%, #a21caf 68%, #ea580c 100%);
+}
+
+.bg-brand-gradient-subtle {
+  background: linear-gradient(135deg, rgba(0, 55, 176, 0.05) 0%, rgba(192, 38, 211, 0.05) 50%, rgba(255, 121, 27, 0.06) 100%);
+}
+
+.text-brand-gradient {
+  background: linear-gradient(135deg, #0037b0 0%, #3724c9 28%, #c026d3 64%, #ff791b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Primary Action Buttons (Deep Blue / Subtle Gradient, High Contrast) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #0037b0;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px 0 rgba(0, 55, 176, 0.2);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background-color: #002b8c;
+  box-shadow: 0 4px 14px 0 rgba(0, 55, 176, 0.28);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: scale(0.99);
+}
+.btn-primary:disabled {
+  background-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Secondary Action Buttons (Subtle Soft Tint, Deep Blue/Purple Text - Easy Recognition) */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #f1f5f9;
+  color: #1e1b4b;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background-color: #e0e7ff;
+  color: #3724c9;
+  border-color: #a5b4fc;
+  box-shadow: 0 2px 8px 0 rgba(55, 36, 201, 0.12);
+  transform: translateY(-1px);
+}
+.btn-secondary:active {
+  transform: scale(0.99);
+}
+
+/* Gradient Hero CTA Button */
+.btn-gradient-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #0037b0 0%, #3724c9 32%, #c026d3 68%, #ff791b 100%);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px 0 rgba(0, 55, 176, 0.25);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-gradient-cta:hover {
+  opacity: 0.95;
+  box-shadow: 0 6px 20px 0 rgba(192, 38, 211, 0.35);
+  transform: translateY(-1px);
+}
+.btn-gradient-cta:active {
+  transform: scale(0.99);
 }

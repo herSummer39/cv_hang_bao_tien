@@ -71,7 +71,7 @@ export default async function DashboardPage() {
   const displayName = profile?.full_name ?? user.email?.split("@")[0] ?? "Bạn";
 
   return (
-    <div className="bg-[#f8f9ff] min-h-screen flex flex-col">
+    <div className="bg-[#f8f9fc] min-h-screen flex flex-col selection:bg-[#c026d3]/20 selection:text-[#0037b0]">
       <Header />
       <main className="flex-1 pt-16">
         <DashboardView

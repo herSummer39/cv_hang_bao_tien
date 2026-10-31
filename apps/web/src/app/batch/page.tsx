@@ -122,7 +122,7 @@ export default function BatchPage() {
   }
 
   return (
-    <div className="bg-[#f8f9ff] min-h-screen flex flex-col">
+    <div className="bg-[#f8f9fc] min-h-screen flex flex-col selection:bg-[#c026d3]/20 selection:text-[#0037b0]">
       <Header />
 
       <main className="flex-1 pt-16 flex flex-col">
@@ -183,7 +183,7 @@ export default function BatchPage() {
               </p>
 
               <div
-                className="relative min-h-[140px] bg-[#eff4ff]/50 hover:bg-[#eff4ff] rounded-xl transition-all flex flex-col items-center justify-center p-6 text-center cursor-pointer shadow-inner mb-4"
+                className="relative min-h-[140px] bg-slate-50 hover:bg-blue-50/60 border-2 border-dashed border-slate-200 hover:border-[#0037b0]/50 rounded-2xl transition-all flex flex-col items-center justify-center p-6 text-center cursor-pointer shadow-inner mb-4"
               >
                 <input
                   ref={fileInputRef}

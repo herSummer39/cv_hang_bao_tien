@@ -152,6 +152,9 @@ export default function DashboardView({ data }: { data: DashboardData }) {
       label: "Lượt phân tích CV",
       value: String(analysisCount ?? 0),
       foot: `${last30Count ?? 0} lượt trong 30 ngày qua`,
+      iconColor: "text-[#0037b0]",
+      iconBg: "bg-blue-50",
+      accentBorder: "hover:border-blue-200",
     },
     {
       icon: "insights",
@@ -160,6 +163,9 @@ export default function DashboardView({ data }: { data: DashboardData }) {
       unit: avgScore != null ? "/100" : undefined,
       band: avgScore != null ? bandOf(avgScore) : undefined,
       foot: scores.length ? `Tính trên ${scores.length} lần phân tích gần nhất` : "Chưa có kết quả",
+      iconColor: "text-[#c026d3]",
+      iconBg: "bg-fuchsia-50",
+      accentBorder: "hover:border-fuchsia-200",
     },
     {
       icon: "workspace_premium",
@@ -167,19 +173,25 @@ export default function DashboardView({ data }: { data: DashboardData }) {
       value: best ? String(Math.round(best.result!.score!)) : "–",
       unit: best ? "/100" : undefined,
       foot: best ? best.job_title || best.cv_filename || "—" : "Chưa có kết quả",
+      iconColor: "text-[#ea580c]",
+      iconBg: "bg-orange-50",
+      accentBorder: "hover:border-orange-200",
     },
     {
       icon: "record_voice_over",
       label: "Phỏng vấn giả lập",
       value: String(completedInterviews.length),
       foot: avgInterview != null ? `Điểm trung bình ${avgInterview}/100` : "Chưa có phiên nào",
+      iconColor: "text-[#059669]",
+      iconBg: "bg-emerald-50",
+      accentBorder: "hover:border-emerald-200",
     },
   ];
 
   return (
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-6">
           {/* ── Hero ─────────────────────────────────────────────────────── */}
-          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0037b0] to-[#1d4ed8] text-white px-6 sm:px-8 py-7 shadow-lg shadow-[#0037b0]/15">
+          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0037b0] via-[#3724c9] to-[#7c3aed] text-white px-6 sm:px-8 py-7 shadow-lg shadow-[#0037b0]/20">
             <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-[20px] font-bold flex-shrink-0">
@@ -291,10 +303,12 @@ export default function DashboardView({ data }: { data: DashboardData }) {
           {/* ── KPI ──────────────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {kpis.map((k) => (
-              <div key={k.label} className="bg-white rounded-2xl border border-[#e5eeff] shadow-[0_1px_3px_rgba(11,28,48,0.04)] p-5">
+              <div key={k.label} className={`bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(11,28,48,0.04)] p-5 transition-all ${k.accentBorder}`}>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-[12px] font-semibold text-[#565e74] uppercase tracking-wider">{k.label}</span>
-                  <span className="material-symbols-outlined text-[20px] text-[#0037b0]">{k.icon}</span>
+                  <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">{k.label}</span>
+                  <div className={`w-8 h-8 rounded-xl ${k.iconBg} flex items-center justify-center shrink-0`}>
+                    <span className={`material-symbols-outlined text-[19px] ${k.iconColor}`}>{k.icon}</span>
+                  </div>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="font-[family-name:var(--font-plus-jakarta)] text-[32px] font-bold text-[#0b1c30] leading-none">{k.value}</span>

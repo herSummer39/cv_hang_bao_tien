@@ -41,31 +41,31 @@ export default function AuthNav() {
     return (
       <div className="flex items-center gap-3">
         {isPro && (
-          <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-[#ede9fe]/60 text-[#7c3aed] border border-[#c4b5fd]/40 rounded-full text-[11px] font-semibold">
+          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-fuchsia-50 text-[#c026d3] border border-fuchsia-200 rounded-full text-[11px] font-bold">
             <span className="material-symbols-outlined text-[14px] leading-none">workspace_premium</span>
             Pro
           </div>
         )}
         <Link
           href="/dashboard"
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[#434655] text-[13px] font-medium hover:bg-[#e5eeff] hover:text-[#0b1c30] transition-colors"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 text-[13px] font-semibold hover:bg-slate-100 hover:text-[#0037b0] transition-colors"
         >
           <span className="material-symbols-outlined text-[16px]">dashboard</span>
           Dashboard
         </Link>
-        <div className="flex items-center pl-1 border-l border-[#c4c5d7]/40 gap-2">
+        <div className="flex items-center pl-1 border-l border-slate-200 gap-2">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-[#dce1ff] flex items-center justify-center text-[#0037b0] text-[13px] font-bold">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[#0037b0] text-[13px] font-bold">
               {initial}
             </div>
           )}
           <button
             onClick={handleSignOut}
             title="Đăng xuất"
-            className="p-1 rounded-xl text-[#434655] hover:bg-[#ffe5e5] hover:text-red-500 transition-colors"
+            className="p-1 rounded-xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined leading-none text-[18px]">logout</span>
           </button>
@@ -76,16 +76,16 @@ export default function AuthNav() {
 
   // Chưa đăng nhập
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-center gap-2">
       <Link
         href="/login"
-        className="px-3.5 py-1.5 rounded-xl text-[#434655] text-[13px] font-medium hover:bg-[#eff4ff] hover:text-[#0b1c30] transition-colors whitespace-nowrap"
+        className="px-3.5 py-1.5 rounded-xl text-slate-700 text-[13px] font-semibold hover:bg-slate-100 hover:text-[#0037b0] transition-colors whitespace-nowrap"
       >
         Đăng nhập
       </Link>
       <Link
         href="/register"
-        className="px-4 py-1.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-semibold hover:bg-[#1d4ed8] transition-all shadow-sm whitespace-nowrap"
+        className="btn-primary px-3.5 py-1.5 text-[13px] font-semibold shadow-xs whitespace-nowrap"
       >
         Đăng ký miễn phí
       </Link>
