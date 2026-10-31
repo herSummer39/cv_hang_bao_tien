@@ -728,7 +728,7 @@ export default function InterviewPage() {
 
   if (!checkedAuth) {
     return (
-      <div className="bg-[#f8f9ff] min-h-screen flex items-center justify-center">
+      <div className="bg-[#f8f9fc] min-h-screen flex items-center justify-center">
         <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[32px]">progress_activity</span>
       </div>
     );

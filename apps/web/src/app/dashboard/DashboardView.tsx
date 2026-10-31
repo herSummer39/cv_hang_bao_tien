@@ -191,7 +191,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
   return (
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-6">
           {/* ── Hero ─────────────────────────────────────────────────────── */}
-          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0037b0] via-[#3724c9] to-[#7c3aed] text-white px-6 sm:px-8 py-7 shadow-lg shadow-[#0037b0]/20">
+          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1d4ed8] via-[#2563eb] to-[#7c3aed] text-white px-6 sm:px-8 py-7 shadow-lg shadow-blue-700/15">
             <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-[20px] font-bold flex-shrink-0">

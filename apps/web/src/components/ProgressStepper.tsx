@@ -61,7 +61,7 @@ export default function ProgressStepper({ activeStep, sessionId }: Props) {
                 key={step.number}
                 className={`relative flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all ${
                   isActive
-                    ? "bg-brand-gradient text-white shadow-md shadow-[#0037b0]/20 ring-2 ring-[#0037b0]/30 scale-[1.01]"
+                    ? "bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#7c3aed] text-white shadow-md shadow-blue-600/20 ring-2 ring-blue-500/30 scale-[1.01]"
                     : isDone
                     ? "bg-[#ecfdf5] border-2 border-[#a7f3d0] text-[#065f46]"
                     : "bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b]"

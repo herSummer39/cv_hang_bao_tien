@@ -118,19 +118,19 @@
 
 /* Brand Gradients (Logo Alignment: Blue -> Indigo -> Magenta -> Warm Orange) */
 .bg-brand-gradient {
-  background: linear-gradient(135deg, #0037b0 0%, #3724c9 32%, #c026d3 68%, #ff791b 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
 }
 
 .bg-brand-gradient-hover:hover {
-  background: linear-gradient(135deg, #002b8c 0%, #2d1ba8 32%, #a21caf 68%, #ea580c 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 50%, #6d28d9 100%);
 }
 
 .bg-brand-gradient-subtle {
-  background: linear-gradient(135deg, rgba(0, 55, 176, 0.05) 0%, rgba(192, 38, 211, 0.05) 50%, rgba(255, 121, 27, 0.06) 100%);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(99, 102, 241, 0.05) 50%, rgba(124, 58, 237, 0.06) 100%);
 }
 
 .text-brand-gradient {
-  background: linear-gradient(135deg, #0037b0 0%, #3724c9 28%, #c026d3 64%, #ff791b 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 35%, #7c3aed 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -200,19 +200,19 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #0037b0 0%, #3724c9 32%, #c026d3 68%, #ff791b 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
   color: #ffffff;
   font-weight: 700;
   border-radius: 0.75rem;
   padding: 0.75rem 1.5rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 14px 0 rgba(0, 55, 176, 0.25);
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25);
   text-decoration: none;
   cursor: pointer;
 }
 .btn-gradient-cta:hover {
-  opacity: 0.95;
-  box-shadow: 0 6px 20px 0 rgba(192, 38, 211, 0.35);
+  background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 50%, #6d28d9 100%);
+  box-shadow: 0 6px 20px 0 rgba(124, 58, 237, 0.35);
   transform: translateY(-1px);
 }
 .btn-gradient-cta:active {

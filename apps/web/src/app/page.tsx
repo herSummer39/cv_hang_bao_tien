@@ -11,7 +11,7 @@ export default function Home() {
         {/* Hero Section */}
         <section className="w-full px-4 sm:px-8 lg:px-12 pt-20 pb-16 text-center relative overflow-hidden">
           {/* Subtle Ambient Brand Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-[#0037b0]/8 via-[#c026d3]/6 to-[#ff791b]/8 rounded-full blur-3xl pointer-events-none -z-10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-[#2563eb]/10 via-[#4f46e5]/8 to-[#7c3aed]/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#eff4ff] border border-[#dce1ff] text-[#0037b0] text-[13px] font-semibold mb-6 shadow-xs">
             <span className="material-symbols-outlined text-[17px] text-[#0037b0]">auto_awesome</span>
@@ -177,13 +177,13 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
               {/* Connector line for desktop */}
-              <div className="hidden md:block absolute top-7 left-14 right-14 h-[2px] bg-gradient-to-r from-[#0037b0] via-[#c026d3] to-[#ff791b] opacity-40 z-0" />
+              <div className="hidden md:block absolute top-7 left-14 right-14 h-[2px] bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#7c3aed] opacity-40 z-0" />
 
               {[
-                { step: "01", title: "Tải lên CV & JD", desc: "Cung cấp hồ sơ của bạn và mô tả công việc mong muốn.", bg: "bg-[#0037b0]" },
-                { step: "02", title: "AI Phân tích", desc: "Hệ thống bóc tách dữ liệu và đối chiếu kỹ năng đa chiều.", bg: "bg-[#3724c9]" },
-                { step: "03", title: "Xem báo cáo", desc: "Nhận điểm số, lỗ hổng kỹ năng và gợi ý cải thiện.", bg: "bg-[#c026d3]" },
-                { step: "04", title: "Luyện phỏng vấn", desc: "Thực hành trả lời câu hỏi khó với AI Voicebot.", bg: "bg-[#ff791b]" },
+                { step: "01", title: "Tải lên CV & JD", desc: "Cung cấp hồ sơ của bạn và mô tả công việc mong muốn.", bg: "bg-[#1d4ed8]" },
+                { step: "02", title: "AI Phân tích", desc: "Hệ thống bóc tách dữ liệu và đối chiếu kỹ năng đa chiều.", bg: "bg-[#2563eb]" },
+                { step: "03", title: "Xem báo cáo", desc: "Nhận điểm số, lỗ hổng kỹ năng và gợi ý cải thiện.", bg: "bg-[#4f46e5]" },
+                { step: "04", title: "Luyện phỏng vấn", desc: "Thực hành trả lời câu hỏi khó với AI Voicebot.", bg: "bg-[#7c3aed]" },
               ].map((w) => (
                 <div key={w.step} className="relative z-10 flex flex-col items-center text-center">
                   <div className={`w-14 h-14 rounded-2xl ${w.bg} border-4 border-[#0b1c30] flex items-center justify-center font-[family-name:var(--font-plus-jakarta)] font-extrabold text-[18px] text-white mb-5 shadow-xl`}>
@@ -199,8 +199,8 @@ export default function Home() {
 
         {/* CTA Cuối trang */}
         <section className="w-full px-4 sm:px-8 lg:px-12 py-16 text-center max-w-6xl mx-auto">
-          <div className="w-full bg-gradient-to-br from-[#0037b0] via-[#3724c9] to-[#c026d3] rounded-3xl p-10 md:p-16 shadow-xl relative overflow-hidden">
-            <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-[#ff791b]/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="w-full bg-gradient-to-br from-[#1d4ed8] via-[#2563eb] to-[#7c3aed] rounded-3xl p-10 md:p-16 shadow-xl relative overflow-hidden">
+            <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-[#7c3aed]/25 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -left-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-2xl pointer-events-none" />
             <div className="relative z-10 max-w-3xl mx-auto">
               <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[30px] md:text-[42px] font-extrabold text-white mb-4 tracking-tight">
