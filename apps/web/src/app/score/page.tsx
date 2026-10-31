@@ -45,9 +45,11 @@ export default function ScorePage() {
   const [rawCV, setRawCV] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [jdContent, setJdContent] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [toastError, setToastError] = useState<string | null>(null);
 
   const cvReady = hasFile || rawCV.trim().length > 20;
-  const jdReady = jdContent.trim().length > 30;
+  const jdReady = jdContent.trim().length >= 30;
   const formReady = cvReady && jdReady;
 
   // ── State chọn ngành ─────────────────────────────────────────────────────
@@ -57,9 +59,9 @@ export default function ScorePage() {
   const searchParams = useSearchParams();
   const industryNameFromExplore = searchParams.get("industry") ?? "";
 
-  // ── Prefill preferred_industry_id từ profile (nếu đã đăng nhập, chỉ khi không có URL param) ─
+  // ── Prefill preferred_industry_id từ profile ─────────────────────────────
   useEffect(() => {
-    if (industryNameFromExplore) return; // URL param ưu tiên hơn, để IndustrySelect tự xử lý
+    if (industryNameFromExplore) return;
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -73,15 +75,54 @@ export default function ScorePage() {
         setSelectedIndustryId(profile.preferred_industry_id);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setToastError(null);
     setFileName(file.name);
     setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB • Đã sẵn sàng`);
     setHasFile(true);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "pdf" && ext !== "docx") {
+      setToastError("Chỉ hỗ trợ tệp định dạng PDF hoặc DOCX. Vui lòng thử lại!");
+      return;
+    }
+
+    setToastError(null);
+    setFileName(file.name);
+    setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB • Đã sẵn sàng`);
+    setHasFile(true);
+
+    if (fileInputRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInputRef.current.files = dt.files;
+    }
   }
 
   function removeFile(e: React.MouseEvent) {
@@ -100,6 +141,7 @@ export default function ScorePage() {
 
   async function handleAnalyze() {
     if (!formReady) return;
+    setToastError(null);
 
     const supabase = createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -119,8 +161,6 @@ export default function ScorePage() {
       bytes.forEach((b) => (binary += String.fromCharCode(b)));
       cvB64 = btoa(binary);
 
-      // Lưu file CV gốc vào Storage (bucket user-cvs) nếu đã đăng nhập.
-      // Không chặn luồng phân tích chính nếu upload lỗi — cv_b64 vẫn đủ để worker xử lý.
       if (currentUser) {
         const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
         const MIME: Record<string, string> = {
@@ -142,7 +182,7 @@ export default function ScorePage() {
       cvText = rawCV.trim();
     }
 
-    // Tạo job trong Supabase — ghi kèm industry_id (null nếu user chọn "tự đoán")
+    // Tạo job trong Supabase
     const { data, error } = await supabase
       .from("analysis_jobs")
       .insert({
@@ -160,11 +200,10 @@ export default function ScorePage() {
       .single();
 
     if (error || !data?.id) {
-      alert("Lỗi kết nối Supabase: " + (error?.message || "unknown"));
+      setToastError("Không thể tạo phiên phân tích: " + (error?.message || "Lỗi kết nối cơ sở dữ liệu"));
       return;
     }
 
-    // Upsert preferred_industry_id vào profiles nếu user đã đăng nhập + đã chọn ngành
     if (selectedIndustryId && currentUser) {
       await supabase
         .from("profiles")
@@ -172,7 +211,6 @@ export default function ScorePage() {
         .eq("id", currentUser.id);
     }
 
-    // Lưu jobId để processing page dùng
     sessionStorage.setItem("cf_job_id", data.id);
     router.push("/score/processing");
   }
@@ -202,15 +240,32 @@ export default function ScorePage() {
 
         {/* 50/50 Dual Column */}
         <section className="w-full px-4 sm:px-8 lg:px-12 py-3 flex-1">
+          {/* Toast thông báo lỗi hiện đại */}
+          {toastError && (
+            <div className="mb-4 p-4 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-[#b91c1c] text-[13px] flex items-center justify-between shadow-xs animate-in fade-in duration-200">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-[20px] text-[#dc2626]">error</span>
+                <span className="font-medium">{toastError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setToastError(null)}
+                className="p-1 hover:bg-[#fee2e2] rounded-lg transition-colors text-[#dc2626]"
+                aria-label="Đóng thông báo lỗi"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
             {/* LEFT: CV Upload */}
             <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-[#e2e8f0] p-6 relative">
               {/* Header Cột CV */}
               <div className="flex items-center justify-between pb-3.5 border-b border-[#f1f5f9] mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                    cvReady ? "bg-[#ecfdf5] text-[#059669]" : "bg-[#eff4ff] text-[#0037b0]"
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${cvReady ? "bg-[#ecfdf5] text-[#059669]" : "bg-[#eff4ff] text-[#0037b0]"
+                    }`}>
                     <span className="material-symbols-outlined text-[20px]">
                       {cvReady ? "task_alt" : "description"}
                     </span>
@@ -235,10 +290,16 @@ export default function ScorePage() {
                 )}
               </div>
 
-              {/* Drop zone */}
+              {/* Drop zone với Drag & Drop tương tác */}
               <div
-                className="relative flex-1 min-h-[360px] bg-[#f8fafc] hover:bg-[#eff4ff]/40 rounded-xl transition-all flex flex-col items-center justify-center p-6 text-center group cursor-pointer overflow-hidden border border-[#e2e8f0]"
                 id="cv-drop-zone"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative flex-1 min-h-[360px] rounded-xl transition-all flex flex-col items-center justify-center p-6 text-center group cursor-pointer overflow-hidden border ${isDragging
+                    ? "bg-[#eff6ff] border-2 border-dashed border-[#0037b0] scale-[1.01] shadow-md"
+                    : "bg-[#f8fafc] hover:bg-[#eff4ff]/40 border-[#e2e8f0]"
+                  }`}
               >
                 <input
                   ref={fileInputRef}
@@ -247,27 +308,40 @@ export default function ScorePage() {
                   id="cv-file-input"
                   onChange={handleFileSelected}
                   type="file"
+                  aria-label="Chọn tệp CV định dạng PDF hoặc DOCX"
                 />
 
                 {!hasFile ? (
-                  <>
-                    <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-[#e2e8f0] flex items-center justify-center text-[#0037b0] group-hover:scale-110 group-hover:border-[#bfdbfe] transition-all mb-3 z-0">
-                      <span className="material-symbols-outlined text-[28px]">cloud_upload</span>
+                  isDragging ? (
+                    <div className="flex flex-col items-center gap-2 text-[#0037b0] animate-bounce z-0">
+                      <div className="w-16 h-16 rounded-2xl bg-white shadow-md border border-[#bfdbfe] flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[36px] text-[#0037b0]">download</span>
+                      </div>
+                      <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-bold text-[#0037b0] mt-2">
+                        Thả tệp CV vào đây ngay
+                      </h3>
+                      <p className="text-[12px] text-[#1d4ed8]">Hệ thống sẽ tự động tiếp nhận tệp của bạn</p>
                     </div>
-                    <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-semibold text-[#0b1c30] mb-1 z-0">
-                      Kéo thả tệp CV vào đây, hoặc click để chọn
-                    </h3>
-                    <p className="text-[12px] text-[#64748b] mb-4 max-w-xs z-0 leading-relaxed">
-                      Hỗ trợ PDF hoặc DOCX (tối đa 25MB). Dữ liệu được bảo mật an toàn.
-                    </p>
-                    <button
-                      className="relative z-0 px-4 py-2 bg-white hover:bg-[#f8fafc] text-[#0037b0] border border-[#dce1ff] text-[13px] font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
-                      type="button"
-                    >
-                      <span className="material-symbols-outlined text-[17px]">attach_file</span>
-                      Duyệt tệp từ máy
-                    </button>
-                  </>
+                  ) : (
+                    <>
+                      <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-[#e2e8f0] flex items-center justify-center text-[#0037b0] group-hover:scale-110 group-hover:border-[#bfdbfe] transition-all mb-3 z-0">
+                        <span className="material-symbols-outlined text-[28px]">cloud_upload</span>
+                      </div>
+                      <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-semibold text-[#0b1c30] mb-1 z-0">
+                        Kéo thả tệp CV vào đây, hoặc click để chọn
+                      </h3>
+                      <p className="text-[12px] text-[#64748b] mb-4 max-w-xs z-0 leading-relaxed">
+                        Hỗ trợ PDF hoặc DOCX (tối đa 25MB). Dữ liệu được bảo mật an toàn.
+                      </p>
+                      <button
+                        className="relative z-0 px-4 py-2 bg-white hover:bg-[#f8fafc] text-[#0037b0] border border-[#dce1ff] text-[13px] font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5 pointer-events-none"
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[17px]">attach_file</span>
+                        Duyệt tệp từ máy
+                      </button>
+                    </>
+                  )
                 ) : (
                   <div className="absolute inset-0 bg-white p-6 flex flex-col justify-between z-20 rounded-xl">
                     <div className="flex items-start justify-between">
@@ -286,6 +360,7 @@ export default function ScorePage() {
                         className="p-1.5 rounded-lg hover:bg-[#fee2e2] text-[#64748b] hover:text-[#dc2626] transition-colors"
                         onClick={removeFile}
                         type="button"
+                        aria-label="Xóa tệp CV đã chọn"
                         title="Xóa tệp này"
                       >
                         <span className="material-symbols-outlined text-[18px]">close</span>
@@ -356,9 +431,8 @@ export default function ScorePage() {
               {/* Header Cột JD */}
               <div className="flex items-center justify-between pb-3.5 border-b border-[#f1f5f9] mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                    jdReady ? "bg-[#ecfdf5] text-[#059669]" : "bg-[#eff4ff] text-[#0037b0]"
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${jdReady ? "bg-[#ecfdf5] text-[#059669]" : "bg-[#eff4ff] text-[#0037b0]"
+                    }`}>
                     <span className="material-symbols-outlined text-[20px]">
                       {jdReady ? "task_alt" : "work_outline"}
                     </span>
@@ -455,13 +529,21 @@ export default function ScorePage() {
                     value={jdContent}
                     onChange={(e) => setJdContent(e.target.value)}
                   />
+
+                  {/* Dynamic character counter & quality status */}
                   <div className="mt-2 flex items-center justify-between text-[12px] text-[#64748b]">
                     <span className="inline-flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px] text-[#94a3b8]">info</span>
-                      Tối thiểu 30 ký tự để AI phân tích chuẩn xác
+                      {jdContent.trim().length < 30 ? (
+                        <span className="text-[#b45309]">Cần thêm ít nhất {30 - jdContent.trim().length} ký tự</span>
+                      ) : (
+                        <span className="text-[#059669] font-medium">
+                          Độ dài đạt chuẩn ({jdContent.trim().split(/\s+/).filter(Boolean).length} từ)
+                        </span>
+                      )}
                     </span>
                     <span className={`font-semibold ${jdReady ? "text-[#059669]" : "text-[#94a3b8]"}`}>
-                      {jdContent.length} ký tự {jdReady ? "✓" : "(cần ≥ 30)"}
+                      {jdContent.trim().length}/30 ký tự {jdReady ? "✓" : ""}
                     </span>
                   </div>
                 </div>
@@ -472,9 +554,8 @@ export default function ScorePage() {
           {/* Action Bar trung tâm thân thiện */}
           <div className="mt-6 p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 text-center sm:text-left">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-                formReady ? "bg-[#ecfdf5] text-[#059669] ring-4 ring-[#ecfdf5]" : "bg-[#f1f5f9] text-[#94a3b8]"
-              }`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${formReady ? "bg-[#ecfdf5] text-[#059669] ring-4 ring-[#ecfdf5]" : "bg-[#f1f5f9] text-[#94a3b8]"
+                }`}>
                 <span className="material-symbols-outlined text-[24px]">
                   {formReady ? "verified" : "auto_awesome"}
                 </span>
@@ -496,11 +577,10 @@ export default function ScorePage() {
                 id="analyze-btn"
                 disabled={!formReady}
                 onClick={handleAnalyze}
-                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold flex items-center justify-center gap-2 transition-all ${
-                  formReady
+                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold flex items-center justify-center gap-2 transition-all ${formReady
                     ? "bg-gradient-to-r from-[#0037b0] via-[#1a56db] to-[#2563eb] hover:shadow-lg hover:shadow-[#0037b0]/25 text-white cursor-pointer active:scale-[0.99]"
                     : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed shadow-none"
-                }`}
+                  }`}
               >
                 <span className="material-symbols-outlined text-[19px]">
                   {formReady ? "bolt" : "lock"}

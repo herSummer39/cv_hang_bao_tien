@@ -75,7 +75,7 @@ export default function ProcessingPage() {
       }
 
       if (!jobId) {
-        setError("Không tìm thấy job ID. Vui lòng quay lại và thử lại.");
+        setError("Không tìm thấy mã phiên phân tích (Job ID). Vui lòng quay lại và thử lại.");
         clearInterval(progressTimer);
         return;
       }
@@ -89,7 +89,7 @@ export default function ProcessingPage() {
         attempts++;
         if (attempts > maxAttempts) {
           clearInterval(poll);
-          setError("Hết thời gian chờ. Worker có thể đang offline.");
+          setError("Hết thời gian chờ phản hồi. AI Worker có thể đang bận hoặc chưa khởi chạy.");
           clearInterval(progressTimer);
           return;
         }
@@ -100,7 +100,7 @@ export default function ProcessingPage() {
           .eq("id", jobId)
           .single();
 
-        if (dbErr) return; // Bỏ qua lỗi mạng tạm thời
+        if (dbErr) return;
 
         if (data) {
           if (data.cv_filename) setCvFilename(data.cv_filename);
@@ -112,18 +112,16 @@ export default function ProcessingPage() {
         if (data?.status === "done" && data.result) {
           clearInterval(poll);
           clearInterval(progressTimer);
-          // Lưu kết quả vào sessionStorage để result page dùng
           sessionStorage.setItem("cf_result", JSON.stringify(data.result));
           setProgress(100);
           setTimeout(() => router.push("/score/result"), 800);
         } else if (data?.status === "error") {
           clearInterval(poll);
           clearInterval(progressTimer);
-          setError("Worker báo lỗi: " + (data.error_msg || "Lỗi không xác định"));
+          setError("AI Worker báo lỗi: " + (data.error_msg || "Lỗi không xác định"));
           setProgress(100);
         }
-        // status === "pending" hoặc "processing" → tiếp tục poll
-      }, 5000); // poll mỗi 5 giây
+      }, 5000);
 
       return () => clearInterval(poll);
     }
@@ -144,15 +142,43 @@ export default function ProcessingPage() {
 
   if (error) {
     return (
-      <div className="bg-[#f8f9ff] min-h-screen flex flex-col items-center justify-center gap-4">
-        <span className="material-symbols-outlined text-red-500 text-5xl">error</span>
-        <h2 className="text-xl font-bold text-red-600">Lỗi phân tích</h2>
-        <p className="text-gray-600 max-w-md text-center">{error}</p>
-        <p className="text-sm text-gray-400">Kiểm tra FastAPI server đang chạy tại localhost:8000</p>
-        <button onClick={() => window.history.back()}
-          className="px-6 py-2 bg-[#1d4ed8] text-white rounded-xl hover:bg-blue-700 transition">
-          ← Quay lại
-        </button>
+      <div className="bg-[#f8f9ff] min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-[#fecaca] p-6 text-center flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#fef2f2] text-[#dc2626] flex items-center justify-center">
+            <span className="material-symbols-outlined text-[32px]">error</span>
+          </div>
+          <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-bold text-[#0b1c30]">
+            Không thể hoàn tất phân tích
+          </h2>
+          <p className="text-[13px] text-[#565e74] leading-relaxed">{error}</p>
+
+          <div className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 text-[12px] text-[#64748b] text-left">
+            <span className="font-semibold text-[#0b1c30] block mb-1">Gợi ý xử lý:</span>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>
+                Nếu đang chạy local, hãy đảm bảo worker AI đang chạy (<code className="text-[#0037b0] font-mono bg-[#eff4ff] px-1 py-0.5 rounded">python worker.py</code>).
+              </li>
+              <li>Kiểm tra lại kết nối mạng và file cấu hình Supabase.</li>
+            </ul>
+          </div>
+
+          <div className="flex items-center gap-3 w-full mt-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="flex-1 py-2.5 px-4 rounded-xl border border-[#c4c5d7] text-[#0b1c30] text-[13px] font-semibold hover:bg-[#f1f5f9] transition-colors"
+            >
+              Tải lại trang
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/score")}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-[#0037b0] text-white text-[13px] font-semibold hover:bg-[#1d4ed8] transition-colors shadow-xs"
+            >
+              Quay lại Đánh giá
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -188,14 +214,14 @@ export default function ProcessingPage() {
                 Hệ thống đang trích xuất kỹ năng, kinh nghiệm từ CV và đối chiếu với yêu cầu trong JD bạn đã cung cấp.
               </p>
             </div>
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm">
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-[#e2e8f0]">
               <span className="w-2 h-2 rounded-full bg-[#004f35] animate-pulse" />
               <span className="text-[12px] font-medium text-[#0b1c30]">Phiên làm việc #{shortSessionCode}</span>
             </div>
           </div>
 
           {/* 50/50 split */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
             {/* LEFT: CV summary */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
@@ -204,7 +230,7 @@ export default function ProcessingPage() {
                     1. Hồ sơ ứng viên (CV)
                   </span>
                   <span className="text-[12px] px-1.5 py-0.5 rounded bg-[#d3e4fe] text-[#0037b0] font-semibold">
-                    PDF Định dạng chuẩn
+                    Định dạng chuẩn
                   </span>
                 </div>
                 <span className="text-[11px] text-[#004f35] flex items-center gap-1 font-semibold">
@@ -213,32 +239,34 @@ export default function ProcessingPage() {
                 </span>
               </div>
 
-              <div className="bg-white rounded-xl p-4 shadow-sm">
-                <div className="flex items-start justify-between gap-3 pb-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-lg bg-[#e5eeff] flex items-center justify-center shrink-0 text-[#1d4ed8]">
-                      <span className="material-symbols-outlined text-[24px]">description</span>
-                    </div>
-                    <div className="min-w-0">
-                      <span className="font-semibold text-[16px] text-[#0b1c30] truncate block">
-                        {displayFilename}
-                      </span>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[#434655] text-[13px]">
-                        <span className="text-[#004f35] font-medium">
-                          {isDone ? "Đã xử lý xong" : "Đang chờ worker xử lý"}
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-[#e2e8f0] flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between gap-3 pb-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-lg bg-[#e5eeff] flex items-center justify-center shrink-0 text-[#1d4ed8]">
+                        <span className="material-symbols-outlined text-[24px]">description</span>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-semibold text-[16px] text-[#0b1c30] truncate block">
+                          {displayFilename}
                         </span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[#434655] text-[13px]">
+                          <span className="text-[#004f35] font-medium">
+                            {isDone ? "Đã xử lý xong" : "Đang chờ worker xử lý"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-[#eff4ff] rounded-lg p-3 flex flex-col gap-2">
-                  <div className="flex items-center justify-between text-[#434655] text-[11px]">
-                    <span className="uppercase tracking-wide font-medium">Trích xuất kỹ năng &amp; kinh nghiệm</span>
+                  <div className="bg-[#eff4ff] rounded-lg p-3 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-[#434655] text-[11px]">
+                      <span className="uppercase tracking-wide font-medium">Trích xuất kỹ năng &amp; kinh nghiệm</span>
+                    </div>
+                    <p className="text-[12px] text-[#565e74]">
+                      Danh sách kỹ năng, số năm kinh nghiệm thực tế sẽ hiển thị đầy đủ ở trang kết quả sau khi worker xử lý xong.
+                    </p>
                   </div>
-                  <p className="text-[12px] text-[#565e74]">
-                    Danh sách kỹ năng, số năm kinh nghiệm thực tế sẽ hiển thị đầy đủ ở trang kết quả sau khi worker xử lý xong — trang này chỉ hiển thị trạng thái xử lý.
-                  </p>
                 </div>
 
                 <div className="mt-3 p-3 rounded-lg bg-white border border-[#e5eeff]">
@@ -265,16 +293,16 @@ export default function ProcessingPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 shadow-sm flex flex-col gap-3">
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-[#e2e8f0] flex-1 flex flex-col gap-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-semibold text-[#0b1c30] block">
-                      {jobTitle || "Đang tải vị trí ứng tuyển..."}
+                    <span className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30] block">
+                      {jobTitle || "Vị trí ứng tuyển mục tiêu"}
                     </span>
                   </div>
                 </div>
 
-                <div className="bg-[#eff4ff] rounded-lg p-4 text-[#0b1c30] text-[13px] flex flex-col gap-2 leading-relaxed max-h-[260px] overflow-y-auto whitespace-pre-line">
+                <div className="bg-[#eff4ff] rounded-lg p-4 text-[#0b1c30] text-[13px] flex-1 leading-relaxed max-h-[260px] overflow-y-auto whitespace-pre-line">
                   {jdText || "Đang tải nội dung mô tả công việc..."}
                 </div>
               </div>
@@ -282,12 +310,12 @@ export default function ProcessingPage() {
           </div>
 
           {/* Processing status hub */}
-          <div className="bg-white rounded-xl p-6 shadow-md flex flex-col gap-6">
+          <div className="bg-white rounded-xl p-6 shadow-md border border-[#e2e8f0] flex flex-col gap-6">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 w-full lg:w-auto">
                 <button
                   disabled
-                  className="cursor-not-allowed w-full lg:w-auto px-6 py-3 rounded-lg bg-[#1d4ed8] text-white font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold flex items-center justify-center gap-2 shadow-sm"
+                  className="cursor-not-allowed w-full lg:w-auto px-6 py-3 rounded-lg bg-[#1d4ed8] text-white font-[family-name:var(--font-plus-jakarta)] text-[15px] font-semibold flex items-center justify-center gap-2 shadow-sm"
                 >
                   {!isDone && (
                     <svg
@@ -316,17 +344,17 @@ export default function ProcessingPage() {
                 </button>
                 {!isDone && (
                   <span className="hidden md:inline-block text-[13px] text-[#434655]">
-                    Ước tính còn lại: ~{Math.max(0, Math.round((100 - clampedProgress) / 1.2 * 0.06))}s
+                    Ước tính còn lại: ~{Math.max(0, Math.round(((100 - clampedProgress) / 1.2) * 0.06))}s
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-3 self-stretch lg:self-auto justify-end">
-                <div className="bg-[#eff4ff] px-3 py-1 rounded-lg flex items-center gap-2">
+                <div className="bg-[#eff4ff] px-3 py-1 rounded-lg flex items-center gap-2 border border-[#dce1ff]">
                   <span className="material-symbols-outlined text-[#565e74] text-sm">storage</span>
                   <span className="text-[12px] text-[#565e74]">Token Vector: 768 chiều</span>
                 </div>
-                <div className="bg-[#eff4ff] px-3 py-1 rounded-lg flex items-center gap-2">
+                <div className="bg-[#eff4ff] px-3 py-1 rounded-lg flex items-center gap-2 border border-[#dce1ff]">
                   <span className="material-symbols-outlined text-[#565e74] text-sm">model_training</span>
                   <span className="text-[12px] text-[#565e74]">PhoBERT + XGBoost</span>
                 </div>
@@ -346,22 +374,20 @@ export default function ProcessingPage() {
               {STAGES.map((stage) => (
                 <div
                   key={stage.id}
-                  className={`flex items-start gap-2 p-3 rounded-lg ${
-                    stage.status === "done"
-                      ? "bg-[#eff4ff]"
+                  className={`flex items-start gap-2 p-3 rounded-lg border ${stage.status === "done"
+                      ? "bg-[#eff4ff] border-[#bfdbfe]"
                       : stage.status === "running"
-                      ? "bg-[#dce9ff]"
-                      : "bg-[#eff4ff] opacity-60"
-                  }`}
+                        ? "bg-[#dce9ff] border-[#93c5fd]"
+                        : "bg-[#eff4ff]/60 border-[#e2e8f0] opacity-60"
+                    }`}
                 >
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                      stage.status === "done"
+                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${stage.status === "done"
                         ? "bg-[#85f8c4] text-[#002114]"
                         : stage.status === "running"
-                        ? "bg-[#1d4ed8] text-white"
-                        : "bg-[#e5eeff] text-[#565e74]"
-                    }`}
+                          ? "bg-[#1d4ed8] text-white"
+                          : "bg-[#e5eeff] text-[#565e74]"
+                      }`}
                   >
                     <span
                       className={`material-symbols-outlined text-sm ${stage.status === "running" ? "animate-spin" : ""}`}
@@ -372,9 +398,8 @@ export default function ProcessingPage() {
                   <div className="flex flex-col min-w-0">
                     <span className="text-[14px] text-[#0b1c30] font-semibold truncate">{stage.label}</span>
                     <span
-                      className={`text-[11px] mt-0.5 ${
-                        stage.status === "running" ? "text-[#1d4ed8] font-medium" : "text-[#565e74]"
-                      }`}
+                      className={`text-[11px] mt-0.5 ${stage.status === "running" ? "text-[#1d4ed8] font-medium" : "text-[#565e74]"
+                        }`}
                     >
                       {stage.sublabel}
                     </span>
@@ -384,7 +409,7 @@ export default function ProcessingPage() {
             </div>
 
             {/* Log stream */}
-            <div className="bg-[#eff4ff] rounded-lg p-3 text-[12px] text-[#434655] flex items-center justify-between">
+            <div className="bg-[#eff4ff] rounded-lg p-3 text-[12px] text-[#434655] flex items-center justify-between border border-[#dce1ff]">
               <div className="flex items-center gap-2 truncate">
                 <span className="w-2 h-2 rounded-full bg-[#1d4ed8] animate-ping shrink-0" />
                 <span className="text-[#565e74]">[LOG: {new Date().toLocaleTimeString("vi-VN")}]</span>
@@ -400,8 +425,12 @@ export default function ProcessingPage() {
 
       <style jsx>{`
         @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
       `}</style>
     </div>

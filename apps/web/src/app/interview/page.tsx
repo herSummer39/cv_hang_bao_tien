@@ -953,7 +953,13 @@ export default function InterviewPage() {
                   {isListening && (
                     <div className="mt-3 px-3.5 py-2.5 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] text-[13px] flex items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-2 text-[#1e40af] overflow-hidden">
-                        <span className="material-symbols-outlined text-[18px] text-[#0037b0] animate-pulse">mic</span>
+                        <div className="flex items-end gap-0.5 h-4 shrink-0 pb-0.5" aria-hidden="true">
+                          <span className="w-1 bg-[#0037b0] rounded-full animate-pulse h-2"></span>
+                          <span className="w-1 bg-[#1d4ed8] rounded-full animate-pulse h-3.5"></span>
+                          <span className="w-1 bg-[#2563eb] rounded-full animate-pulse h-2.5"></span>
+                          <span className="w-1 bg-[#0037b0] rounded-full animate-pulse h-4"></span>
+                          <span className="w-1 bg-[#3b82f6] rounded-full animate-pulse h-2"></span>
+                        </div>
                         <span className="font-semibold text-[#0037b0] shrink-0">Đang nghe trực tiếp:</span>
                         <span className="italic truncate text-[#1d4ed8]">
                           {normalizedInterim || "Đang chờ giọng nói của bạn (0ms latency)..."}
