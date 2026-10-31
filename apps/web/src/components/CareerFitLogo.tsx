@@ -1,7 +1,7 @@
 import React from "react";
 
 interface CareerFitLogoProps {
-  /** Kích thước: sm (navbar ~36px), md (~42px), lg (~50px), xl (~64px) */
+  /** Kích thước: sm (navbar ~35px), md (~40px), lg (~48px), xl (~60px) */
   size?: "sm" | "md" | "lg" | "xl";
   /** Có hiển thị chữ CareerFit nhiều màu không */
   showText?: boolean;
@@ -14,99 +14,91 @@ export default function CareerFitLogo({
   showText = true,
   className = "",
 }: CareerFitLogoProps) {
-  // Cấu hình kích thước icon và font chữ
+  // Cấu hình kích thước chuẩn, gọn gàng, vừa mắt
   const config = {
-    sm: { box: 36, font: "text-[21px]", gap: "gap-2.5", radius: "rounded-[11px]" },
-    md: { box: 42, font: "text-[24px]", gap: "gap-3", radius: "rounded-[13px]" },
-    lg: { box: 50, font: "text-[28px]", gap: "gap-3.5", radius: "rounded-[15px]" },
-    xl: { box: 64, font: "text-[38px]", gap: "gap-4", radius: "rounded-[19px]" },
+    sm: { box: 34, font: "text-[20px]", gap: "gap-2.5", radius: "rounded-[10px]" },
+    md: { box: 40, font: "text-[23px]", gap: "gap-2.5", radius: "rounded-[12px]" },
+    lg: { box: 48, font: "text-[27px]", gap: "gap-3", radius: "rounded-[14px]" },
+    xl: { box: 60, font: "text-[34px]", gap: "gap-3.5", radius: "rounded-[16px]" },
   }[size];
 
   return (
     <div className={`inline-flex items-center ${config.gap} select-none group ${className}`}>
-      {/* Icon Squircle với Gradient rực rỡ & Bóng đa tầng nổi bật */}
+      {/* Icon Squircle sắc nét, chuyển màu hoàng hôn mượt mà, bóng đổ tự nhiên nhẹ dịu mắt */}
       <div
         style={{
           width: config.box,
           height: config.box,
         }}
-        className={`relative shrink-0 ${config.radius} transition-all duration-300 group-hover:scale-105 cursor-pointer`}
+        className={`relative shrink-0 ${config.radius} transition-all duration-200 group-hover:scale-105 cursor-pointer shadow-[0_3px_10px_rgba(15,23,42,0.12),0_1px_3px_rgba(15,23,42,0.06)] group-hover:shadow-[0_6px_16px_rgba(15,23,42,0.16)]`}
       >
-        {/* Lớp bóng màu phát sáng (Ambient Glow Shadow) */}
+        {/* Khung Icon chính: Gradient mềm mại từ Xanh tím sang Hồng cam */}
         <div
-          className={`absolute -inset-0.5 ${config.radius} opacity-70 blur-[8px] -z-10 transition-all duration-300 group-hover:opacity-100 group-hover:blur-[11px]`}
+          className={`w-full h-full ${config.radius} overflow-hidden flex items-center justify-center`}
           style={{
             background:
-              "linear-gradient(135deg, rgba(79,70,229,0.7) 0%, rgba(192,38,211,0.8) 45%, rgba(244,63,94,0.8) 75%, rgba(251,146,60,0.8) 100%)",
-          }}
-        />
-
-        {/* Khung Icon chính với viền sáng 3D & bóng đổ mềm */}
-        <div
-          className={`w-full h-full ${config.radius} overflow-hidden flex items-center justify-center border border-white/30 transition-all duration-300 shadow-[0_6px_16px_rgba(192,38,211,0.35),0_2px_6px_rgba(59,40,204,0.25),inset_0_1.5px_2px_rgba(255,255,255,0.45)] group-hover:shadow-[0_10px_24px_rgba(244,63,94,0.45),0_4px_10px_rgba(79,70,229,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.6)]`}
-          style={{
-            background:
-              "linear-gradient(135deg, #4338ca 0%, #7e22ce 28%, #c026d3 55%, #f43f5e 80%, #ff7828 100%)",
+              "linear-gradient(135deg, #3724c9 0%, #7d1fa8 38%, #df2365 72%, #ff791b 100%)",
           }}
         >
-          {/* SVG Artwork: Tờ CV có avatar + Dấu tích Checkmark dạng rỗng như ảnh mẫu */}
+          {/* SVG Artwork: Tờ CV + Avatar + Dấu tích chuẩn xác, nét mảnh thanh thoát */}
           <svg
             viewBox="0 0 100 100"
-            className="w-full h-full drop-shadow-[0_2px_3px_rgba(0,0,0,0.3)]"
+            className="w-full h-full p-[1px]"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* Tờ tài liệu CV viền trắng */}
+            {/* Tờ tài liệu CV viền trắng sắc nét */}
             <path
-              d="M25 22C25 17.58 28.58 14 33 14H57L73 30V74C73 78.42 69.42 82 65 82H33C28.58 82 25 78.42 25 74V22Z"
+              d="M26 23C26 18.58 29.58 15 34 15H56L72 31V71C72 75.42 68.42 79 64 79H34C29.58 79 26 75.42 26 71V23Z"
               stroke="#ffffff"
-              strokeWidth="5.5"
+              strokeWidth="4.8"
               strokeLinejoin="round"
             />
             {/* Góc gấp tài liệu (Dog ear) */}
             <path
-              d="M57 14V27C57 28.66 58.34 30 60 30H73"
+              d="M56 15V27C56 29.21 57.79 31 60 31H72"
               stroke="#ffffff"
-              strokeWidth="5"
+              strokeWidth="4.2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            {/* Đầu avatar ứng viên (tròn đặc trắng) */}
-            <circle cx="43" cy="33.5" r="5.5" fill="#ffffff" />
-            {/* Thân/vai avatar ứng viên (tròn đặc trắng) */}
+            {/* Đầu avatar nhân sự (tròn đặc trắng) */}
+            <circle cx="43" cy="33.5" r="5" fill="#ffffff" />
+            {/* Vai avatar nhân sự */}
             <path
-              d="M34 50.5C34 44.5 52 44.5 52 50.5Z"
-              fill="#ffffff"
+              d="M34 50C34 44 52 44 52 50"
+              stroke="#ffffff"
+              strokeWidth="4.2"
+              strokeLinecap="round"
             />
 
-            {/* Dấu tích ✓ viền trắng rỗng, nổi bật đè lên góc dưới CV như ảnh tham khảo */}
+            {/* Dấu tích ✓ viền rỗng thanh mảnh, cân đối theo đúng ảnh tham khảo */}
             <path
-              d="M16 57L37 78L84 31L76 23L37 62L24 49Z"
+              d="M17 58L36 77L83 30L75 22L36 61L25 50Z"
               stroke="#ffffff"
-              strokeWidth="5"
+              strokeWidth="4.2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              fill="rgba(255,255,255,0.05)"
-              className="drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)]"
+              fill="none"
             />
           </svg>
         </div>
       </div>
 
-      {/* Tên thương hiệu CareerFit với từng ký tự mang màu sắc rực rỡ & bóng chữ nổi bật */}
+      {/* Tên thương hiệu CareerFit: Từng chữ mang màu tươi tắn, đường nét sắc sảo, không bị chói nhòe */}
       {showText && (
         <span
           className={`font-[family-name:var(--font-plus-jakarta)] font-extrabold tracking-tight ${config.font} flex items-center leading-none transition-transform duration-200`}
         >
-          <span style={{ color: "#00a2bb", textShadow: "0 2px 4px rgba(0,162,187,0.25)" }}>C</span>
-          <span style={{ color: "#ff6a00", textShadow: "0 2px 4px rgba(255,106,0,0.25)" }}>a</span>
-          <span style={{ color: "#5d359b", textShadow: "0 2px 4px rgba(93,53,155,0.25)" }}>r</span>
-          <span style={{ color: "#2ea44f", textShadow: "0 2px 4px rgba(46,164,79,0.25)" }}>e</span>
-          <span style={{ color: "#ffb300", textShadow: "0 2px 4px rgba(255,179,0,0.25)" }}>e</span>
-          <span style={{ color: "#db1a6e", textShadow: "0 2px 4px rgba(219,26,110,0.25)" }}>r</span>
-          <span style={{ color: "#b51a82", textShadow: "0 2px 4px rgba(181,26,130,0.25)" }}>F</span>
-          <span style={{ color: "#009fe3", textShadow: "0 2px 4px rgba(0,159,227,0.25)" }}>i</span>
-          <span style={{ color: "#ef3340", textShadow: "0 2px 4px rgba(239,51,64,0.25)" }}>t</span>
+          <span style={{ color: "#00a2bb" }}>C</span>
+          <span style={{ color: "#ff6a00" }}>a</span>
+          <span style={{ color: "#5d359b" }}>r</span>
+          <span style={{ color: "#2ea44f" }}>e</span>
+          <span style={{ color: "#ffb300" }}>e</span>
+          <span style={{ color: "#db1a6e" }}>r</span>
+          <span style={{ color: "#b51a82" }}>F</span>
+          <span style={{ color: "#009fe3" }}>i</span>
+          <span style={{ color: "#ef3340" }}>t</span>
         </span>
       )}
     </div>
