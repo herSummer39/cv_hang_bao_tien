@@ -1,3 +1,4 @@
+import CareerFitLogo from "@/components/CareerFitLogo";
 "use client";
 
 import { useState } from "react";
@@ -51,15 +52,8 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
-        <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-[#0037b0] flex items-center justify-center">
-            <span className="material-symbols-outlined text-white text-[18px]">
-              analytics
-            </span>
-          </div>
-          <span className="font-bold text-[20px] text-white tracking-tight">
-            CareerFit
-          </span>
+        <Link href="/" className="flex items-center justify-center mb-8">
+          <CareerFitLogo size="lg" />
         </Link>
 
         {/* Card */}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AuthNav from "@/components/AuthNav";
+import CareerFitLogo from "@/components/CareerFitLogo";
 
 export default function Header() {
   const pathname = usePathname();
@@ -68,13 +69,8 @@ export default function Header() {
             </span>
           </button>
 
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-[#0037b0] flex items-center justify-center shadow-sm">
-              <span className="material-symbols-outlined text-white text-[18px]">psychology</span>
-            </div>
-            <span className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-bold text-[#0037b0] tracking-tight">
-              CareerFit
-            </span>
+          <Link href="/" className="flex items-center shrink-0">
+            <CareerFitLogo size="sm" />
           </Link>
         </div>
 
