@@ -13,7 +13,7 @@ const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ
 const MIN_TIME_MULTIPLIER = 0.5; // sàn giảm điểm ở cuối phút thứ 3 (giây 180)
 
 // Giọng đọc mặc định cố định: Giọng nữ Hà Nội chuẩn (Trúc Ly — VieNeu-TTS / Web Speech)
-const DEFAULT_VOICE_LABEL = "Nữ Hà Nội chuẩn";
+const DEFAULT_VOICE_LABEL = "Nữ chuẩn Việt Nam";
 const DEFAULT_VOICE_CODE = "Ly";
 
 
@@ -234,6 +234,16 @@ export default function InterviewPage() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [jdSkills, setJdSkills] = useState<string[]>([]);
 
+  // Khởi tạo và nạp sẵn danh sách voices cho trình duyệt
+  useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
+
   // Web Speech API Hook — nhận diện giọng nói native với latency 0ms
   const {
     isListening,
@@ -274,24 +284,24 @@ export default function InterviewPage() {
     stopAllAudio();
     setIsSpeaking(true);
 
-    const url = audioUrls?.[index];
+    const url = audioUrls?.[index] || `/api/interview/tts?text=${encodeURIComponent(qText)}`;
     const el = questionAudioRef.current;
 
-    // 1. Nếu có file âm thanh từ VieNeu-TTS
-    if (url && el) {
+    // 1. Ưu tiên phát bằng audio element qua /api/interview/tts hoặc VieNeu-TTS (Giọng nữ chuẩn 100%)
+    if (el) {
       el.src = url;
       el.play()
         .then(() => {
           setIsSpeaking(true);
         })
-        .catch(() => {
-          // Bị chặn autoplay hoặc lỗi -> phát bằng Speech Synthesis
+        .catch((err) => {
+          console.warn("[TTS] Không phát được qua thẻ audio, chuyển sang Web Speech tiếng Việt:", err);
           speakViaSpeechSynthesis(qText);
         });
       return;
     }
 
-    // 2. Mặc định phát trực tiếp bằng Web Speech API tiếng Việt giọng nữ
+    // 2. Fallback sang Web Speech API nếu không có phần tử audio
     speakViaSpeechSynthesis(qText);
 
     function speakViaSpeechSynthesis(text: string) {
@@ -303,24 +313,30 @@ export default function InterviewPage() {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "vi-VN";
-      utterance.rate = 0.94; // Tốc độ vừa vặn, phát âm rõ ràng, chuẩn ngữ điệu
-      utterance.pitch = 1.05; // Cao độ nữ tính, thanh lịch
+      utterance.rate = 0.94;
+      utterance.pitch = 1.05;
 
       const voices = window.speechSynthesis.getVoices();
-      // Ưu tiên giọng nữ tiếng Việt chuẩn (HoaiMy, Linh, Mai, vi-VN, Female)
+      // Ưu tiên tìm giọng nữ tiếng Việt thực tế trong trình duyệt
       const vietnameseVoice =
         voices.find(
           (v) =>
-            (v.lang === "vi-VN" || v.lang.startsWith("vi")) &&
+            v.lang.toLowerCase().includes("vi") &&
             (v.name.toLowerCase().includes("hoaimy") ||
               v.name.toLowerCase().includes("female") ||
               v.name.toLowerCase().includes("mai") ||
               v.name.toLowerCase().includes("linh") ||
-              v.name.toLowerCase().includes("natural"))
-        ) || voices.find((v) => v.lang === "vi-VN" || v.lang.startsWith("vi"));
+              v.name.toLowerCase().includes("natural") ||
+              v.name.toLowerCase().includes("tiếng việt"))
+        ) || voices.find((v) => v.lang.toLowerCase().startsWith("vi"));
 
       if (vietnameseVoice) {
         utterance.voice = vietnameseVoice;
+      } else {
+        // Tuyệt đối KHÔNG gán mặc định giọng tiếng Anh (Microsoft David) để tránh nói giọng người nước ngoài
+        console.warn("[TTS] Trình duyệt không có sẵn giọng tiếng Việt Web Speech.");
+        setIsSpeaking(false);
+        return;
       }
 
       utterance.onstart = () => {
