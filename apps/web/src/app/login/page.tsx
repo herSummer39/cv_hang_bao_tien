@@ -1,5 +1,6 @@
-import CareerFitLogo from "@/components/CareerFitLogo";
 "use client";
+
+import CareerFitLogo from "@/components/CareerFitLogo";
 
 import { useState } from "react";
 import Link from "next/link";

@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
@@ -35,7 +35,7 @@ const PRESETS: Record<Preset, { title: string; jd: string }> = {
   },
 };
 
-export default function ScorePage() {
+function ScorePageContent() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasFile, setHasFile] = useState(false);
@@ -633,5 +633,21 @@ export default function ScorePage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ScorePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-[#f8f9fc] min-h-screen flex items-center justify-center">
+          <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[36px]">
+            progress_activity
+          </span>
+        </div>
+      }
+    >
+      <ScorePageContent />
+    </Suspense>
   );
 }
