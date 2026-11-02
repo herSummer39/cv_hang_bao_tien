@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -56,7 +55,7 @@ export default function ResultPage() {
     matched_skills?: string[];
     missing_skills?: string[];
     cv_exp_years?: number;
-    features?: { skill_ratio?: number; exp_ratio?: number; [key: string]: number | undefined };
+    features?: { skill_ratio?: number; exp_ratio?: number;[key: string]: number | undefined };
     requirements?: RequirementItem[];
     requirement_summary?: RequirementSummary | null;
     score_breakdown?: ScoreBreakdown | null;
@@ -246,8 +245,7 @@ export default function ResultPage() {
       // 1. Tiêu đề
       addTitle("CareerFit — Báo cáo đánh giá độ phù hợp", 17);
       addBody(
-        `Ứng viên: ${candidateName || "Chưa xác định"}   |   Vị trí: ${
-          apiResult.job_title || "Chưa xác định"
+        `Ứng viên: ${candidateName || "Chưa xác định"}   |   Vị trí: ${apiResult.job_title || "Chưa xác định"
         }   |   Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`,
         10
       );
@@ -268,13 +266,13 @@ export default function ResultPage() {
         addTitle("Vì sao được số điểm này", 13);
         addBody(
           `Mức nền ${breakdown.base.toFixed(1)} ` +
-            breakdown.factors
-              .map(
-                (f) =>
-                  `${f.contribution >= 0 ? "+" : "−"} ${Math.abs(f.contribution).toFixed(1)} (${f.label})`
-              )
-              .join(" ") +
-            ` = ${Math.round(breakdown.final)} điểm`
+          breakdown.factors
+            .map(
+              (f) =>
+                `${f.contribution >= 0 ? "+" : "−"} ${Math.abs(f.contribution).toFixed(1)} (${f.label})`
+            )
+            .join(" ") +
+          ` = ${Math.round(breakdown.final)} điểm`
         );
         breakdown.factors.forEach((f) => addBody(`• ${f.label}: ${f.detail}`));
         addSpacer(4);
@@ -733,13 +731,12 @@ export default function ResultPage() {
                     Rủi ro tuyển dụng:
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
-                      tier.risk === "Thấp"
+                    className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${tier.risk === "Thấp"
                         ? "bg-emerald-100 text-emerald-800"
                         : tier.risk === "Trung bình"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-rose-100 text-rose-800"
-                    }`}
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-rose-100 text-rose-800"
+                      }`}
                   >
                     {tier.risk}
                   </span>
@@ -810,10 +807,10 @@ export default function ResultPage() {
                   s.type === "skill"
                     ? "add_circle"
                     : s.type === "experience"
-                    ? "history_edu"
-                    : s.type === "phrasing"
-                    ? "translate"
-                    : "tips_and_updates";
+                      ? "history_edu"
+                      : s.type === "phrasing"
+                        ? "translate"
+                        : "tips_and_updates";
                 return (
                   <div
                     key={`${s.title}-${i}`}
@@ -857,11 +854,10 @@ export default function ResultPage() {
                   onClick={(e) => {
                     if (questions.length === 0) e.preventDefault();
                   }}
-                  className={`px-5 py-2.5 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all ${
-                    questions.length === 0
+                  className={`px-5 py-2.5 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all ${questions.length === 0
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                       : "bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:from-[#1d4ed8] hover:to-[#6d28d9] text-white shadow-xs hover:shadow-sm"
-                  }`}
+                    }`}
                 >
                   <span className="material-symbols-outlined text-[18px]">play_arrow</span>
                   Bắt đầu phỏng vấn giả lập
@@ -870,11 +866,10 @@ export default function ResultPage() {
                   type="button"
                   onClick={() => setShowInterviewPrep(true)}
                   disabled={questions.length === 0}
-                  className={`px-4 py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border border-slate-200 transition-colors ${
-                    questions.length === 0
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border border-slate-200 transition-colors ${questions.length === 0
                       ? "text-slate-300 cursor-not-allowed"
                       : "text-slate-600 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   <span className="material-symbols-outlined text-[18px]">visibility</span>
                   Xem trước câu hỏi
@@ -1085,8 +1080,6 @@ export default function ResultPage() {
           </section>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 }

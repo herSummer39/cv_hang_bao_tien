@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
 import { createClient } from "@/lib/supabase/client";
 
 interface SkillItem {
@@ -346,7 +346,7 @@ export default function ExplorePage() {
         </section>
       </main>
 
-      <Footer />
+
     </div>
   );
 }

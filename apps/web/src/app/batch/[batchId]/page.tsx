@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
 import { createClient } from "@/lib/supabase/client";
 import {
   buildRequirementMatrix,
@@ -416,7 +416,7 @@ export default function BatchResultPage() {
           )}
         </section>
       </main>
-      <Footer />
+
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
 import DashboardView, { type BatchRow, type BatchStat, type InterviewRow, type JobRow } from "./DashboardView";
 
 // Mốc thời gian "N ngày trước" (tách ra ngoài component — quy tắc purity)
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
           }}
         />
       </main>
-      <Footer />
+
     </div>
   );
 }

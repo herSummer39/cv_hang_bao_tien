@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
 import IndustrySelect from "@/components/IndustrySelect";
 import { createClient } from "@/lib/supabase/client";
 
@@ -316,7 +316,7 @@ export default function BatchPage() {
         </section>
       </main>
 
-      <Footer />
+
     </div>
   );
 }

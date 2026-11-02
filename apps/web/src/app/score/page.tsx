@@ -2,7 +2,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect, Suspense } from "react";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
 import IndustrySelect from "@/components/IndustrySelect";
 import { createClient } from "@/lib/supabase/client";
@@ -630,8 +629,6 @@ function ScorePageContent() {
           </div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 }

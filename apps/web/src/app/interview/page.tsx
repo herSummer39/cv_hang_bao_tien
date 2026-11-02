@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
 import { createClient } from "@/lib/supabase/client";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { normalizeTranscriptWithContext, type QuestionContext } from "@/utils/dynamicSpeechNormalizer";
@@ -38,14 +38,14 @@ function extractSkillNames(parsed: unknown): string[] {
   const toNames = (v: unknown): string[] =>
     Array.isArray(v)
       ? v
-          .map((x) =>
-            typeof x === "string"
-              ? x
-              : typeof x === "object" && x !== null && typeof (x as { name?: unknown }).name === "string"
+        .map((x) =>
+          typeof x === "string"
+            ? x
+            : typeof x === "object" && x !== null && typeof (x as { name?: unknown }).name === "string"
               ? (x as { name: string }).name
               : ""
-          )
-          .filter(Boolean)
+        )
+        .filter(Boolean)
       : [];
   return [...toNames(p?.matched_skills), ...toNames(p?.missing_skills)];
 }
@@ -261,13 +261,13 @@ export default function InterviewPage() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       try {
         window.speechSynthesis.cancel();
-      } catch {}
+      } catch { }
     }
     if (questionAudioRef.current) {
       try {
         questionAudioRef.current.pause();
         questionAudioRef.current.currentTime = 0;
-      } catch {}
+      } catch { }
     }
     setIsSpeaking(false);
   }, []);
@@ -685,9 +685,9 @@ export default function InterviewPage() {
               setAudioJobActive(true);
             }
           },
-          () => {}
+          () => { }
         );
-    } catch {}
+    } catch { }
   }
 
   // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong (nếu có worker chạy)
@@ -792,11 +792,10 @@ export default function InterviewPage() {
                             key={item.key}
                             type="button"
                             onClick={() => selectPreset(item.key)}
-                            className={`flex flex-col gap-1.5 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                              activePresetKey === item.key
+                            className={`flex flex-col gap-1.5 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${activePresetKey === item.key
                                 ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] shadow-sm ring-2 ring-[#0037b0]/20 font-bold"
                                 : "bg-[#f8fafc] border-[#e2e8f0] text-[#475569] hover:bg-white hover:border-[#cbd5e1] font-medium"
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2">
                               <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
@@ -937,11 +936,10 @@ export default function InterviewPage() {
                     <button
                       type="button"
                       onClick={() => playQuestionAudio(currentIndex)}
-                      className={`px-3.5 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
-                        isSpeaking
+                      className={`px-3.5 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${isSpeaking
                           ? "bg-[#0037b0] text-white shadow-sm ring-2 ring-[#0037b0]/20 animate-pulse"
                           : "bg-[#eff4ff] text-[#0037b0] hover:bg-[#dbeafe] border border-[#bfdbfe]"
-                      }`}
+                        }`}
                       title="Bấm để nghe đọc lại câu hỏi bằng giọng nữ Hà Nội chuẩn"
                     >
                       <span className="material-symbols-outlined text-[18px]">
@@ -994,23 +992,22 @@ export default function InterviewPage() {
                         type="button"
                         onClick={isListening ? stopListening : startListening}
                         disabled={!isSpeechSupported || isSpeaking || isEvaluating}
-                        className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
-                          isListening
+                        className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-all shrink-0 cursor-pointer ${isListening
                             ? "bg-[#ba1a1a] text-white hover:bg-[#93000a] shadow-sm animate-pulse"
                             : isSpeaking
-                            ? "bg-[#f1f5f9] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
-                            : !isSpeechSupported
-                            ? "bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
-                            : "bg-white border border-[#c4c5d7]/80 text-[#0037b0] hover:bg-[#eff4ff] hover:border-[#0037b0]"
-                        }`}
+                              ? "bg-[#f1f5f9] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                              : !isSpeechSupported
+                                ? "bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                                : "bg-white border border-[#c4c5d7]/80 text-[#0037b0] hover:bg-[#eff4ff] hover:border-[#0037b0]"
+                          }`}
                         title={
                           isSpeaking
                             ? "Phỏng vấn viên đang đọc câu hỏi, microphone tạm khóa"
                             : !isSpeechSupported
-                            ? "Trình duyệt không hỗ trợ Web Speech API"
-                            : isListening
-                            ? "Bấm để dừng thu âm"
-                            : "Bấm để bắt đầu trả lời bằng giọng nói"
+                              ? "Trình duyệt không hỗ trợ Web Speech API"
+                              : isListening
+                                ? "Bấm để dừng thu âm"
+                                : "Bấm để bắt đầu trả lời bằng giọng nói"
                         }
                       >
                         <span className={`material-symbols-outlined text-[18px] ${isListening ? "animate-pulse" : ""}`}>
@@ -1020,8 +1017,8 @@ export default function InterviewPage() {
                           {isListening
                             ? "Dừng thu âm"
                             : isSpeaking
-                            ? "Phỏng vấn viên đang nói..."
-                            : "Trả lời bằng giọng nói"}
+                              ? "Phỏng vấn viên đang nói..."
+                              : "Trả lời bằng giọng nói"}
                         </span>
                       </button>
 
@@ -1071,11 +1068,10 @@ export default function InterviewPage() {
                       type="button"
                       onClick={handleSubmitAnswer}
                       disabled={isEvaluating}
-                      className={`px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
-                        isEvaluating
+                      className={`px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${isEvaluating
                           ? "bg-[#e5eeff] text-[#64748b] cursor-wait"
                           : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] hover:shadow-md"
-                      }`}
+                        }`}
                     >
                       {isEvaluating && (
                         <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
@@ -1084,8 +1080,8 @@ export default function InterviewPage() {
                         {isEvaluating
                           ? "Đang đánh giá..."
                           : currentIndex + 1 >= questions.length
-                          ? "Nộp & xem kết quả"
-                          : "Nộp & câu tiếp theo"}
+                            ? "Nộp & xem kết quả"
+                            : "Nộp & câu tiếp theo"}
                       </span>
                       {!isEvaluating && (
                         <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -1102,9 +1098,8 @@ export default function InterviewPage() {
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[12px] font-bold text-[#64748b] uppercase tracking-wider">Thời gian còn lại</span>
                     <span
-                      className={`px-3 py-1 rounded-full text-[14px] font-mono font-bold ${
-                        timeLeft <= 10 ? "bg-[#ffdad6] text-[#93000a] animate-pulse" : "bg-[#e5eeff] text-[#0037b0]"
-                      }`}
+                      className={`px-3 py-1 rounded-full text-[14px] font-mono font-bold ${timeLeft <= 10 ? "bg-[#ffdad6] text-[#93000a] animate-pulse" : "bg-[#e5eeff] text-[#0037b0]"
+                        }`}
                     >
                       {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}
                     </span>
@@ -1134,13 +1129,12 @@ export default function InterviewPage() {
                     {questions.map((q, idx) => (
                       <div
                         key={idx}
-                        className={`p-3 rounded-xl text-[12px] flex items-center justify-between border transition-all ${
-                          idx === currentIndex
+                        className={`p-3 rounded-xl text-[12px] flex items-center justify-between border transition-all ${idx === currentIndex
                             ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] font-bold shadow-xs"
                             : idx < currentIndex
-                            ? "bg-[#f8fafc] border-[#e2e8f0] text-[#059669]"
-                            : "bg-white border-[#f1f5f9] text-[#94a3b8]"
-                        }`}
+                              ? "bg-[#f8fafc] border-[#e2e8f0] text-[#059669]"
+                              : "bg-white border-[#f1f5f9] text-[#94a3b8]"
+                          }`}
                       >
                         <div className="flex items-center gap-2 truncate">
                           <span className="material-symbols-outlined text-[16px] shrink-0">
@@ -1201,13 +1195,12 @@ export default function InterviewPage() {
               {guestResult && (
                 <div className="mb-8 p-6 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs">
                   <div className="flex items-center gap-5">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-[26px] shadow-sm ${
-                      guestResult.totalScore >= 70
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-[26px] shadow-sm ${guestResult.totalScore >= 70
                         ? "bg-[#ecfdf5] text-[#059669]"
                         : guestResult.totalScore >= 50
-                        ? "bg-[#fffbeb] text-[#d97706]"
-                        : "bg-[#fef2f2] text-[#dc2626]"
-                    }`}>
+                          ? "bg-[#fffbeb] text-[#d97706]"
+                          : "bg-[#fef2f2] text-[#dc2626]"
+                      }`}>
                       {guestResult.totalScore}
                     </div>
                     <div>
@@ -1241,13 +1234,12 @@ export default function InterviewPage() {
                           <span className="font-bold text-[14px] text-[#0b1c30]">
                             Câu {idx + 1}: {ans.question}
                           </span>
-                          <span className={`px-3 py-1 rounded-full text-[12px] font-extrabold shrink-0 ${
-                            ans.question_score >= 70
+                          <span className={`px-3 py-1 rounded-full text-[12px] font-extrabold shrink-0 ${ans.question_score >= 70
                               ? "bg-[#ecfdf5] text-[#059669]"
                               : ans.question_score >= 50
-                              ? "bg-[#fffbeb] text-[#d97706]"
-                              : "bg-[#fef2f2] text-[#dc2626]"
-                          }`}>
+                                ? "bg-[#fffbeb] text-[#d97706]"
+                                : "bg-[#fef2f2] text-[#dc2626]"
+                            }`}>
                             {ans.question_score}/100 đ
                           </span>
                         </div>
@@ -1290,7 +1282,7 @@ export default function InterviewPage() {
           )}
         </section>
       </main>
-      <Footer />
+
     </div>
   );
 }

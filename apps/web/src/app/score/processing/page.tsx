@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import ProgressStepper from "@/components/ProgressStepper";
 import { createClient } from "@/lib/supabase/client";
 
@@ -375,18 +374,18 @@ export default function ProcessingPage() {
                 <div
                   key={stage.id}
                   className={`flex items-start gap-2 p-3 rounded-lg border ${stage.status === "done"
-                      ? "bg-[#eff4ff] border-[#bfdbfe]"
-                      : stage.status === "running"
-                        ? "bg-[#dce9ff] border-[#93c5fd]"
-                        : "bg-[#eff4ff]/60 border-[#e2e8f0] opacity-60"
+                    ? "bg-[#eff4ff] border-[#bfdbfe]"
+                    : stage.status === "running"
+                      ? "bg-[#dce9ff] border-[#93c5fd]"
+                      : "bg-[#eff4ff]/60 border-[#e2e8f0] opacity-60"
                     }`}
                 >
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${stage.status === "done"
-                        ? "bg-[#85f8c4] text-[#002114]"
-                        : stage.status === "running"
-                          ? "bg-[#1d4ed8] text-white"
-                          : "bg-[#e5eeff] text-[#565e74]"
+                      ? "bg-[#85f8c4] text-[#002114]"
+                      : stage.status === "running"
+                        ? "bg-[#1d4ed8] text-white"
+                        : "bg-[#e5eeff] text-[#565e74]"
                       }`}
                   >
                     <span
@@ -420,8 +419,6 @@ export default function ProcessingPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
 
       <style jsx>{`
         @keyframes spin {

@@ -52,17 +52,18 @@ export default function Header() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#c4c5d7]/30 shadow-[0_1px_4px_rgba(11,28,48,0.04)]">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_1px_3px_rgba(11,28,48,0.04)]">
+      {/* Container dàn đều toàn màn hình, padding hai bên cân đối loại bỏ khoảng trắng thừa */}
       <div className="h-16 w-full px-4 sm:px-8 lg:px-12 flex items-center justify-between gap-4">
         {/* Left: Logo & Mobile Toggle Button */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {/* Hamburger Menu Toggle (Mobile) */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-label={mobileMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
             aria-expanded={mobileMenuOpen}
-            className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-[#475569] hover:text-[#0b1c30] hover:bg-[#f1f5f9] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0037b0]"
+            className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0037b0]"
           >
             <span className="material-symbols-outlined text-[24px]">
               {mobileMenuOpen ? "close" : "menu"}
@@ -74,28 +75,26 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Center: Desktop Navigation Menu */}
-        <nav className="hidden md:flex items-center justify-center gap-1.5 h-16">
+        {/* Center: Desktop Navigation Menu — Căn đều thoáng đãng, cân xứng hai bên */}
+        <nav className="hidden md:flex items-center justify-center gap-2 lg:gap-4 flex-1 h-16">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap ${
-                item.active
-                  ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 shadow-xs"
-                  : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0b1c30]"
-              }`}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13.5px] font-semibold transition-all whitespace-nowrap ${item.active
+                  ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 shadow-2xs font-bold"
+                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
+                }`}
             >
               <span
-                className={`material-symbols-outlined text-[17px] ${
-                  item.active ? "text-[#0037b0]" : "text-[#64748b]"
-                }`}
+                className={`material-symbols-outlined text-[18px] ${item.active ? "text-[#0037b0]" : "text-slate-400"
+                  }`}
               >
                 {item.icon}
               </span>
               <span>{item.label}</span>
               {item.badge && (
-                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-[#eff4ff] text-[#0037b0] border border-[#dce1ff]">
+                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-blue-50 text-[#0037b0] border border-blue-200">
                   {item.badge}
                 </span>
               )}
@@ -111,31 +110,29 @@ export default function Header() {
 
       {/* Mobile Navigation Drawer (Dropdown Overlay) */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-[#e2e8f0] bg-white px-4 py-3 shadow-lg animate-in slide-in-from-top-2 duration-150">
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 shadow-lg animate-in slide-in-from-top-2 duration-150">
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${
-                  item.active
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[14px] font-bold transition-all ${item.active
                     ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 font-extrabold"
-                    : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0b1c30]"
-                }`}
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`material-symbols-outlined text-[20px] ${
-                      item.active ? "text-[#0037b0]" : "text-[#64748b]"
-                    }`}
+                    className={`material-symbols-outlined text-[20px] ${item.active ? "text-[#0037b0]" : "text-slate-400"
+                      }`}
                   >
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#eff4ff] text-[#0037b0] border border-[#dce1ff]">
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-blue-50 text-[#0037b0] border border-blue-200">
                     {item.badge}
                   </span>
                 )}
