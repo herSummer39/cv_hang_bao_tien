@@ -750,10 +750,10 @@ export default function InterviewPage() {
                   <span className="material-symbols-outlined text-[16px] text-[#c026d3]">record_voice_over</span>
                   <span className="tracking-wide">PHÒNG PHỎNG VẤN GIẢ LẬP 1:1 VỚI AI RECRUITER</span>
                 </div>
-                <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[38px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
-                  Luyện Phản Xạ Phỏng Vấn{" "}
+                <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[34px] lg:text-[36px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.25] max-w-2xl mx-auto">
+                  Luyện Phỏng Vấn 1:1{" "}
                   <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#c026d3]">
-                    Theo Đúng Lỗ Hổng CV</span><h1 className="hidden"><span>
+                    <span className="whitespace-nowrap">Dựa Trên &ldquo;Lỗ Hổng&rdquo; CV</span></span><h1 className="hidden"><span>
                     </span>
                   </h1>
 

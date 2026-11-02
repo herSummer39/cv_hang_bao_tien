@@ -228,10 +228,10 @@ function ScorePageContent() {
               <span className="material-symbols-outlined text-[16px] text-[#2563eb] animate-pulse">auto_awesome</span>
               <span className="tracking-wide">ĐỘNG CƠ AI ĐỐI SOÁT NĂNG LỰC &amp; BỘ LỌC ATS</span>
             </div>
-            <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[36px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
-              Kiểm Tra Điểm Khớp CV Với JD{" "}
-              <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#0037b0] via-[#2563eb] to-[#7c3aed]">
-                Chuẩn Bộ Lọc Tuyển Dụng
+            <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[34px] lg:text-[38px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
+              Độ Khớp CV &amp; JD{" "}
+              <span className="whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-[#0037b0] via-[#2563eb] to-[#7c3aed]">
+                Chuẩn ATS
               </span>
             </h1>
             <p className="text-[14px] sm:text-[15.5px] text-[#475569] mt-2.5 max-w-3xl leading-relaxed">

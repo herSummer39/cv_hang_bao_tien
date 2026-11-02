@@ -133,9 +133,9 @@ export default function BatchPage() {
                 <span className="material-symbols-outlined text-[15px] text-[#0037b0]">groups</span>
                 <span className="tracking-wide">BỘ LỌC ỨNG VIÊN HÀNG LOẠT (BATCH MATCHING)</span>
               </div>
-              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[36px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
-                Sàng Lọc &amp; Xếp Hạng Hàng Chục CV{" "}
-                <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#1d4ed8] via-[#2563eb] to-[#059669]">
+              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] lg:text-[34px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.25]">
+                Sàng Lọc &amp; Xếp Hạng CV{" "}
+                <span className="whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-[#0037b0] via-[#2563eb] to-[#7c3aed]">
                   Chỉ Trong 30 Giây
                 </span>
               </h1>

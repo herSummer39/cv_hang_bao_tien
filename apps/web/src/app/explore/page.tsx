@@ -248,15 +248,15 @@ export default function ExplorePage() {
         {/* ── 1. Hero Banner: Súc tích, nói thẳng giá trị ── */}
         <section className="w-full px-4 sm:px-8 lg:px-12 pt-8 pb-5">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-slate-200/80">
-            <div className="max-w-2xl">
+            <div className="max-w-2xl lg:max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 text-[#0037b0] text-[12px] font-bold mb-3 shadow-2xs">
                 <span className="material-symbols-outlined text-[16px] text-[#059669]">verified</span>
                 <span className="tracking-wide">BẢN ĐỒ TỪ KHÓA TUYỂN DỤNG ATS VIỆT NAM</span>
               </div>
-              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[36px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
-                Giải Mã Bộ Từ Khóa Vàng{" "}
-                <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#0037b0] via-[#2563eb] to-[#7c3aed]">
-                  Nhà Tuyển Dụng Tìm Kiếm
+              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] lg:text-[35px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.25]">
+                Giải Mã &ldquo;Bộ Từ Khóa Vàng&rdquo;{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0037b0] via-[#2563eb] to-[#7c3aed]">
+                  Từ Hàng Nghìn JD Thực Tế
                 </span>
               </h1>
               <p className="text-[14px] sm:text-[15.5px] text-[#475569] mt-2.5 leading-relaxed">
