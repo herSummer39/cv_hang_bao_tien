@@ -742,17 +742,42 @@ export default function InterviewPage() {
           {phase === "intro" ? (
             <div className="space-y-6">
               {/* Header Intro */}
-              <div className="text-center max-w-3xl mx-auto mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-[#eff4ff] text-[#0037b0] flex items-center justify-center mx-auto mb-3 shadow-xs">
-                  <span className="material-symbols-outlined text-[28px]">record_voice_over</span>
+              <div className="text-center max-w-3xl mx-auto mb-7"><div className="hidden">
+
+
+              </div>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-fuchsia-50/90 border border-fuchsia-200/80 text-[#7c3aed] text-[12px] font-bold mb-3.5 shadow-2xs">
+                  <span className="material-symbols-outlined text-[16px] text-[#c026d3]">record_voice_over</span>
+                  <span className="tracking-wide">PHÒNG PHỎNG VẤN GIẢ LẬP 1:1 VỚI AI RECRUITER</span>
                 </div>
-                <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] font-extrabold text-[#0b1c30] tracking-tight">
-                  Phòng luyện phỏng vấn AI
+                <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[38px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
+                  Luyện Phản Xạ Phỏng Vấn{" "}
+                  <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#c026d3]">
+                    Theo Đúng Lỗ Hổng CV</span><h1 className="hidden"><span>
+                    </span>
+                  </h1>
+
                 </h1>
-                <p className="text-[14px] sm:text-[15px] text-[#64748b] mt-2 leading-relaxed">
+                <p className="text-[14.5px] sm:text-[16px] text-slate-600 mt-2.5 leading-relaxed">
                   {isPresetMode
-                    ? "Luyện phản xạ phỏng vấn với các câu hỏi tình huống thực tế. Hỗ trợ trả lời bằng giọng nói trực tiếp qua Web Speech API và chấm điểm tự động."
-                    : `Câu hỏi được AI đối soát và cá nhân hóa theo khoảng trống năng lực trong CV của bạn cho vị trí ${jobTitle}.`}
+                    ? "Tập trả lời trực tiếp bằng giọng nói thời gian thực. Đối mặt với các câu hỏi tình huống sát thực tế và nhận phản hồi chấm điểm ngay lập tức."
+                    : `Câu hỏi được AI đối soát chuyên sâu theo khoảng trống năng lực trong CV của bạn cho vị trí ${jobTitle}.`}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-4 text-[12px] text-slate-600 font-medium">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs">
+                    <span className="material-symbols-outlined text-[15px] text-[#0037b0]">mic</span>
+                    <span>Giọng nói tiếng Việt tự nhiên</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs">
+                    <span className="material-symbols-outlined text-[15px] text-[#059669]">bolt</span>
+                    <span>Phản hồi &amp; Chấm điểm tức thì</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs">
+                    <span className="material-symbols-outlined text-[15px] text-[#7c3aed]">psychology</span>
+                    <span>Gợi ý câu trả lời chuẩn sao (STAR)</span>
+                  </span>
+                </div>
+                <p className="hidden">
                 </p>
               </div>
 
@@ -793,8 +818,8 @@ export default function InterviewPage() {
                             type="button"
                             onClick={() => selectPreset(item.key)}
                             className={`flex flex-col gap-1.5 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${activePresetKey === item.key
-                                ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] shadow-sm ring-2 ring-[#0037b0]/20 font-bold"
-                                : "bg-[#f8fafc] border-[#e2e8f0] text-[#475569] hover:bg-white hover:border-[#cbd5e1] font-medium"
+                              ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] shadow-sm ring-2 ring-[#0037b0]/20 font-bold"
+                              : "bg-[#f8fafc] border-[#e2e8f0] text-[#475569] hover:bg-white hover:border-[#cbd5e1] font-medium"
                               }`}
                           >
                             <div className="flex items-center gap-2">
@@ -937,8 +962,8 @@ export default function InterviewPage() {
                       type="button"
                       onClick={() => playQuestionAudio(currentIndex)}
                       className={`px-3.5 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${isSpeaking
-                          ? "bg-[#0037b0] text-white shadow-sm ring-2 ring-[#0037b0]/20 animate-pulse"
-                          : "bg-[#eff4ff] text-[#0037b0] hover:bg-[#dbeafe] border border-[#bfdbfe]"
+                        ? "bg-[#0037b0] text-white shadow-sm ring-2 ring-[#0037b0]/20 animate-pulse"
+                        : "bg-[#eff4ff] text-[#0037b0] hover:bg-[#dbeafe] border border-[#bfdbfe]"
                         }`}
                       title="Bấm để nghe đọc lại câu hỏi bằng giọng nữ Hà Nội chuẩn"
                     >
@@ -993,12 +1018,12 @@ export default function InterviewPage() {
                         onClick={isListening ? stopListening : startListening}
                         disabled={!isSpeechSupported || isSpeaking || isEvaluating}
                         className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition-all shrink-0 cursor-pointer ${isListening
-                            ? "bg-[#ba1a1a] text-white hover:bg-[#93000a] shadow-sm animate-pulse"
-                            : isSpeaking
-                              ? "bg-[#f1f5f9] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
-                              : !isSpeechSupported
-                                ? "bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
-                                : "bg-white border border-[#c4c5d7]/80 text-[#0037b0] hover:bg-[#eff4ff] hover:border-[#0037b0]"
+                          ? "bg-[#ba1a1a] text-white hover:bg-[#93000a] shadow-sm animate-pulse"
+                          : isSpeaking
+                            ? "bg-[#f1f5f9] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                            : !isSpeechSupported
+                              ? "bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0] cursor-not-allowed"
+                              : "bg-white border border-[#c4c5d7]/80 text-[#0037b0] hover:bg-[#eff4ff] hover:border-[#0037b0]"
                           }`}
                         title={
                           isSpeaking
@@ -1069,8 +1094,8 @@ export default function InterviewPage() {
                       onClick={handleSubmitAnswer}
                       disabled={isEvaluating}
                       className={`px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${isEvaluating
-                          ? "bg-[#e5eeff] text-[#64748b] cursor-wait"
-                          : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] hover:shadow-md"
+                        ? "bg-[#e5eeff] text-[#64748b] cursor-wait"
+                        : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] hover:shadow-md"
                         }`}
                     >
                       {isEvaluating && (
@@ -1130,10 +1155,10 @@ export default function InterviewPage() {
                       <div
                         key={idx}
                         className={`p-3 rounded-xl text-[12px] flex items-center justify-between border transition-all ${idx === currentIndex
-                            ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] font-bold shadow-xs"
-                            : idx < currentIndex
-                              ? "bg-[#f8fafc] border-[#e2e8f0] text-[#059669]"
-                              : "bg-white border-[#f1f5f9] text-[#94a3b8]"
+                          ? "bg-[#eff4ff] border-[#0037b0] text-[#0037b0] font-bold shadow-xs"
+                          : idx < currentIndex
+                            ? "bg-[#f8fafc] border-[#e2e8f0] text-[#059669]"
+                            : "bg-white border-[#f1f5f9] text-[#94a3b8]"
                           }`}
                       >
                         <div className="flex items-center gap-2 truncate">
@@ -1196,10 +1221,10 @@ export default function InterviewPage() {
                 <div className="mb-8 p-6 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs">
                   <div className="flex items-center gap-5">
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-[26px] shadow-sm ${guestResult.totalScore >= 70
-                        ? "bg-[#ecfdf5] text-[#059669]"
-                        : guestResult.totalScore >= 50
-                          ? "bg-[#fffbeb] text-[#d97706]"
-                          : "bg-[#fef2f2] text-[#dc2626]"
+                      ? "bg-[#ecfdf5] text-[#059669]"
+                      : guestResult.totalScore >= 50
+                        ? "bg-[#fffbeb] text-[#d97706]"
+                        : "bg-[#fef2f2] text-[#dc2626]"
                       }`}>
                       {guestResult.totalScore}
                     </div>
@@ -1235,10 +1260,10 @@ export default function InterviewPage() {
                             Câu {idx + 1}: {ans.question}
                           </span>
                           <span className={`px-3 py-1 rounded-full text-[12px] font-extrabold shrink-0 ${ans.question_score >= 70
-                              ? "bg-[#ecfdf5] text-[#059669]"
-                              : ans.question_score >= 50
-                                ? "bg-[#fffbeb] text-[#d97706]"
-                                : "bg-[#fef2f2] text-[#dc2626]"
+                            ? "bg-[#ecfdf5] text-[#059669]"
+                            : ans.question_score >= 50
+                              ? "bg-[#fffbeb] text-[#d97706]"
+                              : "bg-[#fef2f2] text-[#dc2626]"
                             }`}>
                             {ans.question_score}/100 đ
                           </span>

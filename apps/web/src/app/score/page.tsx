@@ -221,19 +221,38 @@ function ScorePageContent() {
       <main className="flex-1 pt-16 flex flex-col">
         <ProgressStepper activeStep={1} />
 
-        {/* Page Header */}
-        <section className="w-full px-4 sm:px-8 lg:px-12 pt-7 pb-2">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#eff4ff] border border-[#dce1ff] text-[#0037b0] text-[12px] font-bold mb-3 shadow-xs">
-              <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
-              <span>Động cơ AI đối soát năng lực &amp; Chuẩn ATS</span>
+        {/* Page Header — Hook Tối ưu & Chuyên sâu */}
+        <section className="w-full px-4 sm:px-8 lg:px-12 pt-7 pb-3">
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 text-[#0037b0] text-[12px] font-bold mb-3 shadow-2xs">
+              <span className="material-symbols-outlined text-[16px] text-[#2563eb] animate-pulse">auto_awesome</span>
+              <span className="tracking-wide">ĐỘNG CƠ AI ĐỐI SOÁT NĂNG LỰC &amp; BỘ LỌC ATS</span>
             </div>
-            <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] font-extrabold text-[#0b1c30] tracking-tight leading-tight">
-              Đánh giá mức độ phù hợp giữa CV &amp; Vị trí tuyển dụng
+            <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[36px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
+              Kiểm Tra Điểm Khớp CV Với JD{" "}
+              <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#0037b0] via-[#2563eb] to-[#7c3aed]">
+                Chuẩn Bộ Lọc Tuyển Dụng
+              </span>
             </h1>
-            <p className="text-[14px] sm:text-[15px] text-[#475569] mt-2 leading-relaxed">
-              Tải lên CV của bạn và cung cấp yêu cầu tuyển dụng để AI phân tích độ tương thích, phát hiện lỗ hổng kỹ năng và đề xuất tối ưu.
+            <p className="text-[14px] sm:text-[15.5px] text-[#475569] mt-2.5 max-w-3xl leading-relaxed">
+              Đừng nộp CV trong mơ hồ. Hệ thống 3 mô hình AI sẽ chỉ rõ kỹ năng bạn còn thiếu theo từng dòng yêu cầu công việc và gợi ý câu từ tối ưu trước khi nộp cho nhà tuyển dụng.
             </p>
+
+            {/* Trụ cột giá trị nhanh (Trust Badges) */}
+            <div className="flex flex-wrap items-center gap-3 mt-3.5 text-[12px] text-slate-600 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 shadow-2xs">
+                <span className="material-symbols-outlined text-[15px] text-[#059669]">check_circle</span>
+                <span>Đối soát 11 đặc trưng chuyên sâu</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 shadow-2xs">
+                <span className="material-symbols-outlined text-[15px] text-[#0037b0]">radar</span>
+                <span>Bắt lỗi từ khóa ATS còn thiếu</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 shadow-2xs">
+                <span className="material-symbols-outlined text-[15px] text-[#7c3aed]">lock</span>
+                <span>Bảo mật dữ liệu cá nhân 100%</span>
+              </span>
+            </div>
           </div>
         </section>
 
@@ -296,8 +315,8 @@ function ScorePageContent() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`relative flex-1 min-h-[360px] rounded-xl transition-all flex flex-col items-center justify-center p-6 text-center group cursor-pointer overflow-hidden border ${isDragging
-                    ? "bg-[#eff6ff] border-2 border-dashed border-[#0037b0] scale-[1.01] shadow-md"
-                    : "bg-[#f8fafc] hover:bg-[#eff4ff]/40 border-[#e2e8f0]"
+                  ? "bg-[#eff6ff] border-2 border-dashed border-[#0037b0] scale-[1.01] shadow-md"
+                  : "bg-[#f8fafc] hover:bg-[#eff4ff]/40 border-[#e2e8f0]"
                   }`}
               >
                 <input
@@ -577,8 +596,8 @@ function ScorePageContent() {
                 disabled={!formReady}
                 onClick={handleAnalyze}
                 className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold flex items-center justify-center gap-2 transition-all ${formReady
-                    ? "btn-gradient-cta shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]"
-                    : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                  ? "btn-gradient-cta shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
                   }`}
               >
                 <span className="material-symbols-outlined text-[19px]">

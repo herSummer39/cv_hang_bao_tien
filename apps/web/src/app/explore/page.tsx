@@ -249,15 +249,18 @@ export default function ExplorePage() {
         <section className="w-full px-4 sm:px-8 lg:px-12 pt-8 pb-5">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-slate-200/80">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0037b0] text-[12px] font-bold mb-2.5 shadow-2xs">
-                <span className="material-symbols-outlined text-[15px] text-[#0037b0]">verified</span>
-                <span>Bộ từ khóa chuẩn hóa theo JD thực tế</span>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 text-[#0037b0] text-[12px] font-bold mb-3 shadow-2xs">
+                <span className="material-symbols-outlined text-[16px] text-[#059669]">verified</span>
+                <span className="tracking-wide">BẢN ĐỒ TỪ KHÓA TUYỂN DỤNG ATS VIỆT NAM</span>
               </div>
-              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] font-extrabold text-[#0b1c30] tracking-tight leading-tight">
-                Khám phá Chuẩn Kỹ Năng theo Ngành
+              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[36px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
+                Giải Mã Bộ Từ Khóa Vàng{" "}
+                <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#0037b0] via-[#2563eb] to-[#7c3aed]">
+                  Nhà Tuyển Dụng Tìm Kiếm
+                </span>
               </h1>
-              <p className="text-[14px] sm:text-[15px] text-slate-600 mt-1.5 leading-relaxed">
-                Tra cứu các từ khóa trọng yếu mà nhà tuyển dụng yêu cầu nhiều nhất. Bấm chọn kỹ năng bạn đã có để tự đo độ sẵn sàng và đối soát tự động với CV.
+              <p className="text-[14px] sm:text-[15.5px] text-[#475569] mt-2.5 leading-relaxed">
+                Đừng đoán mò tiêu chí tuyển dụng. Tra cứu chuẩn kỹ năng cứng &amp; kỹ năng mềm được trích xuất từ hàng nghìn JD thực tế, tự kiểm tra độ sẵn sàng và đồng bộ ngay vào CV.
               </p>
             </div>
 

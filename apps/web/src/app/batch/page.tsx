@@ -129,15 +129,30 @@ export default function BatchPage() {
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-7 pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] text-[11px] font-bold mb-2 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50/90 border border-indigo-200/80 text-[#1d4ed8] text-[12px] font-bold mb-3 shadow-2xs">
                 <span className="material-symbols-outlined text-[15px] text-[#0037b0]">groups</span>
-                <span>Công cụ dành cho Nhà tuyển dụng / HR / Team Lead</span>
+                <span className="tracking-wide">BỘ LỌC ỨNG VIÊN HÀNG LOẠT (BATCH MATCHING)</span>
               </div>
-              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[26px] sm:text-[32px] font-bold text-[#0b1c30] tracking-tight leading-tight">
-                So sánh &amp; Xếp hạng nhiều hồ sơ cho 1 vị trí
+              <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[28px] sm:text-[36px] font-extrabold text-[#0b1c30] tracking-tight leading-[1.2]">
+                Sàng Lọc &amp; Xếp Hạng Hàng Chục CV{" "}
+                <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-[#1d4ed8] via-[#2563eb] to-[#059669]">
+                  Chỉ Trong 30 Giây
+                </span>
               </h1>
-              <p className="text-[14px] sm:text-[15px] text-[#64748b] mt-1.5 max-w-2xl leading-relaxed">
-                Tải lên đồng thời tối đa 20 CV và cung cấp 1 bản JD. AI sẽ quét và xếp hạng thứ tự phù hợp của các ứng viên theo độ khớp kỹ năng thực tế.
+              <p className="text-[14px] sm:text-[15.5px] text-[#475569] mt-2 max-w-2xl leading-relaxed">
+                Tạm biệt việc đọc thủ công từng trang hồ sơ. Tải lên cùng lúc tới 20 CV, AI sẽ bóc tách ma trận kỹ năng, chấm điểm độ khớp JD và xếp hạng ứng viên minh bạch.
+              </p>
+              <div className="flex flex-wrap items-center gap-2.5 mt-3 text-[12px] text-slate-600 font-medium">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 shadow-2xs">
+                  <span className="material-symbols-outlined text-[15px] text-[#059669]">speed</span>
+                  <span>Tiết kiệm 80% thời gian sơ tuyển</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 shadow-2xs">
+                  <span className="material-symbols-outlined text-[15px] text-[#0037b0]">grid_view</span>
+                  <span>Ma trận kỹ năng đối chiếu</span>
+                </span>
+              </div>
+              <p className="hidden">
               </p>
             </div>
 
