@@ -1,0 +1,11 @@
+Yêu cầu
+1. Thực hiện theo trình tự các chương trong file hướng dẫn làm Đồ án Môn học  (Đã gửi trên Drive)
+2. Trong tuần này các nhóm phải thực hiện xong các phần sau:
+     2.1. Mô tả Bảng đặc tả yêu cầu
+     2.2. Sơ đồ chức năng (Mô hình hệ thống).
+     2.2. Thiết kế sơ đồ Use Case tổng quát
+     2.3. Các sơ đồ Use case chi tiết cốt lõi (kèm các bảng mô tả)
+     2.4. Các Sơ đồ tuần tự cốt lõi.
+     2.5. Sơđồ hoạt động (activity).
+3. Thực hiện xong nộp lên Drive (Tuần 4)
+4. Tuần tiếp theo(tuần 5): Thiết kế CSDL và Hệ thống màn hình (thiết kế giao diện, các chức năng của hệ thống

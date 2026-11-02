@@ -1,0 +1,332 @@
+Total paragraphs: 330
+
+[1] TRƯỜNG ĐẠI HỌC BÌNH DƯƠNG 
+[2] VIỆN TRÍ TUỆ NHÂN TẠO VÀ CHUYỂN ĐỔI SỐ
+[3] KHOA CÔNG NGHỆ THÔNG TIN, ROBOT VÀ
+[4] TRÍ TUỆ NHÂN TẠO 
+[5]  ĐỒ ÁN MÔN HỌC
+[6] Tên đề tài: 
+[7] XÂY DỰNG ỨNG DỤNG AI ĐÁNH GIÁ CV VÀ MÔ PHỎNG PHỎNG VẤN CHO SINH VIÊN ĐA NGÀNH DỰA TRÊN DEEP LEARNING VÀ NLP
+[8] GVHD: ThS. Nguyễn Hồ Hải.
+[9] SVTH:  Trần Thị Ngọc Hằng – 23050115-26TH02
+[10] Hạ Chí Tiền – 23050117-26TH02
+[11] Lê Gia Bảo – 23050110-26TH02
+[12] Thành phố Hồ Chí Minh, 03 Tháng 10 năm 2026
+[13] LỜI CẢM ƠN
+[14] MỤC LỤC
+[15] DANH MỤC HÌNH ẢNH
+[16] DANH MỤC BẢNG BIỂU
+[17] DANH MỤC CÁC KÝ HIỆU VÀ CHỮ VIẾT TẮT
+[18] GIỚI THIỆU TỔNG QUAN
+[19]  Mục tiêu của đồ án
+[20] Trong bối cảnh thị trường lao động hiện đại cạnh tranh gay gắt, sinh viên mới tốt nghiệp hoặc chuẩn bị đi làm thường gặp nhiều khó khăn trong việc chuẩn bị hồ sơ tuyển dụng (CV) cũng như rèn luyện kỹ năng phỏng vấn. Hồ sơ CV không chỉ cần trình bày đẹp mắt mà còn phải thể hiện rõ các năng lực cốt lõi, đáp ứng chính xác các tiêu chí của bản mô tả công việc (Job Description - JD). Bên cạnh đó, việc thiếu trải nghiệm phỏng vấn thực tế khiến nhiều sinh viên mất tự tin khi làm việc với nhà tuyển dụng. 
+[21] Mục tiêu chính của đồ án là nghiên cứu, thiết kế và phát triển hệ thống phần mềm ứng dụng trí tuệ nhân tạo thông minh mang tên CareerFit. Hệ thống đóng vai trò như một trợ lý ảo AI chuyên sâu, hỗ trợ đánh giá chất lượng hồ sơ CV và rèn luyện phỏng vấn giả lập cho sinh viên đa ngành dựa trên các mô hình Học sâu (Deep Learning) và Xử lý ngôn ngữ tự nhiên (NLP) tiếng Việt. Các mục tiêu cụ thể của đồ án bao gồm:
+[22] Bóc tách dữ liệu CV đa định dạng tự động: Triển khai module trích xuất dữ liệu văn bản từ các tệp CV có cấu trúc phức tạp (PDF 1 cột, PDF 2 cột, tệp DOCX, bảng biểu) và các tệp dạng ảnh scan/chụp qua công nghệ nhận dạng ký tự quang học (OCR). 
+[23] Đánh giá và so khớp ngữ nghĩa đa tầng (AI Matching): Xây dựng Pipeline AI kết hợp 3 tầng mô hình nhằm phân tích thực thể tên riêng (NER), so khớp độ tương đồng ngữ nghĩa vector 768 chiều giữa CV và JD, từ đó tính toán điểm số tổng hợp và chỉ ra chính xác khoảng trống kỹ năng (Skill Gap). 
+[24] Giải thích minh bạch điểm số (Explainable AI): Tích hợp công cụ giải thích trọng số đóng góp, giúp sinh viên hiểu rõ lý do vì sao hồ sơ đạt hoặc chưa đạt điểm cao, kèm theo các khuyến nghị cải thiện CV được cá nhân hóa. 
+[25] Mô phỏng phỏng vấn bằng giọng nói 2 chiều (Voice AI Interview): Xây dựng phòng phỏng vấn giả lập tương tác bằng tiếng Việt. Hệ thống tự động chọn câu hỏi dựa trên lỗ hổng kỹ năng của ứng viên, phát âm bằng giọng đọc tự nhiên đa vùng miền và nhận dạng giọng nói câu trả lời để chấm điểm tiêu chí. 
+[26] Hỗ trợ Nhà tuyển dụng (Batch Mode): Cung cấp tính năng sàng lọc, chấm điểm và lập ma trận kỹ năng (Skill Matrix) hàng loạt cho nhiều hồ sơ ứng viên cùng lúc. 
+[27] Tra cứu Bản đồ kỹ năng (Explore): Cung cấp cây tri thức tra cứu lộ trình kỹ năng tiêu chuẩn cho 17 nhóm ngành và 73 vị trí công việc tại Việt Nam. 
+[28] Các hệ thống tương tự
+[29] Hiện nay, trên thị trường trong và ngoài nước đã xuất hiện một số hệ thống hỗ trợ tuyển dụng và đánh giá CV. Qua quá trình khảo sát và phân tích, nhóm thực hiện ghi nhận các đặc điểm và hạn chế của các nghiên cứu/hệ thống đã có như sau: 
+[30] Các hệ thống quản trị tuyển dụng truyền thống (ATS - Applicant Tracking System):
+[31] Đặc điểm: Sử dụng chủ yếu thuật toán đối soát từ khóa cứng (KeywordMatching) để lọc hồ sơ. 
+[32] Hạn chế: Dễ bỏ sót các ứng viên tiềm năng nếu họ sử dụng từ đồng nghĩa, từ viết tắt hoặc cách diễn đạt khác với từ khóa trong JD. Không đánh giá được ngữ cảnh hay chiều sâu kinh nghiệm. 
+[33] Các công cụ đánh giá CV trực tuyến (như VMock, Resume Worded, TopCV...):
+[34] Đặc điểm: Đưa ra các chỉ số phân tích cấu trúc, độ dài và kiểm tra lỗi chính tả cơ bản trên CV. 
+[35] Hạn chế: Các công cụ quốc tế chủ yếu hỗ trợ tiếng Anh, hoạt động kém hiệu quả với tiếng Việt. Các công cụ trong nước chủ yếu dừng lại ở việc cung cấp mẫu CV (Template) mà chưa đi sâu vào phân tích ngữ nghĩa 2 chiều giữa CV và JD. 
+[36] Các ứng dụng luyện phỏng vấn bằng AI:
+[37] Đặc điểm: Cung cấp các câu hỏi phỏng vấn cố định dưới dạng văn bản (Text). 
+[38] Hạn chế: Thiếu tính năng mô phỏng giọng nói 2 chiều (Voice-to-Voice) thực tế. Chưa có khả năng tự động tạo câu hỏi xoáy sâu vào đúng điểm yếu/kỹ năng còn thiếu (Skill Gap) vừa được phát hiện từ CV của ứng viên. 
+[39] Bảng  11: Bảng so sánh tính năng giữa hệ thống CareerFit và các giải pháp hiện hành trên thị trường
+[40] Tiêu chí so sánh
+[41] Hệ thống ATS truyền thống
+[42] Công cụ đánh giá CV trực tuyến (TopCV, VMock...)
+[43] Các ứng dụng phỏng vấn AI hiện tại
+[44] Hệ thống CareerFit (Đề tài)
+[45] So khớp ngữ nghĩa AI (NLP)
+[46] Không (Chỉ đối soát từ khóa cứng - Keyword Matching) 
+[47] Hạn chế (Chủ yếu kiểm tra cấu trúc, lỗi chính tả & từ khóa) 
+[48] Không (Không hỗ trợ so khớp đối soát dữ liệu CV và JD) 
+[49] Có (Pipeline 3 tầng: PhoBERT-NER, Embedding 768d & XGBoost + SHAP) 
+[50] Bóc tách CV 2 cột & OCR dự phòng
+[51] Hạn chế (Dễ lộn xộn thứ tự dòng ở CV dạng 2 cột) 
+[52] Hạn chế (Gặp khó khăn với bố cục 2 cột phức tạp hoặc file scan) 
+[53] Không hỗ trợ
+[54] Có (CvParserAdapter tự phân tách cột & EasyOCR cho file scan) 
+[55] Phỏng vấn giọng nói 2 chiều (Voice AI)
+[56] Không có
+[57] Không có
+[58] Hạn chế (Chủ yếu phỏng vấn dạng văn bản chữ - Text based) 
+[59] Có (Tương tác Voice-to-Voice 2 chiều qua PhoWhisper-base ASR) 
+[60] Phát âm 7 vùng miền
+[61] Không có
+[62] Không có
+[63] Không có (Chỉ có 1 giọng đọc mặc định hoặc không hỗ trợ tiếng Việt) 
+[64] Có (VieNeu-TTS hỗ trợ 7 chất giọng vùng miền Việt Nam) 
+[65] Lọc CV hàng loạt (Batch Mode)
+[66] Có (Lọc danh sách nhưng dựa trên từ khóa cứng) 
+[67] Không (Chủ yếu đánh giá từng hồ sơ CV đơn lẻ) 
+[68] Không có
+[69] Có (Chấm điểm song song & xuất Ma trận Kỹ năng Skill Matrix) 
+[70] Tính mới, tính ứng dụng
+[71] Tính mới của đồ án
+[72] Pipeline AI 3 tầng chuyên sâu hỗ trợ tiếng Việt:
+[73] Tầng 1 (M1 - PhoBERT-NER): Bóc tách các thực thể quan trọng (Kỹ năng - SKILL, Tổ chức/Công ty - ORG, Học vấn - EDU) với cơ chế khớp ranh giới từ và khớp từ vựng mềm. 
+[74] Tầng 2 (M2 - PhoBERT Embedding): Biểu diễn văn bản thành vector đặc trưng 768 chiều, tính toán độ tương đồng ngữ nghĩa Cosine Similarity, tự động loại bỏ các đoạn văn bản nhiễu (quản lý quyền lợi, địa điểm làm việc). 
+[75] Tầng 3 (M3 - XGBoost & SHAP): Tổng hợp các chỉ số đặc trưng để chấm điểm số tổng thể (0 - 100%) và trực quan hóa trọng số đóng góp của từng yếu tố bằng SHAP Explainer. 
+[76] Môi trường Voice AI tương tác 2 chiều đa vùng miền: Tích hợp mô hình PhoWhisper-base chạy offline để nhận dạng giọng nói tiếng Việt (ASR) kết hợp engine VieNeu-TTS phát âm câu hỏi bằng 7 chất giọng vùng miền (Bắc Bộ, Trung Bộ, Nam Bộ...), tạo cảm giác như buổi phỏng vấn trực tiếp tại doanh nghiệp. 
+[77] Kiến trúc Lục giác (Hexagonal Architecture) cho Module Bóc tách CV: Thiết kế CvParserAdapter giúp tách biệt hoàn toàn logic xử lý file khỏi framework. Hệ thống tự động phân tách cột đối với CV 2 cột phức tạp, tự động nối câu ngắt dòng và kích hoạt OCR dự phòng (EasyOCR) khi gặp file scan/ảnh. 
+[78] Hình 11: Sơ đồ kiến trúc Pipeline AI 3 tầng xử lý CV và JD của hệ thống
+[79] Tính ứng dụng của đồ án
+[80] Đối với Sinh viên: Giúp sinh viên đa ngành nhanh chóng phát hiện các lỗi sai và kỹ năng còn thiếu trong CV; cung cấp lộ trình cải thiện cá nhân hóa và tạo môi trường luyện phỏng vấn giọng nói phản xạ thực tế hoàn toàn miễn phí. 
+[81] Đối với Nhà tuyển dụng (HR): Tự động hóa công tác sàng lọc hàng chục/hàng trăm hồ sơ nộp vào cùng lúc qua chế độ Batch Mode, xuất ma trận kỹ năng so sánh thứ hạng ứng viên, giúp tiết kiệm hơn 80% thời gian tuyển dụng ban đầu. 
+[82] Nội dung, phạm vi đồ án
+[83] Phạm vi đồ án
+[84] Đối tượng phục vụ: Sinh viên chuẩn bị tốt nghiệp thuộc các khối ngành tại Việt Nam và Chuyên viên tuyển dụng/HR. 
+[85] Danh mục chuẩn hóa: Xây dựng kho dữ liệu gồm 17 nhóm ngành lớn và 73 vị trí việc làm trọng điểm tại thị trường Việt Nam. 
+[86] Dữ liệu phỏng vấn: Ngân hàng 141 câu hỏi phỏng vấn chuẩn hóa được phân loại theo ngành nghề. 
+[87] Định dạng tệp hỗ trợ: Xử lý các định dạng CV phổ biến gồm PDF (1 cột, 2 cột), DOCX và các tệp hình ảnh (PNG, JPG). 
+[88] Thời gian thực hiện: 12 tuần (từ ngày 08/09/2026 đến ngày 10/11/2026). 
+[89] Nội dung thực hiện
+[90] Quản trị cơ sở dữ liệu: Thiết kế và triển khai 11 bản migration thực tế trên PostgreSQL (Supabase). 
+[91] Huấn luyện và tích hợp mô hình AI: Tối ưu bộ 3 mô hình M1 (PhoBERT-NER), M2 (PhoBERT Embedding), M3 (XGBoost + SHAP) và quản lý phiên bản trọng số mô hình bằng DVC (Data Version Control) kết nối Google Drive Storage. 
+[92] Phát triển Voice AI: Tích hợp mô hình PhoWhisper-base (ASR offline) và VieNeu-TTS (7 giọng vùng miền). 
+[93] Xây dựng giao diện ứng dụng Web: Phát triển ứng dụng Web trên nền tảng Next.js 16 (App Router), Tailwind CSS với 6 luồng màn hình chính. 
+[94] Thử nghiệm & Báo cáo: Đánh giá hiệu năng bóc tách, độ chính xác chấm điểm và viết báo cáo đồ án. 
+[95] Hình 12: Biểu đồ Use Case tổng quát thể hiện 4 Tác nhân (Ứng viên, HR, Admin, AI Worker) và các nhóm chức năng chính.
+[96] Kết quả cần đạt
+[97] Dưới đây là bảng tổng hợp các kết quả cần đạt và tiêu chí đánh giá cụ thể cho từng kết quả của đồ án môn học: 
+[98] Bảng  12: Bảng các kết quả cần đạt và tiêu chí đánh giá cho đồ án
+[99] STT
+[100] Kết quả cần đạt
+[101] Tiêu chí đánh giá chi tiết
+[102] 1
+[103] Cơ sở dữ liệu hệ thống
+[104] Triển khai thành công 11 bảng dữ liệu trên PostgreSQL/Supabase (analysis_jobs, cv_sessions, skills, interview_questions...); đảm bảo toàn vẹn dữ liệu, khóa ngoại và liên kết Supabase Auth. 
+[105] 2
+[106] Module Bóc tách CV đa định dạng (CvParserAdapter)
+[107] Trích xuất thành công dữ liệu từ file PDF (1 cột, 2 cột), DOCX và tệp ảnh. Tự động nối câu ngắt dòng và chuyển hướng sang EasyOCR khi phát hiện file scan. 
+[108] 3
+[109] Pipeline AI 3 tầng (M1, M2, M3)
+[110] - Bóc tách chính xác các nhãn SKILL, ORG, EDU với confidence 0.85 – 0.99. 
+[111] - So khớp ngữ nghĩa vector 768 chiều, loại bỏ thành công các đoạn nhiễu (lương, đãi ngộ). 
+[112] - Chấm điểm tổng hợp 0 - 100% và xuất biểu đồ giải thích trọng số SHAP. 
+[113] 4
+[114] Tính năng Voice AI Phỏng vấn giả lập
+[115] - Chuyển đổi giọng nói câu trả lời thành văn bản qua PhoWhisper-base với độ trễ < 2 giây. 
+[116] - Phát âm câu hỏi mượt mà bằng VieNeu-TTS hỗ trợ 7 chất giọng vùng miền. 
+[117] 5
+[118] Giao diện Ứng dụng Web hoàn chỉnh (Next.js 16)
+[119] Xây dựng đầy đủ 6 luồng giao diện người dùng hoạt động mượt mà:
+[120] 1. Thiết lập hồ sơ CV & JD (/score) 
+[121] 2. Tiến trình đối soát bất đồng bộ Async Worker (/score/processing) 
+[122] 3. Báo cáo chi tiết, Radar & Gợi ý cải thiện CV (/score/result)
+[123] 4. Phòng luyện phỏng vấn giả lập giọng nói (/interview) 
+[124] 5. Đánh giá & Xếp hạng CV hàng loạt - Batch Mode (/batch) 
+[125] 6. Dashboard trung tâm & Bản đồ Kỹ năng ngành nghề (/dashboard & /explore) 
+[126] 6
+[127] Tài liệu Báo cáo Đồ án
+[128] Hoàn thành quyển báo cáo đồ án từ 40 - 90 trang, tuân thủ đúng định dạng, font chữ, header-footer và cấu trúc 5 chương theo quy định. 
+[129] CƠ SỞ LÝ THUYẾT
+[130] Mô tả Bảng đặc tả yêu cầu 
+[131] Bảng đặc tả Yêu cầu Chức năng (Functional Requirements - FR)
+[132] Bảng  21: Bảng đặc tả Yêu cầu Chức năng (Functional Requirements - FR)
+[133] Mã YC
+[134] Tên yêu cầu chức năng
+[135] Tác nhân chính
+[136] Mô tả chi tiết chức năng
+[137] FR-01
+[138] Xác thực & Quản lý hồ sơ
+[139] Ứng viên / HR
+[140] Cho phép đăng ký, đăng nhập tài khoản an toàn qua Email/Password hoặc Google OAuth bằng Supabase Auth; quản lý thông tin profile cá nhân. 
+[141] FR-02
+[142] Tải lên CV & Nhập JD
+[143] Ứng viên / HR
+[144] Hỗ trợ kéo-thả hoặc tải lên tệp CV đa định dạng (PDF 1 cột, PDF 2 cột, DOCX, PNG/JPG); cho phép dán văn bản JD tùy chỉnh hoặc chọn mẫu từ thư viện jd_library theo 73 vị trí. 
+[145] FR-03
+[146] Bóc tách dữ liệu CV tự động
+[147] Hệ thống AI Worker
+[148] Kích hoạt CvParserAdapter để xử lý phân tách cột PDF 2 cột, nối câu ngắt dòng và tự động chuyển hướng sang EasyOCR nếu phát hiện tệp scan/ảnh chụp. 
+[149] FR-04
+[150] Đánh giá & AI Matching 3 tầng
+[151] Hệ thống AI Worker
+[152] - Tầng 1 (M1 - PhoBERT-NER): Bóc tách các nhãn thực thể SKILL, ORG, EDU. 
+[153] - Tầng 2 (M2 - PhoBERT Embedding 768d): So khớp ngữ nghĩa giữa CV và JD bằng Cosine Similarity, loại bỏ thông tin nhiễu. 
+[154] - Tầng 3 (M3 - XGBoost & SHAP): Chấm điểm phần trăm tổng thể (0–100%) và xuất trọng số đóng góp. 
+[155] FR-05
+[156] Báo cáo Radar & Khuyến nghị
+[157] Ứng viên
+[158] Hiển thị Biểu đồ Radar 5 khía cạnh năng lực, Bảng đối soát bằng chứng (Evidence Matching), khoảng trống kỹ năng (Skill Gap), gợi ý viết lại CV cá nhân hóa và xuất file PDF. 
+[159] FR-06
+[160] Phỏng vấn giả lập Voice AI 2 chiều
+[161] Ứng viên
+[162] Tự động sinh câu hỏi phỏng vấn dựa trên Skill Gap từ CV; phát âm câu hỏi bằng VieNeu-TTS (7 giọng vùng miền); thu âm câu trả lời và chuyển đổi thành chữ qua PhoWhisper-base ASR offline để chấm điểm. 
+[163] FR-07
+[164] Sàng lọc CV hàng loạt (Batch Mode)
+[165] Nhà tuyển dụng (HR)
+[166] Tải lên lô hồ sơ CV cho một vị trí, hệ thống xử lý song song, xuất Ma trận kỹ năng (Skill Matrix) và bảng xếp hạng ứng viên từ cao xuống thấp. 
+[167] FR-08
+[168] Dashboard & Bản đồ Kỹ năng
+[169] Ứng viên / HR
+[170] Quản lý lịch sử đánh giá, theo dõi biểu đồ tiến bộ điểm số qua các mốc thời gian, tra cứu cây kỹ năng cho 17 nhóm ngành và 73 vị trí.
+[171] Bảng đặc tả Yêu cầu Phi chức năng (Non-Functional Requirements - NFR)
+[172] Bảng  22: Bảng đặc tả Yêu cầu Phi chức năng (Non-Functional Requirements - NFR)
+[173] Mã YC
+[174] Nhóm yêu cầu
+[175] Tiêu chí kỹ thuật & Chỉ số đạt được
+[176] NFR-01
+[177] Hiệu năng & Độ trễ
+[178] - Thời gian bóc tách và matching AI trung bình < 5 giây. 
+[179] - Độ trễ nhận dạng giọng nói PhoWhisper-base ASR < 2 giây. 
+[180] NFR-02
+[181] Độ chính xác AI
+[182] - Mô hình M1 PhoBERT-NER đạt độ tin cậy confidence từ 0.85 đến 0.99 với các nhãn Kỹ năng, Công ty, Học vấn. 
+[183] - VieNeu-TTS đạt độ tự nhiên phát âm tiếng Việt chuẩn 7 vùng miền. 
+[184] NFR-03
+[185] Kiến trúc & Khả năng mở rộng
+[186] - Áp dụng Kiến trúc Lục giác (Hexagonal Architecture) giúp tách biệt hoàn toàn logic bóc tách khỏi framework. 
+[187] - Xử lý bất đồng bộ (Async Worker) qua hàng đợi Supabase giúp chống nghẽn hệ thống khi có lượng tải lớn. 
+[188] NFR-04
+[189] Bảo mật & Tương thích
+[190] - Mã hóa dữ liệu hồ sơ cá nhân; phân quyền người dùng qua Supabase Auth. 
+[191] - Giao diện Web tương thích đa nền tảng (Responsive) trên Next.js 16 và Tailwind CSS. 
+[192] Sơ đồ chức năng (Mô hình hệ thống)
+[193] Hệ thống được thiết kế theo cấu trúc cây phân rã chức năng (Functional Decomposition Diagram) gồm 5 Nhóm chức năng chính: 
+[194] Hình 21: Sơ đồ cây phân rã chức năng (Functional Decomposition Diagram) biểu diễn 5 nhóm chức năng trên.
+[195] Thiết kế sơ đồ Use Case tổng quát
+[196] Sơ đồ Use Case tổng quát thể hiện sự tương tác giữa 4 Tác nhân (Actors) và các nhóm chức năng chính của ứng dụng: 
+[197] Ứng viên (Candidate): Đăng ký/Đăng nhập, tải CV & nhập JD, xem báo cáo điểm số & Radar, xuất file PDF, tham gia phỏng vấn giọng nói AI, tra cứu bản đồ kỹ năng. 
+[198] Nhà tuyển dụng (HR / Recruiter): Tải hàng loạt CV (Batch Mode), xem ma trận kỹ năng (Skill Matrix) và bảng xếp hạng thứ bậc ứng viên. 
+[199] Quản trị viên (Admin): Quản lý danh mục 17 nhóm ngành, 73 vị trí và ngân hàng câu hỏi phỏng vấn. 
+[200] Hệ thống AI Worker: Tác nhân ngầm thực thi các tác vụ bóc tách OCR, M1 PhoBERT-NER, M2 PhoBERT Embedding, M3 XGBoost, PhoWhisper ASR và VieNeu-TTS. 
+[201] Hình 22: Sơ đồ Use Case Diagram Tổng quát
+[202] Các sơ đồ Use Case chi tiết cốt lõi (kèm các bảng mô tả)
+[203] UC-01: Đánh giá & Chấm điểm CV so với JD
+[204] Bảng  23: đặc tả chi tiết UC-01
+[205] Thuộc tính
+[206] Nội dung mô tả chi tiết
+[207] Mã Use Case
+[208] UC-01
+[209] Tên Use Case
+[210] Đánh giá & Chấm điểm CV so với JD 
+[211] Tác nhân (Actor)
+[212] Ứng viên (Chính), AI Worker (Hệ thống) 
+[213] Mô tả ngắn
+[214] Hệ thống bóc tách nội dung CV, so khớp ngữ nghĩa với JD mục tiêu, tính điểm số tương thích (0–100%) và trả về bảng phân tích khoảng trống kỹ năng (Skill Gap). 
+[215] Tiền điều kiện
+[216] Ứng viên truy cập trang /score và có sẵn tệp CV + bản mô tả công việc JD. 
+[217] Hậu điều kiện
+[218] Lưu kết quả đánh giá vào CSDL (cv_sessions) và hiển thị báo cáo chi tiết kèm Biểu đồ Radar. 
+[219] Luồng chính (Basic Flow)
+[220] 1. Ứng viên tải tệp CV (PDF/DOCX/Ảnh) và chọn/nhập nội dung JD. 
+[221] 2. Ứng viên nhấn nút "Phân tích CV". 
+[222] 3. CvParserAdapter thực hiện trích xuất văn bản thô từ tệp CV. 
+[223] 4. Mô hình PhoBERT-NER (M1) nhận diện các thực thể SKILL, ORG, EDU. 
+[224] 5. Mô hình PhoBERT Embedding (M2) tính toán vector 768d và độ tương đồng Cosine giữa CV và JD. 
+[225] 6. Mô hình XGBoost & SHAP (M3) tính toán điểm số tổng quan và xác định danh sách kỹ năng còn thiếu (Skill Gap). 
+[226] 7. Lưu kết quả vào CSDL và tự động chuyển hướng ứng viên sang màn hình Báo cáo kết quả (/score/result). 
+[227] Luồng rẽ nhánh (Alternative Flow)
+[228] - 3a. CV là dạng ảnh chụp hoặc file scan: Hệ thống tự động chuyển sang module EasyOCR để quét chữ. 
+[229] - 3b. CV dạng 2 cột phức tạp: Hệ thống kích hoạt thuật toán Column Detection để trích xuất thứ tự đọc chính xác. 
+[230] Mô tả: Hệ thống tiếp nhận hồ sơ ứng viên (PDF/Docx) và bản mô tả công việc (JD), sau đó tiến hành bóc tách, phân tích ngữ nghĩa và chấm điểm độ phù hợp.
+[231] Luồng cơ bản:
+[232] Ứng viên tải lên CV và nhập hoặc chọn JD mục tiêu.
+[233] Module EasyOCR thực hiện trích xuất toàn bộ văn bản từ định dạng file.
+[234] Mô hình PhoBERT-NER nhận diện các thực thể quan trọng (kỹ năng, kinh nghiệm, học vấn, công nghệ).
+[235] Mô hình SentenceTransformers chuyển đổi văn bản thành các vector và tính toán độ tương đồng ngữ nghĩa giữa CV và JD.
+[236] Mô hình XGBoost tổng hợp các chỉ số đặc trưng để tính điểm số đánh giá toàn diện (Score) và trả về kết quả cho người dùng kèm danh sách kỹ năng thiếu hụt (Skill Gap).
+[237] UC-02: Luyện phỏng vấn giả lập giọng nói AI
+[238] Bảng  24: Bảng đặc tả chi tiết UC-02
+[239] Thuộc tính
+[240] Nội dung mô tả chi tiết
+[241] Mã Use Case
+[242] UC-02
+[243] Tên Use Case
+[244] Luyện phỏng vấn giả lập giọng nói AI 
+[245] Tác nhân (Actor)
+[246] Ứng viên (Chính), AI Worker (Hệ thống) 
+[247] Mô tả ngắn
+[248] Tạo môi trường phỏng vấn mô phỏng bằng giọng nói tiếng Việt 2 chiều xoay quanh các kỹ năng còn thiếu (Skill Gap) của ứng viên. 
+[249] Tiền điều kiện
+[250] Ứng viên đã hoàn thành bước phân tích CV (đã có dữ liệu Skill Gap). 
+[251] Hậu điều kiện
+[252] Lưu lịch sử phiên phỏng vấn (interview_sessions) và hiển thị báo cáo đánh giá phản xạ/nội dung. 
+[253] Luồng chính (Basic Flow)
+[254] 1. Hệ thống đọc danh sách Skill Gap từ kết quả đánh giá CV. 
+[255] 2. Hệ thống truy vấn ngân hàng 141 câu hỏi để sinh danh sách câu hỏi phù hợp. 
+[256] 3. Engine VieNeu-TTS chuyển câu hỏi thành giọng nói (với 7 tùy chọn vùng miền) và phát âm thanh. 
+[257] 4. Ứng viên ghi âm câu trả lời trực tiếp qua Micro. 
+[258] 5. Mô hình PhoWhisper-base ASR chuyển đổi file ghi âm thành văn bản tiếng Việt. 
+[259] 6. AI Evaluator chấm điểm câu trả lời theo các tiêu chí (nội dung, từ vựng, độ tự tin). 
+[260] 7. Kiểm tra: Nếu còn câu hỏi tiếp theo thì quay lại bước 3; nếu hết câu hỏi thì chuyển sang bước 8. 
+[261] 8. Hệ thống tổng hợp báo cáo đánh giá toàn diện phiên phỏng vấn. 
+[262]  UC-03: Sàng lọc hàng loạt CV cho HR (Batch Mode)
+[263] Bảng  25: Bảng đặc tả chi tiết UC-03
+[264] Thuộc tính
+[265] Nội dung mô tả chi tiết
+[266] Mã Use Case
+[267] UC-03
+[268] Tên Use Case
+[269] Sàng lọc hàng loạt CV cho HR 
+[270] Tác nhân (Actor)
+[271] Nhà tuyển dụng (HR), AI Worker 
+[272] Mô tả ngắn
+[273] Hỗ trợ HR tải lên cùng lúc nhiều hồ sơ CV cho một vị trí, tự động chấm điểm song song và lập bảng xếp hạng. 
+[274] Tiền điều kiện
+[275] HR truy cập trang /batch và chuẩn bị thư mục gồm nhiều file CV + 1 bản mô tả JD. 
+[276] Hậu điều kiện
+[277] Xuất Ma trận kỹ năng (Skill Matrix) và danh sách thứ hạng ứng viên. 
+[278] Luồng chính (Basic Flow)
+[279] 1. HR chọn tải lên danh sách nhiều CV và dán/chọn JD mục tiêu. 
+[280] 2. Hệ thống khởi tạo các tiến trình xử lý song song thông qua AI Workers. 
+[281] 3. AI Workers bóc tách và thực thi Pipeline AI (M1, M2, M3) cho từng tệp CV. 
+[282] 4. Hệ thống tổng hợp điểm số, lập Ma trận Kỹ năng (Skill Matrix) và xếp hạng ứng viên từ cao xuống thấp. 
+[283] 5. Hiển thị ma trận so sánh trực quan và cho phép xuất báo cáo. 
+[284] UC-04: Khám phá Bản đồ 17 nhóm ngành nghề
+[285] Bảng  26: Bảng đặc tả chi tiết UC-04:
+[286] Thuộc tính
+[287] Nội dung mô tả chi tiết
+[288] Mã Use Case
+[289] UC-04
+[290] Tên Use Case
+[291] Khám phá Bản đồ 17 nhóm ngành nghề 
+[292] Tác nhân (Actor)
+[293] Ứng viên 
+[294] Mô tả ngắn
+[295] Cung cấp kho dữ liệu chuẩn hóa tra cứu cây kỹ năng tiêu chuẩn cho 17 nhóm ngành và 73 vị trí. 
+[296] Luồng chính (Basic Flow)
+[297] 1. Ứng viên truy cập mục Khám phá (/explore). 
+[298] 2. Hệ thống hiển thị danh mục 17 nhóm ngành lớn. 
+[299] 3. Ứng viên chọn nhóm ngành và vị trí chuyên môn cụ thể. 
+[300] 4. Hệ thống hiển thị cây kỹ năng tiêu chuẩn (kỹ năng cứng và kỹ năng mềm) được cập nhật theo xu hướng thị trường.
+[301] Các Sơ đồ tuần tự cốt lõi (Sequence Diagrams)
+[302] Sơ đồ tuần tự 1: Tiến trình Bóc tách & Đánh giá CV bất đồng bộ (Async Matching Pipeline)
+[303] Trình tự tương tác qua các bước:
+[304] Candidate (Ứng viên) chọn file CV & JD rồi gửi yêu cầu từ Frontend (Next.js). 
+[305] Frontend gửi request tạo công việc phân tích mới vào Supabase Database (analysis_jobs) với trạng thái PENDING. 
+[306] Supabase DB phát sự kiện Realtime thông báo cho AI Worker (Python ML Service). 
+[307] AI Worker kích hoạt CvParserAdapter để bóc tách văn bản thô từ file CV (PDF 2 cột / DOCX / EasyOCR). 
+[308] AI Worker truyền văn bản sang Model M1 (PhoBERT-NER) để bóc tách thực thể SKILL, ORG, EDU. 
+[309] AI Worker truyền văn bản sang Model M2 (PhoBERT Embedding) để chuyển đổi vector 768d và tính Cosine Similarity. 
+[310] AI Worker chuyển các đặc trưng sang Model M3 (XGBoost + SHAP) để tính điểm phần trăm và lọc Skill Gap. 
+[311] AI Worker cập nhật kết quả phân tích vào bảng cv_sessions và chuyển trạng thái job thành COMPLETED. 
+[312] Supabase DB lắng nghe sự kiện hoàn thành và tự động phản hồi cho Frontend qua kết nối Realtime. 
+[313] Hình 23: Chèn Sơ đồ tuần tự (Sequence Diagram 1) biểu diễn Tiến trình Bóc tách & Đánh giá CV bất đồng bộHình 23: Chèn Sơ đồ tuần tự (Sequence Diagram 1) biểu diễn Tiến trình Bóc tách & Đánh giá CV bất đồng bộFrontend chuyển hướng ứng viên sang trang Báo cáo kết quả (/score/result). 
+[314] Hình 23: Chèn Sơ đồ tuần tự (Sequence Diagram 1) biểu diễn Tiến trình Bóc tách & Đánh giá CV bất đồng bộ
+[315] Hình 23: Chèn Sơ đồ tuần tự (Sequence Diagram 1) biểu diễn Tiến trình Bóc tách & Đánh giá CV bất đồng bộ
+[316] Sơ đồ tuần tự 2: Luồng Phỏng vấn giả lập giọng nói 2 chiều (Voice AI Interview)
+[317] Trình tự tương tác qua các bước:
+[318] Candidate chọn nút "Bắt đầu Phỏng vấn" và chọn chất giọng vùng miền trên Frontend. 
+[319] Frontend gửi truy vấn đến Backend / Database để đọc thông tin Skill Gap từ phiên đánh giá CV gần nhất. 
+[320] Backend truy xuất Question Bank (interview_questions) để lấy câu hỏi phỏng vấn phù hợp. 
+[321] Backend gửi văn bản câu hỏi đến TTS Engine (VieNeu-TTS) để tổng hợp file âm thanh câu hỏi. 
+[322] Frontend nhận file audio và phát âm thanh câu hỏi cho Candidate nghe. 
+[323] Candidate thu âm câu trả lời qua Micro và bấm gửi file ghi âm lên Frontend. 
+[324] Frontend chuyển file âm thanh câu trả lời sang ASR Worker (PhoWhisper-base) để nhận dạng thành văn bản chữ. 
+[325] ASR Worker truyền đoạn văn bản câu trả lời sang AI Evaluator để chấm điểm theo các tiêu chí. 
+[326] Backend lưu lịch sử tương tác và điểm số vào bảng interview_sessions trên Database. 
+[327] Frontend hiển thị phản hồi chi tiết cho ứng viên và kích hoạt câu hỏi tiếp theo. 
+[328] Hình 24: Sơ đồ tuần tự (Sequence Diagram 2) biểu diễn Luồng Phỏng vấn giả lập giọng nói 2 chiềuHình 24: Sơ đồ tuần tự (Sequence Diagram 2) biểu diễn Luồng Phỏng vấn giả lập giọng nói 2 chiều
+[329] Hình 24: Sơ đồ tuần tự (Sequence Diagram 2) biểu diễn Luồng Phỏng vấn giả lập giọng nói 2 chiều
+[330] Hình 24: Sơ đồ tuần tự (Sequence Diagram 2) biểu diễn Luồng Phỏng vấn giả lập giọng nói 2 chiều

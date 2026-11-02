@@ -24,103 +24,6 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-const STRENGTHS = [
-  {
-    title: "TypeScript & Type Safety Vững chắc",
-    desc: "Thực thi Generic cấp cao, Monorepo tooling với Nx & Turborepo.",
-  },
-  {
-    title: "Kiến trúc Micro-frontend Độc lập",
-    desc: "Module Federation trên Webpack 5 phục vụ 12 squad thanh toán.",
-  },
-  {
-    title: "Tối ưu hóa Core Web Vitals",
-    desc: "LCP < 1.2s, INP đạt chuẩn tối đa cho luồng checkout 30k RPS.",
-  },
-  {
-    title: "Quản lý trạng thái phân tán",
-    desc: "Zustand, TanStack Query kết hợp Event-driven Web Workers.",
-  },
-];
-
-const GAPS = [
-  {
-    title: "Kinh nghiệm GraphQL Federation còn hạn chế",
-    desc: "Chỉ đề cập REST API và tRPC; JD Core Banking yêu cầu Apollo Federation Subgraphs.",
-  },
-  {
-    title: "Kiểm thử E2E Playwright/Cypress chuyên sâu",
-    desc: "Chưa thấy bằng chứng xây dựng chiến lược Visual Regression Testing trên CI/CD.",
-  },
-  {
-    title: "Thâm niên quản lý kỹ thuật nhóm lớn (>15 người)",
-    desc: "Quy mô nhóm hiện tại dừng lại ở 6-8 kỹ sư; vai trò thuần về Tech Lead hơn là People Manager.",
-  },
-];
-
-const QUESTIONS = [
-  {
-    id: "01",
-    category: "Xác thực kỹ thuật chuyên sâu (Technical Depth)",
-    categoryColor: "bg-[#dce1ff] text-[#001551]",
-    badgeBg: "bg-[#1d4ed8]",
-    duration: "20 phút",
-    weight: "40%",
-    weightColor: "text-[#0037b0]",
-    question:
-      '"Ứng viên thể hiện hiểu biết rất tốt về Next.js SSR và Edge Runtime. Hãy yêu cầu ứng viên giải thích chiến lược xử lý Cache Revalidation (ISR/Tag-based) và Distributed State khi hệ thống cổng ngân hàng chịu tải đột biến 50.000 người dùng đồng thời (50k CCU)?"',
-    expected: [
-      "Phân định rõ lớp Stale-While-Revalidate ở cấp độ CDN (Cloudflare/Fastly) so với Node.js cluster.",
-      "Hiểu bài toán Race Condition khi nhiều workers cùng trigger On-demand Revalidation.",
-      "Đề xuất giải pháp Fallback UI an toàn và kịch bản Circuit Breaker khi API core banking suy giảm hiệu năng.",
-    ],
-    redFlags: [
-      "Chỉ phụ thuộc hoàn toàn vào cấu hình mặc định của Vercel/Next.js mà không nắm cơ chế cache headers.",
-      "Không đề cập đến việc bảo mật dữ liệu nhạy cảm (PII) trên lớp Edge Caching.",
-    ],
-  },
-  {
-    id: "02",
-    category: "Thăm dò khoảng trống năng lực (Gap Exploration)",
-    categoryColor: "bg-[#85f8c4] text-[#002114]",
-    badgeBg: "bg-[#004f35]",
-    duration: "20 phút",
-    weight: "35%",
-    weightColor: "text-[#004f35]",
-    question:
-      '"Trong hồ sơ của anh chưa đề cập sâu đến việc triển khai GraphQL Federation ở quy mô lớn. Anh hãy phân tích ưu và nhược điểm khi chuyển đổi từ API Gateway RESTful sang GraphQL Subgraphs giữa 5 dịch vụ nghiệp vụ tài chính độc lập?"',
-    expected: [
-      "Khả năng định nghĩa @key, @extends trên các entities dùng chung giữa các domain squads.",
-      "Tư duy giải quyết bài toán N+1 query bằng DataLoader hoặc batched resolving.",
-      "Hiểu rõ trade-off về độ trễ mạng (latency overhead) và độ phức tạp khi giám sát Distributed Tracing.",
-    ],
-    redFlags: [
-      "Xem GraphQL chỉ là giải pháp thay thế UI không cần quan tâm đến tải cơ sở dữ liệu hạ tầng phía sau.",
-      "Chưa từng đối mặt với bài toán Breaking Changes của schema trên môi trường Production.",
-    ],
-  },
-  {
-    id: "03",
-    category: "Lãnh đạo kỹ thuật & Giải quyết xung đột (Leadership & Culture)",
-    categoryColor: "bg-[#dae2fd] text-[#131b2e]",
-    badgeBg: "bg-[#565e74]",
-    duration: "15 phút",
-    weight: "25%",
-    weightColor: "text-[#565e74]",
-    question:
-      '"Hãy chia sẻ một tình huống thực tế khi anh phải thuyết phục Product Owner hoặc các Tech Lead khác chuyển đổi một chuẩn kiến trúc công nghệ lớn (như từ Monolith sang Micro-frontends) mà vấp phải sự phản đối gay gắt vì lo ngại rủi ro tiến độ? Anh đã giải quyết thế nào?"',
-    expected: [
-      "Dùng số liệu thực nghiệm (PoC, A/B Testing, thời gian build CI/CD) thay vì quan điểm cảm tính.",
-      "Lập lộ trình di chuyển dần (Strangler Fig Pattern) không làm gián đoạn release tính năng kinh doanh.",
-      "Tôn trọng góc nhìn của stakeholders và sẵn sàng lắng nghe phản biện chuyên môn.",
-    ],
-    redFlags: [
-      "Áp đặt quyền lực chuyên môn hoặc đổ lỗi cho ban quản lý thiếu tầm nhìn công nghệ.",
-      "Không có kế hoạch rollback nếu quá trình chuyển đổi gặp sự cố nghiêm trọng.",
-    ],
-  },
-];
-
 export default function ResultPage() {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportDone, setExportDone] = useState(false);
@@ -134,10 +37,21 @@ export default function ResultPage() {
   const [apiResult, setApiResult] = useState<{
     score?: number;
     similarity?: number;
-    strengths?: Array<{title: string; desc: string}>;
-    gaps?: Array<{title: string; desc: string}>;
-    cv_suggestions?: Array<{type?: string; title: string; desc: string}>;
-    questions?: Array<{id: string; category: string; categoryColor: string; badgeBg: string; duration: string; weight: string; weightColor: string; question: string; expected: string[]; redFlags: string[]}>;
+    strengths?: Array<{ title: string; desc: string }>;
+    gaps?: Array<{ title: string; desc: string }>;
+    cv_suggestions?: Array<{ type?: string; title: string; desc: string }>;
+    questions?: Array<{
+      id: string;
+      category: string;
+      categoryColor: string;
+      badgeBg: string;
+      duration: string;
+      weight: string;
+      weightColor: string;
+      question: string;
+      expected: string[];
+      redFlags: string[];
+    }>;
     job_title?: string;
     matched_skills?: string[];
     missing_skills?: string[];
@@ -178,7 +92,6 @@ export default function ResultPage() {
         }
 
         const raw = sessionStorage.getItem("cf_result");
-        console.log("[ResultPage] cf_result from sessionStorage:", raw ? JSON.parse(raw) : null);
         if (raw) {
           try {
             setApiResult(JSON.parse(raw));
@@ -196,7 +109,7 @@ export default function ResultPage() {
     loadResult();
   }, []);
 
-  // Lấy tên thật của người dùng đang đăng nhập từ Supabase — không bịa tên ứng viên
+  // Lấy tên thật của người dùng đang đăng nhập từ Supabase
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -210,9 +123,9 @@ export default function ResultPage() {
     });
   }, []);
 
-  // Chỉ dùng data thật từ apiResult — không còn fallback về mock data cố định
+  // Dữ liệu từ apiResult
   const strengths = apiResult?.strengths ?? [];
-  const gaps      = apiResult?.gaps      ?? [];
+  const gaps = apiResult?.gaps ?? [];
   const cvSuggestions = apiResult?.cv_suggestions ?? [];
   const questions = apiResult?.questions ?? [];
   const finalScore = apiResult?.score ?? 0;
@@ -225,15 +138,52 @@ export default function ResultPage() {
   const requirements = apiResult?.requirements ?? [];
   const reqSummary = apiResult?.requirement_summary ?? null;
   const breakdown = apiResult?.score_breakdown ?? null;
-  // Kết quả phân tích trước khi có phần chi tiết (không có 2 trường mới)
-  const isLegacyResult = !!apiResult && apiResult.requirements === undefined && apiResult.score_breakdown === undefined;
+  const isLegacyResult =
+    !!apiResult && apiResult.requirements === undefined && apiResult.score_breakdown === undefined;
 
   function scoreTier(score: number) {
-    if (score >= 70) return { label: "Độ tương thích cao", badge: "bg-[#85f8c4] text-[#002114]", heading: "Đạt chuẩn năng lực", risk: "Thấp" };
-    if (score >= 40) return { label: "Độ tương thích trung bình", badge: "bg-[#ffe8b8] text-[#5c3b00]", heading: "Cần cải thiện thêm", risk: "Trung bình" };
-    return { label: "Độ tương thích thấp", badge: "bg-[#ffdad6] text-[#93000a]", heading: "Chưa đạt chuẩn", risk: "Cao" };
+    if (score >= 70)
+      return {
+        label: "Độ tương thích cao",
+        badge: "bg-emerald-50 text-emerald-800 border border-emerald-200",
+        heading: "Đạt chuẩn năng lực",
+        risk: "Thấp",
+      };
+    if (score >= 40)
+      return {
+        label: "Độ tương thích trung bình",
+        badge: "bg-amber-50 text-amber-800 border border-amber-200",
+        heading: "Cần cải thiện thêm",
+        risk: "Trung bình",
+      };
+    return {
+      label: "Độ tương thích thấp",
+      badge: "bg-rose-50 text-rose-800 border border-rose-200",
+      heading: "Chưa đạt chuẩn",
+      risk: "Cao",
+    };
   }
   const tier = scoreTier(finalScore);
+
+  // Helper: Tách danh sách kỹ năng từ chuỗi mô tả (VD: "Bao gồm: A, B, C và X kỹ năng khác." hoặc "Cần bổ sung: A, B, C...")
+  function parseSkillTags(desc: string): { skills: string[]; extraCount: number; cleanText: string } {
+    const match = desc.match(/(?:Bao gồm|Cần bổ sung):\s*([^.]+?)(?:\s*và\s*(\d+)\s*kỹ năng khác)?\./i);
+    if (match) {
+      const rawSkills = match[1].split(",").map((s) => s.trim()).filter(Boolean);
+      const extraCount = match[2] ? parseInt(match[2], 10) : 0;
+      return { skills: rawSkills, extraCount, cleanText: desc };
+    }
+    return { skills: [], extraCount: 0, cleanText: desc };
+  }
+
+  // Helper: Tách ví dụ trích dẫn đối chiếu từ mô tả (VD: 'VD: "Yêu cầu JD" — CV có: "Minh chứng CV".')
+  function parseEvidenceComparison(desc: string): { jdText: string; cvText: string } | null {
+    const match = desc.match(/VD:\s*"(.*?)"\s*—\s*CV có:\s*"(.*?)"/i);
+    if (match) {
+      return { jdText: match[1], cvText: match[2] };
+    }
+    return null;
+  }
 
   async function handleExport() {
     if (!apiResult) {
@@ -247,7 +197,7 @@ export default function ResultPage() {
       const { default: jsPDF } = await import("jspdf");
       const doc = new jsPDF();
 
-      // Nạp font Noto Sans (đủ dấu tiếng Việt) — font mặc định của jsPDF không có dấu
+      // Nạp font Noto Sans (đủ dấu tiếng Việt)
       const [regularBuf, boldBuf] = await Promise.all([
         fetch("/fonts/NotoSans-Regular.ttf").then((r) => r.arrayBuffer()),
         fetch("/fonts/NotoSans-Bold.ttf").then((r) => r.arrayBuffer()),
@@ -289,12 +239,16 @@ export default function ResultPage() {
         y += lines.length * 6;
       };
 
-      const addSpacer = (h = 4) => { y += h; };
+      const addSpacer = (h = 4) => {
+        y += h;
+      };
 
       // 1. Tiêu đề
       addTitle("CareerFit — Báo cáo đánh giá độ phù hợp", 17);
       addBody(
-        `Ứng viên: ${candidateName || "Chưa xác định"}   |   Vị trí: ${apiResult.job_title || "Chưa xác định"}   |   Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`,
+        `Ứng viên: ${candidateName || "Chưa xác định"}   |   Vị trí: ${
+          apiResult.job_title || "Chưa xác định"
+        }   |   Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`,
         10
       );
       addSpacer(4);
@@ -314,7 +268,12 @@ export default function ResultPage() {
         addTitle("Vì sao được số điểm này", 13);
         addBody(
           `Mức nền ${breakdown.base.toFixed(1)} ` +
-            breakdown.factors.map((f) => `${f.contribution >= 0 ? "+" : "−"} ${Math.abs(f.contribution).toFixed(1)} (${f.label})`).join(" ") +
+            breakdown.factors
+              .map(
+                (f) =>
+                  `${f.contribution >= 0 ? "+" : "−"} ${Math.abs(f.contribution).toFixed(1)} (${f.label})`
+              )
+              .join(" ") +
             ` = ${Math.round(breakdown.final)} điểm`
         );
         breakdown.factors.forEach((f) => addBody(`• ${f.label}: ${f.detail}`));
@@ -323,7 +282,10 @@ export default function ResultPage() {
 
       // 3c. Đối chiếu từng yêu cầu JD
       if (reqSummary && requirements.length > 0) {
-        addTitle(`Đối chiếu yêu cầu JD: đáp ứng ${reqSummary.met}/${reqSummary.total}, một phần ${reqSummary.partial}, chưa có ${reqSummary.missing}`, 13);
+        addTitle(
+          `Đối chiếu yêu cầu JD: đáp ứng ${reqSummary.met}/${reqSummary.total}, một phần ${reqSummary.partial}, chưa có ${reqSummary.missing}`,
+          13
+        );
         const label = { met: "ĐÁP ỨNG", partial: "MỘT PHẦN", missing: "CHƯA CÓ" } as const;
         requirements.forEach((r) => {
           addBody(`[${label[r.status]}] ${r.text}${r.priority === "preferred" ? " (ưu tiên)" : ""}`);
@@ -365,8 +327,10 @@ export default function ResultPage() {
       }
 
       const safeName = (candidateName || "UngVien")
-        .replace(/đ/g, "d").replace(/Đ/g, "D")
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
         .replace(/\s+/g, "");
       const dateStr = new Date().toISOString().slice(0, 10);
       doc.save(`CareerFit_BaoCao_${safeName}_${dateStr}.pdf`);
@@ -398,34 +362,37 @@ export default function ResultPage() {
       <main className="flex-1 pt-16 flex flex-col">
         <ProgressStepper activeStep={3} sessionId="EVAL-2026-0849-VN" />
 
-        {/* Candidate strip */}
-        <section className="w-full bg-[#eff4ff] shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        {/* ── Candidate Strip (Hồ sơ ứng viên) ── */}
+        <section className="w-full bg-white border-b border-slate-200/80 shadow-2xs">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
               <div className="flex items-start sm:items-center gap-4">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-[#dce1ff] flex items-center justify-center ring-2 ring-[#d3e4fe] shadow-sm">
-                    <span className="material-symbols-outlined text-[#0037b0] text-[32px]">person</span>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2563EB]/15 to-[#7C3AED]/20 border border-blue-200/60 flex items-center justify-center shadow-xs">
+                    <span className="material-symbols-outlined text-[#0037b0] text-[28px]">person</span>
                   </div>
-                  <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-[#006948] ring-2 ring-white" title="Hồ sơ đã xác minh" />
+                  <span
+                    className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 ring-2 ring-white"
+                    title="Hồ sơ đã phân tích"
+                  />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] font-bold text-[#0b1c30] tracking-tight">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h1 className="font-[family-name:var(--font-plus-jakarta)] text-[22px] sm:text-[24px] font-extrabold text-[#0b1c30] tracking-tight">
                       {candidateName || "Ứng viên"}
                     </h1>
                     {typeof apiResult?.cv_exp_years === "number" && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#d3e4fe] text-[#434655] text-[11px]">
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0037b0] border border-blue-200/80 text-[11px] font-bold">
                         {apiResult.cv_exp_years} năm kinh nghiệm (theo CV)
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-1 text-[#434655] text-[14px] flex-wrap">
-                    <span className="flex items-center gap-1 text-[#0037b0] font-medium">
-                      <span className="material-symbols-outlined text-[18px]">business_center</span>
+                  <div className="flex items-center gap-2 mt-1 text-slate-500 text-[13px] sm:text-[14px] flex-wrap">
+                    <span className="flex items-center gap-1 text-[#0037b0] font-semibold">
+                      <span className="material-symbols-outlined text-[17px]">business_center</span>
                       Vị trí tuyển chọn:
                     </span>
-                    <span className="font-semibold text-[#0b1c30]">
+                    <span className="font-bold text-[#0b1c30]">
                       {apiResult?.job_title || "Chưa xác định"}
                     </span>
                   </div>
@@ -434,43 +401,49 @@ export default function ResultPage() {
 
               <div className="flex items-center gap-3 shrink-0">
                 <button
+                  type="button"
                   onClick={handleExport}
-                  className="px-4 py-2 rounded-xl bg-white text-[#0b1c30] text-[13px] font-medium hover:bg-[#f0f0f0] transition-all flex items-center gap-2 shadow-sm"
+                  className="px-4 py-2.5 rounded-xl bg-white text-slate-700 text-[13px] font-semibold hover:bg-slate-50 border border-slate-200/90 transition-all flex items-center gap-2 shadow-2xs hover:shadow-xs"
                 >
                   {exportLoading ? (
                     <>
-                      <span className="material-symbols-outlined text-[18px] animate-spin text-[#565e74]">progress_activity</span>
+                      <span className="material-symbols-outlined text-[17px] animate-spin text-slate-500">
+                        progress_activity
+                      </span>
                       <span>Đang tạo PDF...</span>
                     </>
                   ) : exportDone ? (
                     <>
-                      <span className="material-symbols-outlined text-[18px] text-[#004f35]">check</span>
+                      <span className="material-symbols-outlined text-[17px] text-emerald-600">check</span>
                       <span>Đã xuất thành công!</span>
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[18px] text-[#565e74]">picture_as_pdf</span>
+                      <span className="material-symbols-outlined text-[17px] text-slate-500">
+                        picture_as_pdf
+                      </span>
                       <span>Xuất PDF Báo cáo</span>
                     </>
                   )}
                 </button>
                 <button
+                  type="button"
                   onClick={handleSave}
-                  className="px-4 py-2 rounded-xl bg-[#0037b0] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-all flex items-center gap-2 shadow-md"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:from-[#1d4ed8] hover:to-[#6d28d9] text-white text-[13px] font-bold transition-all flex items-center gap-2 shadow-xs hover:shadow-sm"
                 >
                   {saveLoading ? (
                     <>
-                      <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                      <span className="material-symbols-outlined text-[17px] animate-spin">progress_activity</span>
                       <span>Đang lưu...</span>
                     </>
                   ) : saveDone ? (
                     <>
-                      <span className="material-symbols-outlined text-[18px]">done_all</span>
+                      <span className="material-symbols-outlined text-[17px]">done_all</span>
                       <span>Đã lưu vào kho ứng viên</span>
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[18px]">bookmark_add</span>
+                      <span className="material-symbols-outlined text-[17px]">bookmark_add</span>
                       <span>Lưu vào Hồ sơ tuyển dụng</span>
                     </>
                   )}
@@ -482,7 +455,7 @@ export default function ResultPage() {
 
         {loaded && !apiResult && (
           <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-6">
-            <div className="bg-[#fff4e5] border border-[#ffd9a0] text-[#7a4b00] rounded-xl p-4 text-[13px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="bg-[#fff4e5] border border-[#ffd9a0] text-[#7a4b00] rounded-2xl p-4 text-[13px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <span>
                 Không tìm thấy kết quả phân tích thật cho phiên này (worker có thể chưa xử lý xong, hoặc đây là trang cũ). Các số liệu dưới đây sẽ trống cho tới khi có kết quả thật từ hệ thống.
               </span>
@@ -496,147 +469,287 @@ export default function ResultPage() {
           </section>
         )}
 
-        {/* Metric Tri-Core Bento */}
+        {/* ── METRIC TRI-CORE BENTO: THIẾT KẾ LẠI GỌN GÀNG, RÕ Ý NỔI BẬT ── */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* Overall Score */}
-            <div className="md:col-span-12 lg:col-span-4 bg-white rounded-xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+            {/* CỘT 1: CHỈ SỐ ĐỐI SOÁT TỔNG THỂ */}
+            <div className="md:col-span-12 lg:col-span-4 bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#565e74]">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Chỉ số đối soát tổng thể
                   </span>
-                  <span className={`px-2 py-0.5 rounded-full ${tier.badge} text-[11px] font-semibold flex items-center gap-1`}>
-                    <span className="material-symbols-outlined text-[14px]">bolt</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 ${tier.badge}`}>
+                    <span className="material-symbols-outlined text-[13px]">bolt</span>
                     {tier.label}
                   </span>
                 </div>
 
-                {/* Donut */}
-                <div className="flex items-center gap-6 mt-4">
-                  <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
-                    <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" fill="transparent" r="40" stroke="#E5EEFF" strokeWidth="10" />
+                {/* Donut & Verdict */}
+                <div className="flex items-center gap-5 my-5">
+                  <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
+                    <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" fill="transparent" r="40" stroke="#f1f5f9" strokeWidth="7" />
                       <circle
                         cx="50"
                         cy="50"
                         fill="transparent"
                         r="40"
-                        stroke="#004F35"
+                        stroke={finalScore >= 70 ? "#059669" : finalScore >= 40 ? "#d97706" : "#dc2626"}
                         strokeDasharray={`${((Math.max(0, Math.min(finalScore, 100)) / 100) * 251.33).toFixed(2)} 251.33`}
                         strokeLinecap="round"
-                        strokeWidth="10"
+                        strokeWidth="7"
                         className="transition-all duration-1000"
                       />
                     </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="font-[family-name:var(--font-plus-jakarta)] text-[36px] font-bold text-[#004f35] leading-none tracking-tight">
-                        {finalScore}<span className="text-[16px]">%</span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
+                      <div className="flex items-baseline justify-center font-bold tracking-tight text-[#0b1c30] leading-none">
+                        <span className="text-[24px] sm:text-[26px] font-extrabold font-['Inter',-apple-system,BlinkMacSystemFont,sans-serif] tabular-nums">
+                          {typeof finalScore === "number" ? Number(finalScore.toFixed(1)) : finalScore}
+                        </span>
+                        <span className="text-[13px] text-slate-400 font-bold ml-0.5">%</span>
+                      </div>
+                      <span className="text-[9.5px] text-slate-400 uppercase font-extrabold tracking-wider mt-1">
+                        Tương thích
                       </span>
-                      <span className="text-[11px] text-[#565e74] uppercase font-semibold">Tương thích</span>
                     </div>
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <p className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30]">
+                  <div className="min-w-0">
+                    <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[17px] font-bold text-[#0b1c30]">
                       {tier.heading}
-                    </p>
-                    <p className="text-[13px] text-[#434655] mt-1">
+                    </h3>
+                    <p className="text-[13px] text-slate-600 mt-1 leading-snug">
                       {totalSkillCount > 0
-                        ? `Hồ sơ khớp ${matchedCount}/${totalSkillCount} kỹ năng trọng yếu của vị trí ${apiResult?.job_title || "này"}.`
+                        ? `Khớp ${matchedCount}/${totalSkillCount} kỹ năng trọng yếu của vị trí.`
                         : "Chưa có dữ liệu phân tích kỹ năng."}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Pillar scores */}
-              <div className="mt-6 pt-4 bg-[#eff4ff] p-4 rounded-xl space-y-3">
+              {/* 3 Trụ cột đánh giá */}
+              <div className="bg-[#f8faff] p-3.5 rounded-xl border border-blue-100/60 space-y-2.5">
                 {[
-                  { label: "Kỹ năng khớp JD", icon: "terminal", pct: skillRatioPct, color: "#0037b0", bar: "bg-[#0037b0]" },
-                  { label: "Đáp ứng yêu cầu kinh nghiệm", icon: "history_edu", pct: expFitPct, color: "#004f35", bar: "bg-[#004f35]" },
-                  { label: "Tương đồng ngữ nghĩa CV ↔ JD", icon: "psychology", pct: similarityPct, color: "#565e74", bar: "bg-[#565e74]" },
+                  {
+                    label: "Kỹ năng khớp JD",
+                    icon: "terminal",
+                    pct: skillRatioPct,
+                    color: "#0037b0",
+                    bar: "bg-[#0037b0]",
+                  },
+                  {
+                    label: "Đáp ứng kinh nghiệm",
+                    icon: "history_edu",
+                    pct: expFitPct,
+                    color: "#00875a",
+                    bar: "bg-[#00875a]",
+                  },
+                  {
+                    label: "Tương đồng ngữ nghĩa CV ↔ JD",
+                    icon: "psychology",
+                    pct: similarityPct,
+                    color: "#7c3aed",
+                    bar: "bg-[#7c3aed]",
+                  },
                 ].map((item) => (
                   <div key={item.label}>
-                    <div className="flex justify-between text-[13px] mb-1">
-                      <span className="text-[#0b1c30] font-medium flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]" style={{ color: item.color }}>
+                    <div className="flex justify-between text-[12px] mb-1">
+                      <span className="text-slate-700 font-semibold flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[15px]" style={{ color: item.color }}>
                           {item.icon}
                         </span>
                         {item.label}
                       </span>
-                      <span className="font-semibold" style={{ color: item.color }}>{item.pct}%</span>
+                      <span className="font-bold font-mono" style={{ color: item.color }}>
+                        {item.pct}%
+                      </span>
                     </div>
-                    <div className="w-full h-1.5 bg-[#e5eeff] rounded-full overflow-hidden">
-                      <div className={`h-full ${item.bar} rounded-full`} style={{ width: `${item.pct}%` }} />
+                    <div className="w-full h-1.5 bg-slate-200/70 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${item.bar} rounded-full transition-all duration-700`}
+                        style={{ width: `${item.pct}%` }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Strengths */}
-            <div className="md:col-span-6 lg:col-span-4 bg-white rounded-xl p-6 shadow-sm flex flex-col justify-between">
+            {/* CỘT 2: THẾ MẠNH VƯỢT TRỘI (STRENGTHS) */}
+            <div className="md:col-span-6 lg:col-span-4 bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#004f35] flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                    Thế mạnh vượt trội (Strengths)
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+                    Thế mạnh vượt trội
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#85f8c4]/40 text-[#002114] text-[12px] font-semibold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
                     {strengths.length} Trụ cột
                   </span>
                 </div>
-                <p className="text-[13px] text-[#434655] mb-4">
-                  Các năng lực được minh chứng rõ ràng thông qua sản phẩm quy mô lớn trong CV:
+
+                <p className="text-[12px] text-slate-500 mb-3">
+                  Năng lực được chứng minh rõ ràng thông qua dữ liệu trong CV:
                 </p>
-                <div className="space-y-2">
-                  {strengths.map((s) => (
-                    <div key={s.title} className="p-3 rounded-lg bg-[#eff4ff] flex items-start gap-2">
-                      <span className="material-symbols-outlined text-[#004f35] text-[18px] shrink-0 mt-0.5">verified</span>
-                      <div className="min-w-0">
-                        <h4 className="text-[13px] font-semibold text-[#0b1c30]">{s.title}</h4>
-                        <p className="text-[12px] text-[#434655]">{s.desc}</p>
+
+                {/* Danh sách thẻ vi mô cấu trúc gọn gàng */}
+                <div className="space-y-2.5">
+                  {strengths.map((s, idx) => {
+                    const quote = parseEvidenceComparison(s.desc);
+                    const skillData = parseSkillTags(s.desc);
+
+                    return (
+                      <div
+                        key={`${s.title}-${idx}`}
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-emerald-200 transition-all shadow-2xs"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="material-symbols-outlined text-[13px]">verified</span>
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-[13px] font-bold text-[#0b1c30] leading-snug">{s.title}</h4>
+
+                            {/* So sánh trích dẫn yêu cầu & minh chứng */}
+                            {quote ? (
+                              <div className="mt-2 space-y-1 text-[12px]">
+                                <div className="text-slate-600 line-clamp-1">
+                                  <span className="font-semibold text-slate-700">Yêu cầu JD: </span>
+                                  <span className="italic">“{quote.jdText}”</span>
+                                </div>
+                                <div className="p-1.5 rounded-lg bg-white border border-emerald-100 text-emerald-900 text-[11px]">
+                                  <span className="font-semibold text-emerald-700">CV có: </span>
+                                  <span>“{quote.cvText}”</span>
+                                </div>
+                              </div>
+                            ) : skillData.skills.length > 0 ? (
+                              /* Kỹ năng phù hợp dạng Chip/Tags */
+                              <div className="mt-2 flex flex-wrap items-center gap-1">
+                                {skillData.skills.map((sk) => (
+                                  <span
+                                    key={sk}
+                                    className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  >
+                                    <span className="material-symbols-outlined text-[10px]">check</span>
+                                    {sk}
+                                  </span>
+                                ))}
+                                {skillData.extraCount > 0 && (
+                                  <span className="text-[11px] font-medium text-slate-500 bg-slate-200/70 px-1.5 py-0.5 rounded-md">
+                                    +{skillData.extraCount} khác
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              /* Mô tả kinh nghiệm / ngữ nghĩa */
+                              <p className="text-[12px] text-slate-600 mt-1 leading-relaxed">{s.desc}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
-              <div className="mt-4 pt-2 flex items-center justify-between text-[11px] text-[#004f35] bg-[#85f8c4]/20 px-3 py-2 rounded-lg font-semibold">
-                <span>Độ tương đồng ngữ nghĩa CV ↔ JD:</span>
-                <span>{similarityPct}%</span>
+
+              {/* Footer */}
+              <div className="mt-4 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-emerald-800 bg-emerald-50/70 border border-emerald-100 px-3 py-2 rounded-xl font-semibold">
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px] text-emerald-600">compare_arrows</span>
+                  Độ tương đồng ngữ nghĩa:
+                </span>
+                <span className="font-mono font-bold">{similarityPct}%</span>
               </div>
             </div>
 
-            {/* Gaps */}
-            <div className="md:col-span-6 lg:col-span-4 bg-white rounded-xl p-6 shadow-sm flex flex-col justify-between">
+            {/* CỘT 3: KHOẢNG TRỐNG & ĐIỂM CẦN XÁC THỰC (GAPS) */}
+            <div className="md:col-span-6 lg:col-span-4 bg-white rounded-2xl p-6 shadow-xs border border-slate-200/80 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#93000a] flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px] text-[#ba1a1a]">warning</span>
-                    Khoảng trống & Điểm cần xác thực
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px] text-rose-600">warning</span>
+                    Khoảng trống cần xác thực
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#ffdad6] text-[#93000a] text-[12px] font-semibold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold">
                     {gaps.length} Điểm chú ý
                   </span>
                 </div>
-                <p className="text-[13px] text-[#434655] mb-4">
-                  Những vùng thông tin thiếu hụt hoặc cần đối thoại làm rõ ở vòng Phỏng vấn Chuyên sâu:
+
+                <p className="text-[12px] text-slate-500 mb-3">
+                  Thông tin thiếu hụt hoặc cần đối thoại làm rõ khi phỏng vấn:
                 </p>
-                <div className="space-y-2">
-                  {gaps.map((g) => (
-                    <div key={g.title} className="p-3 rounded-lg bg-[#ffdad6]/20 flex items-start gap-2">
-                      <span className="material-symbols-outlined text-[#ba1a1a] text-[18px] shrink-0 mt-0.5">pending_actions</span>
-                      <div className="min-w-0">
-                        <h4 className="text-[13px] font-semibold text-[#0b1c30]">{g.title}</h4>
-                        <p className="text-[12px] text-[#434655]">{g.desc}</p>
+
+                {/* Danh sách thẻ vi mô cấu trúc gọn gàng */}
+                <div className="space-y-2.5">
+                  {gaps.map((g, idx) => {
+                    const skillData = parseSkillTags(g.desc);
+
+                    return (
+                      <div
+                        key={`${g.title}-${idx}`}
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-rose-200 transition-all shadow-2xs"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <span className="w-5 h-5 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="material-symbols-outlined text-[13px]">pending_actions</span>
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-[13px] font-bold text-[#0b1c30] leading-snug">{g.title}</h4>
+
+                            {/* Nếu có danh sách kỹ năng thiếu -> hiển thị dạng chip tag cloud */}
+                            {skillData.skills.length > 0 ? (
+                              <div className="mt-2 flex flex-wrap items-center gap-1">
+                                {skillData.skills.map((sk) => (
+                                  <span
+                                    key={sk}
+                                    className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200"
+                                  >
+                                    <span className="material-symbols-outlined text-[10px]">close</span>
+                                    {sk}
+                                  </span>
+                                ))}
+                                {skillData.extraCount > 0 && (
+                                  <span className="text-[11px] font-semibold text-rose-700 bg-rose-100/80 px-1.5 py-0.5 rounded-md">
+                                    +{skillData.extraCount} khác
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-[12px] text-slate-600 mt-1 leading-relaxed">{g.desc}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
-              <div className="mt-4 pt-2 flex items-center justify-between text-[11px] text-[#93000a] bg-[#ffdad6]/40 px-3 py-2 rounded-lg font-semibold">
-                <span>Mức độ rủi ro tuyển dụng:</span>
-                <span>{tier.risk}</span>
+
+              {/* Footer: Thước đo rủi ro tuyển dụng (Risk Gauge) */}
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 mb-1.5">
+                  <span className="flex items-center gap-1 text-slate-500">
+                    <span className="material-symbols-outlined text-[14px]">shield</span>
+                    Rủi ro tuyển dụng:
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                      tier.risk === "Thấp"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : tier.risk === "Trung bình"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-rose-100 text-rose-800"
+                    }`}
+                  >
+                    {tier.risk}
+                  </span>
+                </div>
+                {/* Visual Gauge Bar */}
+                <div className="grid grid-cols-3 gap-1 h-1.5 rounded-full overflow-hidden bg-slate-100">
+                  <div className={`h-full rounded-sm ${tier.risk === "Thấp" ? "bg-emerald-500" : "bg-slate-200"}`} />
+                  <div className={`h-full rounded-sm ${tier.risk === "Trung bình" ? "bg-amber-500" : "bg-slate-200"}`} />
+                  <div className={`h-full rounded-sm ${tier.risk === "Cao" ? "bg-rose-500" : "bg-slate-200"}`} />
+                </div>
               </div>
             </div>
           </div>
@@ -650,52 +763,68 @@ export default function ResultPage() {
                 <span className="material-symbols-outlined text-[18px]">info</span>
                 Kết quả này được phân tích trước khi có phần giải thích điểm và đối chiếu từng yêu cầu JD. Phân tích lại CV để xem đầy đủ.
               </span>
-              <Link href="/score" className="shrink-0 px-3 py-1.5 rounded-lg bg-[#0037b0] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors">
+              <Link
+                href="/score"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-[#0037b0] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors"
+              >
                 Phân tích lại
               </Link>
             </div>
           </section>
         )}
+
         {breakdown && (
           <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-6">
             <ScoreBreakdownCard data={breakdown} />
           </section>
         )}
+
         {reqSummary && requirements.length > 0 && (
           <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-6">
             <RequirementMatchCard items={requirements} summary={reqSummary} />
           </section>
         )}
 
-        {/* Gợi ý cải thiện CV (AI Advise) — rule-based, bám đúng missing_skills/exp_gap/similarity
-            đã tính ở trên, không gọi LLM. Luôn ở dạng gợi ý điều kiện ("nếu bạn thực sự có kinh
-            nghiệm với X") — không khẳng định ứng viên đã có gì mà CV chưa thể hiện. */}
+        {/* ── GỢI Ý CẢI THIỆN CV (AI ADVISE) — ACTION CARDS GỌN GÀNG ── */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-6">
-          <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5c3b00] flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">tips_and_updates</span>
-                Gợi ý cải thiện CV (AI Advise)
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-[#ffe8b8] text-[#5c3b00] text-[12px] font-semibold">
-                {cvSuggestions.length} gợi ý
+          <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-xs border border-slate-200/80">
+            <div className="flex items-center justify-between mb-2 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[16px]">tips_and_updates</span>
+                </span>
+                <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
+                  Gợi ý hành động cải thiện CV (AI Advise)
+                </h3>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
+                {cvSuggestions.length} khuyến nghị
               </span>
             </div>
-            <p className="text-[13px] text-[#434655] mb-4">
-              Hành động cụ thể để CV bám sát JD hơn — chỉ áp dụng nếu đúng với kinh nghiệm thật của bạn:
+            <p className="text-[13px] text-slate-600 mb-5 leading-relaxed">
+              Các khuyến nghị cụ thể để CV bám sát tiêu chuẩn của JD — chỉ áp dụng nếu đúng với năng lực và kinh nghiệm thực tế của bạn:
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {cvSuggestions.map((s, i) => {
-                const icon = s.type === "skill" ? "add_circle"
-                  : s.type === "experience" ? "history_edu"
-                  : s.type === "phrasing" ? "translate"
-                  : "tips_and_updates";
+                const icon =
+                  s.type === "skill"
+                    ? "add_circle"
+                    : s.type === "experience"
+                    ? "history_edu"
+                    : s.type === "phrasing"
+                    ? "translate"
+                    : "tips_and_updates";
                 return (
-                  <div key={`${s.title}-${i}`} className="p-3 rounded-lg bg-[#fff8ea] flex items-start gap-2">
-                    <span className="material-symbols-outlined text-[#8a5700] text-[18px] shrink-0 mt-0.5">{icon}</span>
-                    <div className="min-w-0">
-                      <h4 className="text-[13px] font-semibold text-[#0b1c30]">{s.title}</h4>
-                      <p className="text-[12px] text-[#434655]">{s.desc}</p>
+                  <div
+                    key={`${s.title}-${i}`}
+                    className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-amber-300 transition-all flex items-start gap-3 shadow-2xs"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-amber-100/70 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="material-symbols-outlined text-[18px]">{icon}</span>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-[13px] font-bold text-[#0b1c30] leading-snug">{s.title}</h4>
+                      <p className="text-[12px] text-slate-600 mt-1 leading-relaxed">{s.desc}</p>
                     </div>
                   </div>
                 );
@@ -704,186 +833,177 @@ export default function ResultPage() {
           </div>
         </section>
 
-        {/* Interview Questions — ẩn mặc định, chỉ hiện khi người dùng chủ động mở.
-            Hành động CHÍNH ở đây phải là TRẢ LỜI phỏng vấn giả lập (route /interview,
-            có tính giờ + chấm điểm thật), không phải chỉ xem trước danh sách câu hỏi
-            (việc xem trước đáp án kỳ vọng/red-flags hợp lý cho nhà tuyển dụng dùng làm
-            rubric, nhưng với ứng viên tự luyện thì lộ đáp án trước khi làm bài là phản
-            tác dụng — nên tách thành 1 lựa chọn phụ, không phải nút chính). */}
+        {/* ── PHỎNG VẤN GIẢ LẬP THEO KHOẢNG TRỐNG NĂNG LỰC ── */}
         <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pb-12">
           {!showInterviewPrep ? (
-            <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#0037b0]/10 flex items-center justify-center text-[#0037b0] shrink-0">
-                  <span className="material-symbols-outlined">psychology_alt</span>
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 lg:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2563EB]/15 to-[#7C3AED]/20 border border-blue-200/60 flex items-center justify-center text-[#0037b0] shrink-0">
+                  <span className="material-symbols-outlined text-[26px]">psychology_alt</span>
                 </div>
                 <div>
                   <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[18px] font-bold text-[#0b1c30]">
                     Phỏng vấn giả lập theo khoảng trống năng lực
                   </h2>
-                  <p className="text-[13px] text-[#434655] mt-1">
-                    {questions.length} câu hỏi được tạo dựa trên chính CV/JD này — nhập câu trả lời trực tiếp, có tính giờ
-                    từng câu, hệ thống tự chấm điểm và lưu lại kết quả để xem lại sau.
+                  <p className="text-[13px] text-slate-600 mt-1 leading-relaxed">
+                    {questions.length} câu hỏi được tạo dựa trên chính CV/JD này — nhập câu trả lời trực tiếp, có tính giờ từng câu, hệ thống tự chấm điểm và lưu lại kết quả.
                   </p>
                 </div>
               </div>
-              <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                 <Link
                   href="/interview"
                   aria-disabled={questions.length === 0}
-                  onClick={(e) => { if (questions.length === 0) e.preventDefault(); }}
-                  className={`px-5 py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 transition-colors ${
+                  onClick={(e) => {
+                    if (questions.length === 0) e.preventDefault();
+                  }}
+                  className={`px-5 py-2.5 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all ${
                     questions.length === 0
-                      ? "bg-[#e5eeff] text-[#9aa0b4] cursor-not-allowed"
-                      : "bg-[#1d4ed8] text-white hover:bg-[#0037b0] shadow-sm"
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:from-[#1d4ed8] hover:to-[#6d28d9] text-white shadow-xs hover:shadow-sm"
                   }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                  Bắt đầu trả lời phỏng vấn giả lập
-                </Link>
-                <button
-                  onClick={() => setShowInterviewPrep(true)}
-                  disabled={questions.length === 0}
-                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 transition-colors ${
-                    questions.length === 0
-                      ? "text-[#c4c5d7] cursor-not-allowed"
-                      : "text-[#565e74] hover:bg-[#f0f4ff]"
-                  }`}
-                  title="Chỉ xem trước danh sách câu hỏi + đáp án kỳ vọng, không tính điểm — hợp cho nhà tuyển dụng tham khảo trước khi phỏng vấn thật"
-                >
-                  <span className="material-symbols-outlined text-[18px]">visibility</span>
-                  Xem trước câu hỏi (không tính điểm)
-                </button>
-              </div>
-            </div>
-          ) : (
-          <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#0037b0] text-[24px]">psychology_alt</span>
-                  <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[24px] font-bold text-[#0b1c30]">
-                    Bộ câu hỏi phỏng vấn đề xuất theo khoảng trống năng lực
-                  </h2>
-                </div>
-                <p className="text-[14px] text-[#434655] mt-1">
-                  Được cấu trúc hoá tự động dựa trên phân tích ma trận đối soát giữa CV của {candidateName || "ứng viên"} và bản mô tả vị trí {apiResult?.job_title || "chưa xác định"}.
-                </p>
-                <p className="text-[12px] text-[#8fa5c0] mt-1 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">info</span>
-                  Chế độ xem trước này hiển thị luôn đáp án kỳ vọng — nếu muốn tự luyện thật thì bấm &quot;Bắt đầu trả lời phỏng vấn giả lập&quot; bên dưới, đừng xem trước đáp án ở đây.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button className="px-3 py-2 rounded-xl bg-[#e5eeff] text-[#434655] text-[13px] font-medium hover:text-[#0b1c30] hover:bg-[#dce9ff] transition-colors flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[16px]">content_copy</span>
-                  Sao chép toàn bộ
-                </button>
-                <button className="px-3 py-2 rounded-xl bg-[#0037b0]/10 text-[#0037b0] text-[13px] font-medium hover:bg-[#0037b0]/20 transition-colors flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[16px]">tune</span>
-                  Tinh chỉnh tiêu chí
-                </button>
-                <button
-                  onClick={() => setShowInterviewPrep(false)}
-                  className="px-3 py-2 rounded-xl bg-[#f0f0f0] text-[#565e74] text-[13px] font-medium hover:bg-[#e5e5e5] transition-colors flex items-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[16px]">expand_less</span>
-                  Thu gọn
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {questions.map((q) => (
-                <div key={q.id} className="bg-[#eff4ff] rounded-xl p-6 transition-all hover:shadow-md">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-7 h-7 rounded-lg ${q.badgeBg} text-white text-[11px] flex items-center justify-center font-bold`}>
-                        {q.id}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full ${q.categoryColor} text-[11px] font-semibold uppercase`}>
-                        {q.category}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[#565e74] text-[11px]">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">timer</span>
-                        Thời lượng dự kiến: {q.duration}
-                      </span>
-                      <span className="text-[#c4c5d7]">•</span>
-                      <span className={`${q.weightColor} font-semibold`}>Trọng số: {q.weight}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                    <p className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30] leading-relaxed">
-                      {q.question}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-[#e5eeff] p-3 rounded-lg">
-                      <p className="text-[11px] font-semibold text-[#004f35] flex items-center gap-1 mb-2">
-                        <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                        Kỳ vọng câu trả lời đạt chuẩn (L6 Senior Lead):
-                      </p>
-                      <ul className="text-[13px] text-[#0b1c30] space-y-1 pl-4 list-disc">
-                        {q.expected.map((e) => <li key={e}>{e}</li>)}
-                      </ul>
-                    </div>
-                    <div className="bg-[#e5eeff] p-3 rounded-lg">
-                      <p className="text-[11px] font-semibold text-[#ba1a1a] flex items-center gap-1 mb-2">
-                        <span className="material-symbols-outlined text-[16px]">cancel</span>
-                        Tín hiệu cảnh báo rủi ro (Red Flags):
-                      </p>
-                      <ul className="text-[13px] text-[#0b1c30] space-y-1 pl-4 list-disc">
-                        {q.redFlags.map((r) => <li key={r}>{r}</li>)}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Digital Rubric Sheet CTA */}
-            <div className="mt-8 p-4 bg-[#e5eeff] rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#0037b0]/10 flex items-center justify-center text-[#0037b0] shrink-0">
-                  <span className="material-symbols-outlined">assignment_turned_in</span>
-                </div>
-                <div>
-                  <p className="font-[family-name:var(--font-plus-jakarta)] text-[16px] font-semibold text-[#0b1c30]">
-                    Sẵn sàng thử trả lời thật chưa?
-                  </p>
-                  <p className="text-[13px] text-[#434655]">
-                    Vào phòng phỏng vấn giả lập — nhập câu trả lời trực tiếp, mỗi câu có tính giờ, hệ thống tự chấm điểm và lưu lại để bạn xem lại sau.
-                  </p>
-                </div>
-              </div>
-              <div className="shrink-0 w-full sm:w-auto">
-                <Link
-                  href="/interview"
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0037b0] text-white text-[13px] font-bold hover:bg-[#1d4ed8] transition-colors shadow-sm flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[18px]">play_arrow</span>
                   Bắt đầu phỏng vấn giả lập
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowInterviewPrep(true)}
+                  disabled={questions.length === 0}
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border border-slate-200 transition-colors ${
+                    questions.length === 0
+                      ? "text-slate-300 cursor-not-allowed"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">visibility</span>
+                  Xem trước câu hỏi
+                </button>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 lg:p-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#0037b0] text-[24px]">
+                      psychology_alt
+                    </span>
+                    <h2 className="font-[family-name:var(--font-plus-jakarta)] text-[22px] font-bold text-[#0b1c30]">
+                      Bộ câu hỏi phỏng vấn đề xuất theo khoảng trống năng lực
+                    </h2>
+                  </div>
+                  <p className="text-[13px] text-slate-600 mt-1">
+                    Cấu trúc tự động dựa trên ma trận đối soát giữa CV của {candidateName || "ứng viên"} và vị trí {apiResult?.job_title || "chưa xác định"}.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowInterviewPrep(false)}
+                    className="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-[13px] font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">expand_less</span>
+                    Thu gọn
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-5 mt-6">
+                {questions.map((q) => (
+                  <div key={q.id} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-7 h-7 rounded-lg ${q.badgeBg} text-white text-[11px] flex items-center justify-center font-bold`}>
+                          {q.id}
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded-full ${q.categoryColor} text-[11px] font-bold uppercase`}>
+                          {q.category}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-slate-500 text-[11px]">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">timer</span>
+                          Thời lượng: {q.duration}
+                        </span>
+                        <span>•</span>
+                        <span className={`${q.weightColor} font-bold`}>Trọng số: {q.weight}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs mb-4">
+                      <p className="font-[family-name:var(--font-plus-jakarta)] text-[15px] sm:text-[16px] font-bold text-[#0b1c30] leading-relaxed">
+                        {q.question}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      <div className="bg-emerald-50/70 border border-emerald-100 p-3.5 rounded-xl">
+                        <p className="text-[11px] font-bold text-emerald-800 flex items-center gap-1 mb-2">
+                          <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
+                          Kỳ vọng câu trả lời đạt chuẩn:
+                        </p>
+                        <ul className="text-[12px] text-slate-700 space-y-1 pl-4 list-disc">
+                          {q.expected.map((e) => (
+                            <li key={e}>{e}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="bg-rose-50/70 border border-rose-100 p-3.5 rounded-xl">
+                        <p className="text-[11px] font-bold text-rose-800 flex items-center gap-1 mb-2">
+                          <span className="material-symbols-outlined text-[15px] text-rose-600">cancel</span>
+                          Tín hiệu cảnh báo rủi ro (Red Flags):
+                        </p>
+                        <ul className="text-[12px] text-slate-700 space-y-1 pl-4 list-disc">
+                          {q.redFlags.map((r) => (
+                            <li key={r}>{r}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Digital Rubric Sheet CTA */}
+              <div className="mt-8 p-5 bg-gradient-to-r from-blue-50 to-indigo-50/40 border border-blue-100 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-white text-[#0037b0] flex items-center justify-center border border-blue-200 shadow-2xs shrink-0">
+                    <span className="material-symbols-outlined">assignment_turned_in</span>
+                  </div>
+                  <div>
+                    <p className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-bold text-[#0b1c30]">
+                      Sẵn sàng thử trả lời thật chưa?
+                    </p>
+                    <p className="text-[12px] text-slate-600">
+                      Vào phòng phỏng vấn giả lập để nhập câu trả lời trực tiếp, có bấm giờ và chấm điểm tự động.
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 w-full sm:w-auto">
+                  <Link
+                    href="/interview"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:from-[#1d4ed8] hover:to-[#6d28d9] text-white text-[13px] font-bold transition-all shadow-xs flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                    Bắt đầu phỏng vấn giả lập
+                  </Link>
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* ── Khối điều hướng bước tiếp theo (Next Action Journey) ───────── */}
-          <section className="mt-8 p-6 sm:p-8 rounded-2xl bg-white border-2 border-[#0037b0]/15 shadow-sm">
+          {/* ── BƯỚC TIẾP THEO DÀNH CHO BẠN (NEXT ACTION JOURNEY) ── */}
+          <section className="mt-8 p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0037b0] bg-[#eff4ff] px-2.5 py-1 rounded-full">
-                  Bước tiếp theo dành cho bạn
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0037b0] bg-blue-50 border border-blue-200/60 px-2.5 py-1 rounded-full">
+                  Lộ trình tiếp theo
                 </span>
                 <h3 className="font-[family-name:var(--font-plus-jakarta)] text-[20px] font-bold text-[#0b1c30] mt-2">
                   Bạn muốn làm gì tiếp theo?
                 </h3>
-                <p className="text-[13px] text-[#565e74] mt-0.5">
+                <p className="text-[13px] text-slate-500 mt-0.5">
                   Dựa trên kết quả đối chiếu năng lực, hãy chọn bước đi phù hợp nhất với kế hoạch của bạn.
                 </p>
               </div>
@@ -893,66 +1013,72 @@ export default function ResultPage() {
               {/* Action 1 */}
               <Link
                 href="/interview"
-                className="group p-5 rounded-xl bg-[#eff4ff]/60 hover:bg-[#eff4ff] border border-[#dce1ff] transition-all flex flex-col justify-between"
+                className="group p-5 rounded-2xl bg-gradient-to-br from-blue-50/70 to-indigo-50/30 hover:from-blue-50 hover:to-indigo-50 border border-blue-200/70 transition-all flex flex-col justify-between shadow-2xs hover:shadow-xs"
               >
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-[#0037b0] text-white flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-xs">
                     <span className="material-symbols-outlined text-[20px]">mic</span>
                   </div>
                   <h4 className="font-bold text-[15px] text-[#0b1c30] mb-1">
                     Luyện phỏng vấn thử 1-1
                   </h4>
-                  <p className="text-[12px] text-[#565e74] leading-relaxed">
+                  <p className="text-[12px] text-slate-500 leading-relaxed">
                     Tập dượt trả lời các câu hỏi dựa trên lỗ hổng và từ khóa thực tế của vị trí này.
                   </p>
                 </div>
                 <div className="mt-4 flex items-center text-[12px] font-bold text-[#0037b0]">
                   <span>Vào phòng phỏng vấn</span>
-                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
                 </div>
               </Link>
 
               {/* Action 2 */}
               <Link
                 href="/score"
-                className="group p-5 rounded-xl bg-white hover:bg-[#f8f9ff] border border-[#e5eeff] transition-all flex flex-col justify-between"
+                className="group p-5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 transition-all flex flex-col justify-between shadow-2xs hover:shadow-xs"
               >
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-[#e5eeff] text-[#0037b0] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-[#0037b0] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                     <span className="material-symbols-outlined text-[20px]">refresh</span>
                   </div>
                   <h4 className="font-bold text-[15px] text-[#0b1c30] mb-1">
                     Sửa CV &amp; Chấm điểm lại
                   </h4>
-                  <p className="text-[12px] text-[#565e74] leading-relaxed">
+                  <p className="text-[12px] text-slate-500 leading-relaxed">
                     Bổ sung từ khóa gợi ý và tải lại CV bản mới để kiểm tra điểm số có tăng không.
                   </p>
                 </div>
                 <div className="mt-4 flex items-center text-[12px] font-bold text-[#0037b0]">
                   <span>Chấm lại CV</span>
-                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
                 </div>
               </Link>
 
               {/* Action 3 */}
               <Link
                 href="/dashboard"
-                className="group p-5 rounded-xl bg-white hover:bg-[#f8f9ff] border border-[#e5eeff] transition-all flex flex-col justify-between"
+                className="group p-5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 transition-all flex flex-col justify-between shadow-2xs hover:shadow-xs"
               >
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-[#e5eeff] text-[#565e74] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                     <span className="material-symbols-outlined text-[20px]">dashboard</span>
                   </div>
                   <h4 className="font-bold text-[15px] text-[#0b1c30] mb-1">
                     Về trang Dashboard
                   </h4>
-                  <p className="text-[12px] text-[#565e74] leading-relaxed">
+                  <p className="text-[12px] text-slate-500 leading-relaxed">
                     Xem biểu đồ tiến trình năng lực, lịch sử phân tích và các chỉ số tích lũy.
                   </p>
                 </div>
-                <div className="mt-4 flex items-center text-[12px] font-bold text-[#565e74] group-hover:text-[#0b1c30]">
+                <div className="mt-4 flex items-center text-[12px] font-bold text-slate-600 group-hover:text-slate-900">
                   <span>Về Dashboard</span>
-                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  <span className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
                 </div>
               </Link>
             </div>

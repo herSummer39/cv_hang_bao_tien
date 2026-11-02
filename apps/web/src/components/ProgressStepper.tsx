@@ -40,13 +40,15 @@ export default function ProgressStepper({ activeStep, sessionId }: Props) {
   }));
 
   return (
-    <section className="w-full bg-white border-b border-[#e2e8f0] py-4 shadow-sm">
+    <section className="w-full bg-white border-b border-slate-200/80 py-4 shadow-2xs">
       <div className="w-full px-4 sm:px-8 lg:px-12">
         {sessionId && (
           <div className="flex items-center gap-2 mb-3 text-[12px]">
-            <span className="font-semibold uppercase tracking-wider text-[#64748b]">Mã phiên làm việc:</span>
-            <span className="font-bold text-[#0037b0] bg-[#eff4ff] border border-[#dce1ff] px-2.5 py-0.5 rounded-lg font-mono">
-              {sessionId}
+            <span className="font-bold uppercase tracking-wider text-slate-500 text-[11px]">
+              Mã phiên làm việc:
+            </span>
+            <span className="font-bold text-[#0037b0] bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-lg font-mono">
+              #{sessionId}
             </span>
           </div>
         )}
@@ -61,24 +63,24 @@ export default function ProgressStepper({ activeStep, sessionId }: Props) {
                 key={step.number}
                 className={`relative flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all ${
                   isActive
-                    ? "bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#7c3aed] text-white shadow-md shadow-blue-600/20 ring-2 ring-blue-500/30 scale-[1.01]"
+                    ? "bg-gradient-to-r from-[#2563eb] to-[#7c3aed] text-white shadow-md shadow-blue-600/20 ring-2 ring-blue-500/20 scale-[1.01]"
                     : isDone
-                    ? "bg-[#ecfdf5] border-2 border-[#a7f3d0] text-[#065f46]"
-                    : "bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b]"
+                    ? "bg-emerald-50/70 border border-emerald-200 text-emerald-900"
+                    : "bg-[#f8fafc] border border-slate-200/80 text-slate-500"
                 }`}
               >
                 {/* Step Circle Badge */}
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-[15px] shadow-sm transition-all ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-[15px] shadow-2xs transition-all ${
                     isActive
-                      ? "bg-white text-[#0037b0] ring-4 ring-white/30"
+                      ? "bg-white text-[#0037b0] ring-4 ring-white/25 shadow-sm"
                       : isDone
-                      ? "bg-[#10b981] text-white"
-                      : "bg-white border-2 border-[#cbd5e1] text-[#64748b]"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-white border-2 border-slate-300 text-slate-400"
                   }`}
                 >
                   {isDone ? (
-                    <span className="material-symbols-outlined text-[22px] font-bold">check</span>
+                    <span className="material-symbols-outlined text-[20px] font-bold">check</span>
                   ) : (
                     <span>{step.number}</span>
                   )}
@@ -89,18 +91,26 @@ export default function ProgressStepper({ activeStep, sessionId }: Props) {
                   <div className="flex items-center gap-1.5">
                     <span
                       className={`text-[13px] font-bold leading-tight truncate ${
-                        isActive ? "text-white" : isDone ? "text-[#065f46]" : "text-[#1e293b]"
+                        isActive
+                          ? "text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]"
+                          : isDone
+                          ? "text-emerald-950 font-bold"
+                          : "text-slate-700"
                       }`}
                     >
                       {step.label}
                     </span>
                     {isActive && (
-                      <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#85f8c4] animate-ping shrink-0" />
+                      <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
                     )}
                   </div>
                   <p
                     className={`text-[11px] leading-tight mt-1 truncate ${
-                      isActive ? "text-white/85 font-medium" : isDone ? "text-[#047857]" : "text-[#64748b]"
+                      isActive
+                        ? "text-white/90 font-medium"
+                        : isDone
+                        ? "text-emerald-700 font-medium"
+                        : "text-slate-400"
                     }`}
                   >
                     {step.sublabel}
@@ -109,7 +119,7 @@ export default function ProgressStepper({ activeStep, sessionId }: Props) {
 
                 {/* Arrow indicator between steps */}
                 {idx < steps.length - 1 && (
-                  <div className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white border border-[#cbd5e1] shadow-xs items-center justify-center text-[#94a3b8]">
+                  <div className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white border border-slate-200 shadow-2xs items-center justify-center text-slate-400">
                     <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                   </div>
                 )}

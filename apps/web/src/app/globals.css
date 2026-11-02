@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+:root {
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-plus-jakarta: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 @layer base {
   html, body {
     margin: 0;
@@ -15,11 +20,11 @@
 }
 
 @theme {
-  /* CareerFit Brand Tokens */
+  /* CareerFit Brand Tokens - Lấy cảm hứng từ Logo */
   --color-brand-blue: #0037b0;
   --color-brand-blue-hover: #002b8c;
-  --color-brand-indigo: #3724c9;
-  --color-brand-magenta: #c026d3;
+  --color-brand-indigo: #2563eb;
+  --color-brand-purple: #7c3aed;
   --color-brand-pink: #df2365;
   --color-brand-orange: #ff791b;
   --color-brand-amber: #f59e0b;
@@ -83,25 +88,6 @@
   --color-inverse-on-surface: #eaf1ff;
   --color-inverse-primary: #b7c4ff;
 
-  /* Spacing */
-  --spacing-space-2xs: 0.25rem;
-  --spacing-space-xs: 0.5rem;
-  --spacing-space-sm: 0.75rem;
-  --spacing-space-md: 1rem;
-  --spacing-space-lg: 1.5rem;
-  --spacing-space-xl: 2rem;
-  --spacing-space-2xl: 3rem;
-  --spacing-margin-mobile: 1rem;
-  --spacing-margin-desktop: 2rem;
-  --spacing-gutter-mobile: 1rem;
-  --spacing-gutter-desktop: 1.5rem;
-
-  /* Border radius */
-  --radius-DEFAULT: 0.125rem;
-  --radius-lg: 0.25rem;
-  --radius-xl: 0.5rem;
-  --radius-full: 0.75rem;
-
   /* Fonts */
   --font-family-display: "Plus Jakarta Sans", sans-serif;
   --font-family-headline: "Plus Jakarta Sans", sans-serif;
@@ -110,13 +96,12 @@
   --font-family-code: "Inter", monospace;
 }
 
-
 /* ==========================================================================
    CareerFit Design System Utilities
    Consistency & Accessibility Standards
    ========================================================================== */
 
-/* Brand Gradients (Logo Alignment: Blue -> Indigo -> Magenta -> Warm Orange) */
+/* Brand Gradients (Soft Linear Gradient: Blue #2563EB -> Indigo #4F46E5 -> Violet #7C3AED) */
 .bg-brand-gradient {
   background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
 }
@@ -135,7 +120,7 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Primary Action Buttons (Deep Blue / Subtle Gradient, High Contrast) */
+/* Primary Action Buttons (Deep Professional Blue / Subtle Shadow) */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -167,14 +152,14 @@
   transform: none;
 }
 
-/* Secondary Action Buttons (Subtle Soft Tint, Deep Blue/Purple Text - Easy Recognition) */
+/* Secondary Action Buttons (Refined Light Gray #F1F5F9 / #F8FAFC - High Interactive Affordance) */
 .btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   background-color: #f1f5f9;
-  color: #1e1b4b;
+  color: #1e293b;
   border: 1px solid #cbd5e1;
   font-weight: 600;
   border-radius: 0.75rem;
@@ -184,10 +169,10 @@
   cursor: pointer;
 }
 .btn-secondary:hover {
-  background-color: #e0e7ff;
-  color: #3724c9;
-  border-color: #a5b4fc;
-  box-shadow: 0 2px 8px 0 rgba(55, 36, 201, 0.12);
+  background-color: #e2e8f0;
+  color: #0037b0;
+  border-color: #94a3b8;
+  box-shadow: 0 2px 6px 0 rgba(0, 55, 176, 0.08);
   transform: translateY(-1px);
 }
 .btn-secondary:active {
@@ -217,4 +202,19 @@
 }
 .btn-gradient-cta:active {
   transform: scale(0.99);
+}
+
+/* Standard Metric & Stat Card */
+.card-stat {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+.card-stat:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
 }
