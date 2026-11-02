@@ -138,6 +138,25 @@ export default function Header() {
                 )}
               </Link>
             ))}
+
+            {/* Mục Dashboard nhanh cho Mobile */}
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[14px] font-bold transition-all border-t border-slate-100 mt-1 pt-3 ${
+                pathname === "/dashboard"
+                  ? "bg-[#0037b0]/10 text-[#0037b0] border border-[#0037b0]/25 font-extrabold"
+                  : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`material-symbols-outlined text-[20px] ${pathname === "/dashboard" ? "text-[#0037b0]" : "text-slate-500"}`}>
+                  dashboard
+                </span>
+                <span>Bảng điều khiển cá nhân</span>
+              </div>
+              <span className="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
+            </Link>
           </nav>
         </div>
       )}
