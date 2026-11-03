@@ -203,6 +203,44 @@ const PRESET_INTERVIEWS: Record<string, { title: string; questions: ApiQuestion[
   },
 };
 
+// Singleton khóa âm thanh toàn cục ở cấp module: đảm bảo tại mọi thời điểm
+// chỉ có tối đa DUY NHẤT 1 luồng giọng nói câu hỏi được phát, triệt tiêu hoàn toàn
+// lỗi 2 giọng nói lặp lại cùng lúc (do gọi kép, AbortError kích hoạt fallback Web Speech, hoặc Strict Mode).
+let globalActiveAudio: HTMLAudioElement | null = null;
+let globalPlayRequestId = 0;
+
+function stopAllQuestionAudio(exceptEl?: HTMLAudioElement | null) {
+  globalPlayRequestId += 1;
+  if (typeof window !== "undefined") {
+    if ("speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // ignore
+      }
+    }
+    document.querySelectorAll("audio").forEach((el) => {
+      if (el !== exceptEl) {
+        try {
+          el.pause();
+          el.currentTime = 0;
+        } catch {
+          // ignore
+        }
+      }
+    });
+  }
+  if (globalActiveAudio && globalActiveAudio !== exceptEl) {
+    try {
+      globalActiveAudio.pause();
+      globalActiveAudio.currentTime = 0;
+    } catch {
+      // ignore
+    }
+    globalActiveAudio = null;
+  }
+}
+
 export default function InterviewPage() {
   const router = useRouter();
   const [checkedAuth, setCheckedAuth] = useState(false);
@@ -228,6 +266,23 @@ export default function InterviewPage() {
   const [audioJobId, setAudioJobId] = useState<string | null>(null);
   const [audioJobActive, setAudioJobActive] = useState(false);
   const playedAudioRef = useRef<Set<number>>(new Set());
+
+  const questionsRef = useRef<ApiQuestion[]>(questions);
+  useEffect(() => {
+    questionsRef.current = questions;
+  }, [questions]);
+
+  const audioUrlsRef = useRef<string[] | null>(audioUrls);
+  useEffect(() => {
+    audioUrlsRef.current = audioUrls;
+  }, [audioUrls]);
+
+  // Dừng mọi luồng âm thanh khi rời trang / unmount
+  useEffect(() => {
+    return () => {
+      stopAllQuestionAudio();
+    };
+  }, []);
 
   // Trạng thái phát âm của VietTTS / Web Speech và trạng thái đánh giá LLM
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -258,11 +313,7 @@ export default function InterviewPage() {
 
   // Dừng mọi âm thanh câu hỏi đang phát
   const stopAllAudio = useCallback(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch { }
-    }
+    stopAllQuestionAudio();
     if (questionAudioRef.current) {
       try {
         questionAudioRef.current.pause();
@@ -273,38 +324,60 @@ export default function InterviewPage() {
   }, []);
 
   // Hàm đọc to câu hỏi bằng tiếng Việt — Giọng Nữ Hà Nội chuẩn:
-  // Ưu tiên audio URL từ VieNeu-TTS nếu có, tự động fallback sang Web Speech Synthesis tiếng Việt chuẩn
+  // Ưu tiên audio URL từ VieNeu-TTS / TTS API nếu có, tự động fallback sang Web Speech Synthesis tiếng Việt chuẩn.
+  // Sử dụng requestId đơn điệu để chống tuyệt đối việc 2 luồng âm thanh (Audio element + Web Speech) phát chồng lên nhau.
   const playQuestionAudio = useCallback((index: number) => {
     if (typeof window === "undefined") return;
-    const qText = questions[index]?.question;
+    const qText = questionsRef.current[index]?.question;
     if (!qText) return;
 
-    // Ngắt micro tạm thời để không bị vang tiếng AI vào ô trả lời
+    // Ngắt micro tạm thời để không bị vang tiếng AI vào ô trả lời và hủy mọi luồng âm thanh cũ
     stopListening();
     stopAllAudio();
+    const requestId = ++globalPlayRequestId;
     setIsSpeaking(true);
 
-    const url = audioUrls?.[index] || `/api/interview/tts?text=${encodeURIComponent(qText)}`;
+    const url = audioUrlsRef.current?.[index] || `/api/interview/tts?text=${encodeURIComponent(qText)}`;
     const el = questionAudioRef.current;
 
     // 1. Ưu tiên phát bằng audio element qua /api/interview/tts hoặc VieNeu-TTS (Giọng nữ chuẩn 100%)
     if (el) {
+      globalActiveAudio = el;
       el.src = url;
+      el.currentTime = 0;
       el.play()
         .then(() => {
+          if (requestId !== globalPlayRequestId) {
+            el.pause();
+            return;
+          }
+          // Đảm bảo Web Speech Synthesis bị hủy nếu thẻ audio đang phát thành công
+          if ("speechSynthesis" in window) {
+            try {
+              window.speechSynthesis.cancel();
+            } catch { }
+          }
           setIsSpeaking(true);
         })
         .catch((err) => {
+          // Nếu lệnh play() bị hủy do một lệnh phát mới hoặc do pause() (AbortError), TUYỆT ĐỐI không gọi fallback
+          if (requestId !== globalPlayRequestId || (err as { name?: string })?.name === "AbortError") {
+            return;
+          }
           console.warn("[TTS] Không phát được qua thẻ audio, chuyển sang Web Speech tiếng Việt:", err);
-          speakViaSpeechSynthesis(qText);
+          try {
+            el.pause();
+          } catch { }
+          speakViaSpeechSynthesis(qText, requestId);
         });
       return;
     }
 
     // 2. Fallback sang Web Speech API nếu không có phần tử audio
-    speakViaSpeechSynthesis(qText);
+    speakViaSpeechSynthesis(qText, requestId);
 
-    function speakViaSpeechSynthesis(text: string) {
+    function speakViaSpeechSynthesis(text: string, reqId: number) {
+      if (reqId !== globalPlayRequestId) return;
       if (!("speechSynthesis" in window)) {
         setIsSpeaking(false);
         return;
@@ -340,19 +413,27 @@ export default function InterviewPage() {
       }
 
       utterance.onstart = () => {
+        if (reqId !== globalPlayRequestId) {
+          window.speechSynthesis.cancel();
+          return;
+        }
         setIsSpeaking(true);
         stopListening();
       };
       utterance.onend = () => {
-        setIsSpeaking(false);
+        if (reqId === globalPlayRequestId) {
+          setIsSpeaking(false);
+        }
       };
       utterance.onerror = () => {
-        setIsSpeaking(false);
+        if (reqId === globalPlayRequestId) {
+          setIsSpeaking(false);
+        }
       };
 
       window.speechSynthesis.speak(utterance);
     }
-  }, [questions, audioUrls, stopListening, stopAllAudio]);
+  }, [stopListening, stopAllAudio]);
 
   const prevTranscriptRef = useRef("");
   const answerDraftRef = useRef(answerDraft);
@@ -640,7 +721,7 @@ export default function InterviewPage() {
     return () => clearTimeout(t);
   }, [phase, timeLeft, isEvaluating, handleTimeout]);
 
-  // Bắt đầu phỏng vấn — tự động phát âm thanh câu hỏi số 1 ngay lập tức
+  // Bắt đầu phỏng vấn — tự động phát âm thanh câu hỏi số 1 thông qua useEffect duy nhất
   function handleStart() {
     setCurrentIndex(0);
     setAnswerDraft("");
@@ -658,13 +739,8 @@ export default function InterviewPage() {
 
     if (questions.length === 0) return;
 
-    // Chuyển thẳng vào running để bắt đầu ngay tức thì, không bắt user chờ
+    // Chuyển thẳng vào running để bắt đầu ngay tức thì; useEffect bên dưới sẽ tự động đọc câu hỏi số 1 đúng 1 lần
     setPhase("running");
-
-    // Tự động phát âm thanh câu hỏi đầu tiên bằng tiếng Việt (Nữ Hà Nội chuẩn)
-    setTimeout(() => {
-      playQuestionAudio(0);
-    }, 350);
 
     // Kích hoạt ngầm audio job nếu Supabase có cấu hình
     try {
@@ -693,7 +769,7 @@ export default function InterviewPage() {
   // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong (nếu có worker chạy)
   useEffect(() => {
     if (!audioJobId || !audioJobActive) return;
-    if (phase !== "running" && phase !== "preparing") return;
+    if (phase !== "running") return;
     const supabase = createClient();
     let stopped = false;
     const timer = setInterval(async () => {
@@ -704,7 +780,14 @@ export default function InterviewPage() {
         .single();
       if (stopped || !row) return;
       const urls = (row.audio_urls as string[] | null) || null;
-      if (urls && urls.length > 0) setAudioUrls(urls);
+      if (urls && urls.length > 0) {
+        setAudioUrls((prev) => {
+          if (prev && prev.length === urls.length && prev.every((u, i) => u === urls[i])) {
+            return prev;
+          }
+          return urls;
+        });
+      }
       if (row.status === "done" || row.status === "error") setAudioJobActive(false);
     }, 2000);
     return () => {
@@ -713,18 +796,19 @@ export default function InterviewPage() {
     };
   }, [audioJobId, audioJobActive, phase]);
 
-  // Tự động phát âm thanh đọc câu hỏi khi chuyển sang câu mới
+  // Tự động phát âm thanh đọc câu hỏi đúng 1 lần duy nhất khi vào câu mới
   useEffect(() => {
     if (phase !== "running" || questions.length === 0) return;
     if (playedAudioRef.current.has(currentIndex)) return;
-    playedAudioRef.current.add(currentIndex);
 
     const timer = setTimeout(() => {
+      if (playedAudioRef.current.has(currentIndex)) return;
+      playedAudioRef.current.add(currentIndex);
       playQuestionAudio(currentIndex);
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [phase, currentIndex, questions, playQuestionAudio]);
+  }, [phase, currentIndex, questions.length, playQuestionAudio]);
 
   if (!checkedAuth) {
     return (
@@ -953,6 +1037,7 @@ export default function InterviewPage() {
                     <audio
                       ref={questionAudioRef}
                       className="hidden"
+                      preload="none"
                       onPlay={handleQuestionAudioPlay}
                       onEnded={handleQuestionAudioStop}
                       onPause={handleQuestionAudioStop}
