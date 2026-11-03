@@ -12,8 +12,8 @@ const TIME_PER_QUESTION_SEC = 180; // 3 phút / câu
 const FULL_SCORE_WINDOW_SEC = 60; // phút đầu — điểm tính đầy đủ, không giảm
 const MIN_TIME_MULTIPLIER = 0.5; // sàn giảm điểm ở cuối phút thứ 3 (giây 180)
 
-// Giọng đọc mặc định cố định: Giọng nữ Hà Nội chuẩn (Trúc Ly — VieNeu-TTS / Web Speech)
-const DEFAULT_VOICE_LABEL = "Nữ chuẩn Việt Nam";
+// Giọng đọc mặc định cố định: Giọng nữ miền Bắc chuẩn (Trúc Ly — VieNeu-TTS chạy trên worker.py)
+const DEFAULT_VOICE_LABEL = "Trúc Ly — Nữ miền Bắc (VieNeu-TTS)";
 const DEFAULT_VOICE_CODE = "Ly";
 
 
@@ -204,8 +204,7 @@ const PRESET_INTERVIEWS: Record<string, { title: string; questions: ApiQuestion[
 };
 
 // Singleton khóa âm thanh toàn cục ở cấp module: đảm bảo tại mọi thời điểm
-// chỉ có tối đa DUY NHẤT 1 luồng giọng nói câu hỏi được phát, triệt tiêu hoàn toàn
-// lỗi 2 giọng nói lặp lại cùng lúc (do gọi kép, AbortError kích hoạt fallback Web Speech, hoặc Strict Mode).
+// chỉ có tối đa DUY NHẤT 1 luồng giọng nói VieNeu-TTS được phát.
 let globalActiveAudio: HTMLAudioElement | null = null;
 let globalPlayRequestId = 0;
 
@@ -258,7 +257,7 @@ export default function InterviewPage() {
   const [saveError, setSaveError] = useState("");
   const [guestResult, setGuestResult] = useState<{ totalScore: number; answers: AnswerRecord[] } | null>(null);
 
-  // Cố định giọng phỏng vấn viên: Giọng nữ Hà Nội chuẩn (VieNeu-TTS / Web Speech)
+  // Cố định giọng phỏng vấn viên: Giọng nữ miền Bắc Trúc Ly (VieNeu-TTS trên worker.py)
   const selectedVoice = DEFAULT_VOICE_CODE;
   const [audioUrls, setAudioUrls] = useState<string[] | null>(null);
   const [audioNote, setAudioNote] = useState("");
@@ -266,11 +265,15 @@ export default function InterviewPage() {
   const [audioJobId, setAudioJobId] = useState<string | null>(null);
   const [audioJobActive, setAudioJobActive] = useState(false);
   const playedAudioRef = useRef<Set<number>>(new Set());
+  const isStartingRef = useRef(false);
 
-  const questionsRef = useRef<ApiQuestion[]>(questions);
-  useEffect(() => {
-    questionsRef.current = questions;
-  }, [questions]);
+  // Trạng thái phát âm của VieNeu-TTS và khóa đồng hồ:
+  // Chỉ khi giọng đọc đã đọc xong câu hỏi hiện tại (hasReadCurrentQuestion === true và isSpeaking === false)
+  // thì đồng hồ 3 phút mới bắt đầu đếm ngược thời gian trả lời của ứng viên.
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [hasReadCurrentQuestion, setHasReadCurrentQuestion] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [jdSkills, setJdSkills] = useState<string[]>([]);
 
   const audioUrlsRef = useRef<string[] | null>(audioUrls);
   useEffect(() => {
@@ -284,22 +287,7 @@ export default function InterviewPage() {
     };
   }, []);
 
-  // Trạng thái phát âm của VietTTS / Web Speech và trạng thái đánh giá LLM
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isEvaluating, setIsEvaluating] = useState(false);
-  const [jdSkills, setJdSkills] = useState<string[]>([]);
-
-  // Khởi tạo và nạp sẵn danh sách voices cho trình duyệt
-  useEffect(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
-  }, []);
-
-  // Web Speech API Hook — nhận diện giọng nói native với latency 0ms
+  // Web Speech API Hook — nhận diện giọng nói của ứng viên với latency 0ms
   const {
     isListening,
     transcript,
@@ -323,117 +311,51 @@ export default function InterviewPage() {
     setIsSpeaking(false);
   }, []);
 
-  // Hàm đọc to câu hỏi bằng tiếng Việt — Giọng Nữ Hà Nội chuẩn:
-  // Ưu tiên audio URL từ VieNeu-TTS / TTS API nếu có, tự động fallback sang Web Speech Synthesis tiếng Việt chuẩn.
-  // Sử dụng requestId đơn điệu để chống tuyệt đối việc 2 luồng âm thanh (Audio element + Web Speech) phát chồng lên nhau.
-  const playQuestionAudio = useCallback((index: number) => {
-    if (typeof window === "undefined") return;
-    const qText = questionsRef.current[index]?.question;
-    if (!qText) return;
+  // Phát giọng đọc câu hỏi từ file WAV của VieNeu-TTS (Nữ miền Bắc Trúc Ly) do worker.py tổng hợp.
+  // Tuyệt đối KHÔNG dùng giọng Google Translate hay giọng trình duyệt Edge/Web Speech.
+  const playQuestionAudio = useCallback(
+    (index: number, explicitUrl?: string, forceReplay = false) => {
+      if (typeof window === "undefined") return;
+      const url = explicitUrl || audioUrlsRef.current?.[index];
+      const el = questionAudioRef.current;
+      if (!url || !el) return;
 
-    // Ngắt micro tạm thời để không bị vang tiếng AI vào ô trả lời và hủy mọi luồng âm thanh cũ
-    stopListening();
-    stopAllAudio();
-    const requestId = ++globalPlayRequestId;
-    setIsSpeaking(true);
+      // Nếu đang phát đúng file của câu này và không phải bấm "Nghe lại", không gọi đè lần 2
+      if (!forceReplay && globalActiveAudio === el && !el.paused && el.src === url) {
+        return;
+      }
 
-    const url = audioUrlsRef.current?.[index] || `/api/interview/tts?text=${encodeURIComponent(qText)}`;
-    const el = questionAudioRef.current;
-
-    // 1. Ưu tiên phát bằng audio element qua /api/interview/tts hoặc VieNeu-TTS (Giọng nữ chuẩn 100%)
-    if (el) {
+      stopListening();
+      stopAllQuestionAudio(el);
+      el.pause();
+      const requestId = ++globalPlayRequestId;
       globalActiveAudio = el;
-      el.src = url;
+
+      if (el.src !== url) {
+        el.src = url;
+      }
       el.currentTime = 0;
+      setIsSpeaking(true);
+
       el.play()
         .then(() => {
           if (requestId !== globalPlayRequestId) {
             el.pause();
             return;
           }
-          // Đảm bảo Web Speech Synthesis bị hủy nếu thẻ audio đang phát thành công
-          if ("speechSynthesis" in window) {
-            try {
-              window.speechSynthesis.cancel();
-            } catch { }
-          }
           setIsSpeaking(true);
         })
         .catch((err) => {
-          // Nếu lệnh play() bị hủy do một lệnh phát mới hoặc do pause() (AbortError), TUYỆT ĐỐI không gọi fallback
           if (requestId !== globalPlayRequestId || (err as { name?: string })?.name === "AbortError") {
             return;
           }
-          console.warn("[TTS] Không phát được qua thẻ audio, chuyển sang Web Speech tiếng Việt:", err);
-          try {
-            el.pause();
-          } catch { }
-          speakViaSpeechSynthesis(qText, requestId);
+          console.warn("[VieNeu-TTS] Trình duyệt chặn tự phát hoặc lỗi phát file audio:", err);
+          setIsSpeaking(false);
+          setHasReadCurrentQuestion(true);
         });
-      return;
-    }
-
-    // 2. Fallback sang Web Speech API nếu không có phần tử audio
-    speakViaSpeechSynthesis(qText, requestId);
-
-    function speakViaSpeechSynthesis(text: string, reqId: number) {
-      if (reqId !== globalPlayRequestId) return;
-      if (!("speechSynthesis" in window)) {
-        setIsSpeaking(false);
-        return;
-      }
-
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "vi-VN";
-      utterance.rate = 0.94;
-      utterance.pitch = 1.05;
-
-      const voices = window.speechSynthesis.getVoices();
-      // Ưu tiên tìm giọng nữ tiếng Việt thực tế trong trình duyệt
-      const vietnameseVoice =
-        voices.find(
-          (v) =>
-            v.lang.toLowerCase().includes("vi") &&
-            (v.name.toLowerCase().includes("hoaimy") ||
-              v.name.toLowerCase().includes("female") ||
-              v.name.toLowerCase().includes("mai") ||
-              v.name.toLowerCase().includes("linh") ||
-              v.name.toLowerCase().includes("natural") ||
-              v.name.toLowerCase().includes("tiếng việt"))
-        ) || voices.find((v) => v.lang.toLowerCase().startsWith("vi"));
-
-      if (vietnameseVoice) {
-        utterance.voice = vietnameseVoice;
-      } else {
-        // Tuyệt đối KHÔNG gán mặc định giọng tiếng Anh (Microsoft David) để tránh nói giọng người nước ngoài
-        console.warn("[TTS] Trình duyệt không có sẵn giọng tiếng Việt Web Speech.");
-        setIsSpeaking(false);
-        return;
-      }
-
-      utterance.onstart = () => {
-        if (reqId !== globalPlayRequestId) {
-          window.speechSynthesis.cancel();
-          return;
-        }
-        setIsSpeaking(true);
-        stopListening();
-      };
-      utterance.onend = () => {
-        if (reqId === globalPlayRequestId) {
-          setIsSpeaking(false);
-        }
-      };
-      utterance.onerror = () => {
-        if (reqId === globalPlayRequestId) {
-          setIsSpeaking(false);
-        }
-      };
-
-      window.speechSynthesis.speak(utterance);
-    }
-  }, [stopListening, stopAllAudio]);
+    },
+    [stopListening]
+  );
 
   const prevTranscriptRef = useRef("");
   const answerDraftRef = useRef(answerDraft);
@@ -477,12 +399,24 @@ export default function InterviewPage() {
     }
   }, [transcript]);
 
-  // Echo Prevention Lock: khi phát câu hỏi ra loa, tắt micro để không thu lại giọng AI
+  // Echo Prevention Lock & Timer Gate:
+  // Khi VieNeu-TTS đang phát câu hỏi ra loa -> tắt micro và giữ đồng hồ tạm dừng.
+  // Khi đọc xong (onEnded) -> mở khóa micro và bắt đầu đếm ngược thời gian trả lời của ứng viên.
   const handleQuestionAudioPlay = () => {
     setIsSpeaking(true);
     if (isListening) stopListening();
   };
-  const handleQuestionAudioStop = () => setIsSpeaking(false);
+  const handleQuestionAudioEnded = () => {
+    setIsSpeaking(false);
+    setHasReadCurrentQuestion(true);
+  };
+  const handleQuestionAudioPause = () => {
+    setIsSpeaking(false);
+  };
+  const handleQuestionAudioError = () => {
+    setIsSpeaking(false);
+    setHasReadCurrentQuestion(true);
+  };
 
   // Auth + nạp dữ liệu câu hỏi (Từ kết quả phân tích CV hoặc Bộ câu hỏi mẫu)
   useEffect(() => {
@@ -601,6 +535,7 @@ export default function InterviewPage() {
         setCurrentIndex((i) => i + 1);
         setAnswerDraft("");
         setTimeLeft(TIME_PER_QUESTION_SEC);
+        setHasReadCurrentQuestion(false);
       }
       return next;
     });
@@ -608,6 +543,7 @@ export default function InterviewPage() {
 
   const handleSubmitAnswer = async () => {
     stopListening();
+    stopAllAudio();
     const timeUsed = TIME_PER_QUESTION_SEC - timeLeft;
     const q = questions[currentIndex];
     const answerText = answerDraftRef.current.trim();
@@ -671,6 +607,7 @@ export default function InterviewPage() {
 
   const handleSkip = () => {
     stopListening();
+    stopAllAudio();
     const timeUsed = TIME_PER_QUESTION_SEC - timeLeft;
     const q = questions[currentIndex];
     const record: AnswerRecord = {
@@ -691,6 +628,7 @@ export default function InterviewPage() {
 
   const handleTimeout = useCallback(() => {
     stopListening();
+    stopAllAudio();
     const q = questions[currentIndex];
     const record: AnswerRecord = {
       question_id: q.id,
@@ -706,12 +644,15 @@ export default function InterviewPage() {
       answered_at: new Date().toISOString(),
     };
     advanceToNext(record);
-  }, [currentIndex, questions, advanceToNext, stopListening]);
+  }, [currentIndex, questions, advanceToNext, stopListening, stopAllAudio]);
 
-  // Đếm ngược 3 phút (180s) / câu — tạm dừng khi đang đánh giá kết quả
+  // Đếm ngược 3 phút (180s) / câu:
+  // CHỈ bắt đầu tính giờ sau khi giọng đọc VieNeu-TTS đã đọc xong câu hỏi (hasReadCurrentQuestion === true)
+  // và tạm dừng hoàn toàn trong lúc giọng đọc đang phát (isSpeaking === true) hoặc đang chấm điểm (isEvaluating === true).
   useEffect(() => {
     if (phase !== "running") return;
     if (isEvaluating) return;
+    if (!hasReadCurrentQuestion || isSpeaking) return;
 
     if (timeLeft <= 0) {
       handleTimeout();
@@ -719,33 +660,43 @@ export default function InterviewPage() {
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, timeLeft, isEvaluating, handleTimeout]);
+  }, [phase, timeLeft, isEvaluating, hasReadCurrentQuestion, isSpeaking, handleTimeout]);
 
-  // Bắt đầu phỏng vấn — tự động phát âm thanh câu hỏi số 1 thông qua useEffect duy nhất
-  function handleStart() {
+  // Bắt đầu phỏng vấn — gửi job sang worker.py (VieNeu-TTS giọng nữ miền Bắc Trúc Ly)
+  // và chờ câu hỏi số 1 sinh xong audio để phát ngay bằng đúng giọng VieNeu-TTS.
+  async function handleStart() {
+    if (isStartingRef.current || phase === "preparing") return;
+    isStartingRef.current = true;
+
+    stopListening();
+    stopAllAudio();
+    resetTranscript();
+    prevTranscriptRef.current = "";
+
     setCurrentIndex(0);
     setAnswerDraft("");
     setTimeLeft(TIME_PER_QUESTION_SEC);
+    setHasReadCurrentQuestion(false);
     setCollected([]);
     setAudioUrls(null);
     setAudioNote("");
     setAudioJobId(null);
     setAudioJobActive(false);
     playedAudioRef.current = new Set();
-    stopListening();
-    stopAllAudio();
-    resetTranscript();
-    prevTranscriptRef.current = "";
 
-    if (questions.length === 0) return;
+    if (questions.length === 0) {
+      isStartingRef.current = false;
+      return;
+    }
 
-    // Chuyển thẳng vào running để bắt đầu ngay tức thì; useEffect bên dưới sẽ tự động đọc câu hỏi số 1 đúng 1 lần
-    setPhase("running");
+    setPhase("preparing");
+    let createdJobId: string | null = null;
+    let shouldPollBackground = false;
+    let gotFirstAudio = false;
 
-    // Kích hoạt ngầm audio job nếu Supabase có cấu hình
     try {
       const supabase = createClient();
-      supabase
+      const { data: job, error: insertError } = await supabase
         .from("interview_audio_jobs")
         .insert({
           analysis_job_id: analysisJobId,
@@ -753,20 +704,62 @@ export default function InterviewPage() {
           questions: questions.map((q) => q.question),
         })
         .select("id")
-        .single()
-        .then(
-          ({ data: job }) => {
-            if (job?.id) {
-              setAudioJobId(job.id);
-              setAudioJobActive(true);
-            }
-          },
-          () => { }
-        );
-    } catch { }
+        .single();
+
+      if (insertError || !job?.id) {
+        throw new Error(insertError?.message || "tạo audio job thất bại");
+      }
+
+      createdJobId = job.id;
+      shouldPollBackground = true;
+
+      // Chờ worker.py (VieNeu-TTS) tổng hợp xong câu số 1 (tối đa 25s)
+      const deadline = Date.now() + 25_000;
+      while (Date.now() < deadline) {
+        const { data: row } = await supabase
+          .from("interview_audio_jobs")
+          .select("status, audio_urls")
+          .eq("id", job.id)
+          .single();
+        const urls = (row?.audio_urls as string[] | null) || null;
+        if (urls && urls.length > 0) {
+          setAudioUrls(urls);
+          gotFirstAudio = true;
+          if (row?.status === "done") shouldPollBackground = false;
+          break;
+        }
+        if (row?.status === "error") {
+          shouldPollBackground = false;
+          setAudioNote("Không tạo được giọng đọc VieNeu-TTS (worker báo lỗi) — tiếp tục phỏng vấn ở chế độ văn bản.");
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 800));
+      }
+
+      if (!gotFirstAudio && shouldPollBackground) {
+        setAudioNote("Worker VieNeu-TTS đang xử lý câu hỏi — giọng đọc sẽ tự phát ngay khi sẵn sàng.");
+      }
+    } catch (e) {
+      shouldPollBackground = false;
+      setAudioNote(
+        "Không kết nối được dịch vụ giọng đọc VieNeu-TTS (" +
+          (e instanceof Error ? e.message : "unknown") +
+          ") — tiếp tục phỏng vấn ở chế độ văn bản."
+      );
+    } finally {
+      if (createdJobId) {
+        setAudioJobId(createdJobId);
+      }
+      setAudioJobActive(shouldPollBackground);
+      if (!gotFirstAudio && !shouldPollBackground) {
+        setHasReadCurrentQuestion(true);
+      }
+      setPhase("running");
+      isStartingRef.current = false;
+    }
   }
 
-  // Poll nền: lấy audio các câu tiếp theo khi worker sinh xong (nếu có worker chạy)
+  // Poll nền: lấy audio các câu tiếp theo từ worker.py (VieNeu-TTS)
   useEffect(() => {
     if (!audioJobId || !audioJobActive) return;
     if (phase !== "running") return;
@@ -788,27 +781,31 @@ export default function InterviewPage() {
           return urls;
         });
       }
-      if (row.status === "done" || row.status === "error") setAudioJobActive(false);
-    }, 2000);
+      if (row.status === "done" || row.status === "error") {
+        setAudioJobActive(false);
+      }
+    }, 1500);
     return () => {
       stopped = true;
       clearInterval(timer);
     };
   }, [audioJobId, audioJobActive, phase]);
 
-  // Tự động phát âm thanh đọc câu hỏi đúng 1 lần duy nhất khi vào câu mới
+  // Tự động phát âm thanh câu hỏi từ VieNeu-TTS đúng 1 lần duy nhất khi vào câu mới (hoặc ngay khi URL câu đó vừa sinh xong)
   useEffect(() => {
     if (phase !== "running" || questions.length === 0) return;
+    const url = audioUrls?.[currentIndex];
+    if (!url) {
+      if (!audioJobActive) {
+        setHasReadCurrentQuestion(true);
+      }
+      return;
+    }
     if (playedAudioRef.current.has(currentIndex)) return;
 
-    const timer = setTimeout(() => {
-      if (playedAudioRef.current.has(currentIndex)) return;
-      playedAudioRef.current.add(currentIndex);
-      playQuestionAudio(currentIndex);
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [phase, currentIndex, questions.length, playQuestionAudio]);
+    playedAudioRef.current.add(currentIndex);
+    playQuestionAudio(currentIndex, url, false);
+  }, [phase, currentIndex, questions.length, audioUrls, audioJobActive, playQuestionAudio]);
 
   if (!checkedAuth) {
     return (
@@ -850,7 +847,7 @@ export default function InterviewPage() {
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-4 text-[12px] text-slate-600 font-medium">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs">
                     <span className="material-symbols-outlined text-[15px] text-[#0037b0]">mic</span>
-                    <span>Giọng nói tiếng Việt tự nhiên</span>
+                    <span>Giọng đọc Nữ miền Bắc (VieNeu-TTS)</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs">
                     <span className="material-symbols-outlined text-[15px] text-[#059669]">bolt</span>
@@ -928,7 +925,7 @@ export default function InterviewPage() {
                         <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#f8fafc] border border-[#f1f5f9]">
                           <span className="material-symbols-outlined text-[18px] text-[#059669] shrink-0 mt-0.5">timer</span>
                           <div>
-                            <strong className="text-[#0b1c30]">Thời gian & Thang điểm:</strong> Mỗi câu có tối đa <strong>3 phút (180s)</strong>. Nộp bài trong phút đầu tiên để đạt điểm tối ưu (100%), từ phút thứ 2 hệ số điểm sẽ giảm dần theo thời gian.
+                            <strong className="text-[#0b1c30]">Thời gian & Thang điểm:</strong> Mỗi câu có tối đa <strong>3 phút (180s)</strong>, <strong>chỉ bắt đầu tính giờ sau khi AI đọc xong câu hỏi</strong>. Nộp bài trong phút đầu tiên để đạt điểm tối ưu (100%).
                           </div>
                         </div>
                         <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#f8fafc] border border-[#f1f5f9]">
@@ -940,7 +937,7 @@ export default function InterviewPage() {
                         <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#f8fafc] border border-[#f1f5f9]">
                           <span className="material-symbols-outlined text-[18px] text-[#0284c7] shrink-0 mt-0.5">volume_up</span>
                           <div>
-                            <strong className="text-[#0b1c30]">Phỏng vấn viên AI (VieNeu-TTS):</strong> Đọc câu hỏi bằng giọng nói tự nhiên. Micro được tự động tạm khóa trong lúc AI đang đọc để chống hú vang.
+                            <strong className="text-[#0b1c30]">Phỏng vấn viên AI (VieNeu-TTS):</strong> Đọc câu hỏi bằng giọng nữ miền Bắc (Trúc Ly). Đồng hồ và micro được tạm khóa trong lúc AI đang đọc.
                           </div>
                         </div>
                       </div>
@@ -972,14 +969,14 @@ export default function InterviewPage() {
                           <span className="material-symbols-outlined text-[22px]">record_voice_over</span>
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[13px] font-bold text-[#0b1c30]">Giọng đọc phỏng vấn:</span>
                             <span className="text-[11px] font-extrabold text-[#0037b0] bg-[#dbeafe] px-2 py-0.5 rounded">
                               {DEFAULT_VOICE_LABEL}
                             </span>
                           </div>
                           <p className="text-[12px] text-[#475569] mt-1.5 leading-relaxed">
-                            Mặc định cố định giọng nữ Hà Nội chuẩn tự nhiên. Hệ thống tự động đọc to từng câu hỏi bằng tiếng Việt ngay khi bắt đầu.
+                            Sử dụng mô hình <strong>VieNeu-TTS</strong> giọng nữ miền Bắc tự nhiên. Thời gian trả lời chỉ bắt đầu đếm sau khi giọng đọc kết thúc.
                           </p>
                         </div>
                       </div>
@@ -1006,7 +1003,7 @@ export default function InterviewPage() {
               <span className="material-symbols-outlined animate-spin text-[#0037b0] text-[40px] mb-4 block">progress_activity</span>
               <p className="text-[#0b1c30] font-bold text-[18px] mb-2">Đang chuẩn bị giọng đọc phỏng vấn viên...</p>
               <p className="text-[13px] text-[#64748b] leading-relaxed">
-                Đang nạp giọng đọc cho câu hỏi đầu tiên (VieNeu-TTS). Quá trình phỏng vấn sẽ bắt đầu sau giây lát.
+                Đang nạp giọng nữ miền Bắc Trúc Ly (VieNeu-TTS) cho câu hỏi đầu tiên. Đồng hồ sẽ chỉ bắt đầu tính giờ sau khi AI đọc xong câu hỏi.
               </p>
             </div>
           ) : phase === "running" ? (
@@ -1031,7 +1028,7 @@ export default function InterviewPage() {
                     {questions[currentIndex]?.question}
                   </p>
 
-                  {/* Thanh nghe lại câu hỏi — tự động đọc to và bấm để nghe lại bất cứ lúc nào */}
+                  {/* Thanh nghe lại câu hỏi — phát duy nhất giọng VieNeu-TTS */}
                   <div className="mb-4 flex flex-wrap items-center gap-2.5">
                     {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                     <audio
@@ -1039,29 +1036,39 @@ export default function InterviewPage() {
                       className="hidden"
                       preload="none"
                       onPlay={handleQuestionAudioPlay}
-                      onEnded={handleQuestionAudioStop}
-                      onPause={handleQuestionAudioStop}
-                      onError={handleQuestionAudioStop}
+                      onEnded={handleQuestionAudioEnded}
+                      onPause={handleQuestionAudioPause}
+                      onError={handleQuestionAudioError}
                     />
-                    <button
-                      type="button"
-                      onClick={() => playQuestionAudio(currentIndex)}
-                      className={`px-3.5 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${isSpeaking
-                        ? "bg-[#0037b0] text-white shadow-sm ring-2 ring-[#0037b0]/20 animate-pulse"
-                        : "bg-[#eff4ff] text-[#0037b0] hover:bg-[#dbeafe] border border-[#bfdbfe]"
-                        }`}
-                      title="Bấm để nghe đọc lại câu hỏi bằng giọng nữ Hà Nội chuẩn"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        {isSpeaking ? "graphic_eq" : "volume_up"}
+                    {audioUrls?.[currentIndex] ? (
+                      <button
+                        type="button"
+                        onClick={() => playQuestionAudio(currentIndex, audioUrls[currentIndex], true)}
+                        className={`px-3.5 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs ${isSpeaking
+                          ? "bg-[#0037b0] text-white shadow-sm ring-2 ring-[#0037b0]/20 animate-pulse"
+                          : "bg-[#eff4ff] text-[#0037b0] hover:bg-[#dbeafe] border border-[#bfdbfe]"
+                          }`}
+                        title="Bấm để nghe đọc lại câu hỏi bằng giọng nữ miền Bắc (VieNeu-TTS)"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {isSpeaking ? "graphic_eq" : "volume_up"}
+                        </span>
+                        <span>{isSpeaking ? "Đang đọc câu hỏi (tạm dừng tính giờ)..." : "Nghe lại câu hỏi"}</span>
+                      </button>
+                    ) : audioJobActive ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold bg-[#eff6ff] text-[#0037b0] border border-[#bfdbfe]">
+                        <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                        <span>Đang tạo giọng đọc VieNeu-TTS cho câu này (chưa tính giờ)...</span>
                       </span>
-                      <span>{isSpeaking ? "Đang đọc câu hỏi..." : "Nghe lại câu hỏi"}</span>
-                    </button>
+                    ) : null}
                     <span className="inline-flex items-center gap-1.5 text-[11px] text-[#1e40af] bg-[#eff6ff] px-2.5 py-1 rounded-lg font-semibold border border-[#bfdbfe]/60">
                       <span className={`w-2 h-2 rounded-full ${isSpeaking ? "bg-[#2563eb] animate-ping" : "bg-[#10b981]"}`}></span>
                       Giọng đọc: {DEFAULT_VOICE_LABEL}
                     </span>
                   </div>
+                  {audioNote && (
+                    <p className="text-[12px] text-[#64748b] mb-3">{audioNote}</p>
+                  )}
 
                   {/* Ô soạn thảo câu trả lời */}
                   <textarea
@@ -1136,7 +1143,7 @@ export default function InterviewPage() {
                         {isSpeaking && (
                           <span className="text-[#0284c7] font-medium flex items-center gap-1">
                             <span className="material-symbols-outlined text-[14px]">volume_up</span>
-                            Đang phát câu hỏi — micro tạm khóa để chống lặp tiếng.
+                            Đang phát câu hỏi — micro &amp; đồng hồ tạm khóa cho tới khi đọc xong.
                           </span>
                         )}
                         {!isSpeaking && isListening && "Web Speech API đang thu âm trực tiếp tiếng Việt. Bạn có thể nói tự nhiên."}
@@ -1208,7 +1215,11 @@ export default function InterviewPage() {
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[12px] font-bold text-[#64748b] uppercase tracking-wider">Thời gian còn lại</span>
                     <span
-                      className={`px-3 py-1 rounded-full text-[14px] font-mono font-bold ${timeLeft <= 10 ? "bg-[#ffdad6] text-[#93000a] animate-pulse" : "bg-[#e5eeff] text-[#0037b0]"
+                      className={`px-3 py-1 rounded-full text-[14px] font-mono font-bold ${timeLeft <= 10
+                        ? "bg-[#ffdad6] text-[#93000a] animate-pulse"
+                        : !hasReadCurrentQuestion || isSpeaking
+                          ? "bg-[#fef3c7] text-[#92400e]"
+                          : "bg-[#e5eeff] text-[#0037b0]"
                         }`}
                     >
                       {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}
@@ -1223,9 +1234,11 @@ export default function InterviewPage() {
                   </div>
 
                   <p className="text-[12px] text-[#64748b] leading-relaxed">
-                    {timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
-                      ? "⚡ Đang trong phút đầu — nộp trong giai đoạn này để được trọn vẹn điểm tối đa (100%)."
-                      : "⏱️ Đã qua 1 phút — điểm số sẽ giảm dần theo thời lượng trả lời."}
+                    {!hasReadCurrentQuestion || isSpeaking
+                      ? "⏸️ Đang chờ AI đọc xong câu hỏi — đồng hồ chỉ bắt đầu tính giờ khi giọng đọc kết thúc."
+                      : timeLeft > TIME_PER_QUESTION_SEC - FULL_SCORE_WINDOW_SEC
+                        ? "⚡ Đang trong phút đầu — nộp trong giai đoạn này để được trọn vẹn điểm tối đa (100%)."
+                        : "⏱️ Đã qua 1 phút — điểm số sẽ giảm dần theo thời lượng trả lời."}
                   </p>
                 </div>
 
