@@ -16,6 +16,11 @@ const MIN_TIME_MULTIPLIER = 0.5; // sàn giảm điểm ở cuối phút thứ 3
 const DEFAULT_VOICE_LABEL = "Trúc Ly — Nữ miền Bắc (VieNeu-TTS)";
 const DEFAULT_VOICE_CODE = "Ly";
 
+// File WAV im lặng siêu ngắn (1 mẫu) dùng để mở khóa (unlock) quyền Autoplay của trình duyệt
+// ngay tại thời điểm người dùng bấm nút "Bắt đầu phỏng vấn ngay". Nhờ đó khi worker.py sinh xong
+// file .wav câu hỏi sau vài giây, thẻ <audio> vẫn được phép tự động phát 100%.
+const SILENT_WAV_DATA_URI =
+  "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
 
 type ApiQuestion = {
   id: string;
@@ -262,6 +267,7 @@ export default function InterviewPage() {
   const [audioUrls, setAudioUrls] = useState<string[] | null>(null);
   const [audioNote, setAudioNote] = useState("");
   const questionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isUnlockingAudioRef = useRef(false);
   const [audioJobId, setAudioJobId] = useState<string | null>(null);
   const [audioJobActive, setAudioJobActive] = useState(false);
   const playedAudioRef = useRef<Set<number>>(new Set());
@@ -301,6 +307,7 @@ export default function InterviewPage() {
 
   // Dừng mọi âm thanh câu hỏi đang phát
   const stopAllAudio = useCallback(() => {
+    isUnlockingAudioRef.current = false;
     stopAllQuestionAudio();
     if (questionAudioRef.current) {
       try {
@@ -325,16 +332,20 @@ export default function InterviewPage() {
         return;
       }
 
+      isUnlockingAudioRef.current = false;
+      el.muted = false;
       stopListening();
       stopAllQuestionAudio(el);
-      el.pause();
       const requestId = ++globalPlayRequestId;
       globalActiveAudio = el;
 
       if (el.src !== url) {
         el.src = url;
+      } else {
+        try {
+          el.currentTime = 0;
+        } catch { }
       }
-      el.currentTime = 0;
       setIsSpeaking(true);
 
       el.play()
@@ -403,17 +414,21 @@ export default function InterviewPage() {
   // Khi VieNeu-TTS đang phát câu hỏi ra loa -> tắt micro và giữ đồng hồ tạm dừng.
   // Khi đọc xong (onEnded) -> mở khóa micro và bắt đầu đếm ngược thời gian trả lời của ứng viên.
   const handleQuestionAudioPlay = () => {
+    if (isUnlockingAudioRef.current) return;
     setIsSpeaking(true);
     if (isListening) stopListening();
   };
   const handleQuestionAudioEnded = () => {
+    if (isUnlockingAudioRef.current) return;
     setIsSpeaking(false);
     setHasReadCurrentQuestion(true);
   };
   const handleQuestionAudioPause = () => {
+    if (isUnlockingAudioRef.current) return;
     setIsSpeaking(false);
   };
   const handleQuestionAudioError = () => {
+    if (isUnlockingAudioRef.current) return;
     setIsSpeaking(false);
     setHasReadCurrentQuestion(true);
   };
@@ -662,8 +677,8 @@ export default function InterviewPage() {
     return () => clearTimeout(t);
   }, [phase, timeLeft, isEvaluating, hasReadCurrentQuestion, isSpeaking, handleTimeout]);
 
-  // Bắt đầu phỏng vấn — gửi job sang worker.py (VieNeu-TTS giọng nữ miền Bắc Trúc Ly)
-  // và chờ câu hỏi số 1 sinh xong audio để phát ngay bằng đúng giọng VieNeu-TTS.
+  // Bắt đầu phỏng vấn — mở khóa thẻ <audio> ngay trên click của người dùng,
+  // đóng các job TTS cũ bị kẹt và gửi job mới sang worker.py (VieNeu-TTS giọng nữ miền Bắc Trúc Ly).
   async function handleStart() {
     if (isStartingRef.current || phase === "preparing") return;
     isStartingRef.current = true;
@@ -672,6 +687,37 @@ export default function InterviewPage() {
     stopAllAudio();
     resetTranscript();
     prevTranscriptRef.current = "";
+
+    // Mở khóa (unlock) phần tử <audio> ngay lập tức trong sự kiện click của user
+    // để trình duyệt cho phép tự động phát (autoplay) sau khi chờ worker.py sinh xong WAV.
+    const el = questionAudioRef.current;
+    if (el) {
+      try {
+        isUnlockingAudioRef.current = true;
+        el.muted = true;
+        el.src = SILENT_WAV_DATA_URI;
+        const p = el.play();
+        if (p !== undefined) {
+          p.then(() => {
+            if (isUnlockingAudioRef.current) {
+              el.pause();
+              el.currentTime = 0;
+            }
+            el.muted = false;
+            isUnlockingAudioRef.current = false;
+          }).catch(() => {
+            el.muted = false;
+            isUnlockingAudioRef.current = false;
+          });
+        } else {
+          el.muted = false;
+          isUnlockingAudioRef.current = false;
+        }
+      } catch {
+        el.muted = false;
+        isUnlockingAudioRef.current = false;
+      }
+    }
 
     setCurrentIndex(0);
     setAnswerDraft("");
@@ -696,6 +742,13 @@ export default function InterviewPage() {
 
     try {
       const supabase = createClient();
+
+      // Đóng các job TTS cũ đang treo (nếu có) để worker.py tập trung sinh ngay câu số 1 của phiên mới
+      await supabase
+        .from("interview_audio_jobs")
+        .update({ status: "done" })
+        .in("status", ["pending", "processing"]);
+
       const { data: job, error: insertError } = await supabase
         .from("interview_audio_jobs")
         .insert({
@@ -712,9 +765,12 @@ export default function InterviewPage() {
 
       createdJobId = job.id;
       shouldPollBackground = true;
+      setAudioJobId(job.id);
+      setAudioJobActive(true);
 
-      // Chờ worker.py (VieNeu-TTS) tổng hợp xong câu số 1 (tối đa 25s)
-      const deadline = Date.now() + 25_000;
+      // Chờ worker.py (VieNeu-TTS) tổng hợp xong câu số 1 (tối đa 12s ở màn hình chuẩn bị;
+      // nếu lâu hơn sẽ vào phòng thi và tự phát ngay khi poll nền nhận được file WAV)
+      const deadline = Date.now() + 12_000;
       while (Date.now() < deadline) {
         const { data: row } = await supabase
           .from("interview_audio_jobs")
@@ -725,22 +781,23 @@ export default function InterviewPage() {
         if (urls && urls.length > 0) {
           setAudioUrls(urls);
           gotFirstAudio = true;
-          if (row?.status === "done") shouldPollBackground = false;
+          if (row?.status === "done") {
+            shouldPollBackground = false;
+            setAudioJobActive(false);
+          }
           break;
         }
         if (row?.status === "error") {
           shouldPollBackground = false;
+          setAudioJobActive(false);
           setAudioNote("Không tạo được giọng đọc VieNeu-TTS (worker báo lỗi) — tiếp tục phỏng vấn ở chế độ văn bản.");
           break;
         }
-        await new Promise((r) => setTimeout(r, 800));
-      }
-
-      if (!gotFirstAudio && shouldPollBackground) {
-        setAudioNote("Worker VieNeu-TTS đang xử lý câu hỏi — giọng đọc sẽ tự phát ngay khi sẵn sàng.");
+        await new Promise((r) => setTimeout(r, 700));
       }
     } catch (e) {
       shouldPollBackground = false;
+      setAudioJobActive(false);
       setAudioNote(
         "Không kết nối được dịch vụ giọng đọc VieNeu-TTS (" +
           (e instanceof Error ? e.message : "unknown") +
@@ -759,7 +816,7 @@ export default function InterviewPage() {
     }
   }
 
-  // Poll nền: lấy audio các câu tiếp theo từ worker.py (VieNeu-TTS)
+  // Poll nền: lấy audio các câu tiếp theo (hoặc câu 1 nếu sinh >12s) từ worker.py (VieNeu-TTS)
   useEffect(() => {
     if (!audioJobId || !audioJobActive) return;
     if (phase !== "running") return;
@@ -784,7 +841,7 @@ export default function InterviewPage() {
       if (row.status === "done" || row.status === "error") {
         setAudioJobActive(false);
       }
-    }, 1500);
+    }, 1200);
     return () => {
       stopped = true;
       clearInterval(timer);
@@ -819,6 +876,16 @@ export default function InterviewPage() {
     <div className="bg-[#f8f9fc] min-h-screen flex flex-col selection:bg-[#c026d3]/20 selection:text-[#0037b0]">
       <Header />
       <main className="flex-1 pt-16 flex flex-col">
+        {/* Phần tử <audio> luôn được gắn sẵn trong DOM từ lúc mở trang để mở khóa Autoplay ngay khi bấm Bắt đầu */}
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <audio
+          ref={questionAudioRef}
+          className="hidden"
+          onPlay={handleQuestionAudioPlay}
+          onEnded={handleQuestionAudioEnded}
+          onPause={handleQuestionAudioPause}
+          onError={handleQuestionAudioError}
+        />
         <section className="w-full px-4 sm:px-8 lg:px-12 py-8 flex-1">
           {phase === "intro" ? (
             <div className="space-y-6">
@@ -1030,16 +1097,6 @@ export default function InterviewPage() {
 
                   {/* Thanh nghe lại câu hỏi — phát duy nhất giọng VieNeu-TTS */}
                   <div className="mb-4 flex flex-wrap items-center gap-2.5">
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <audio
-                      ref={questionAudioRef}
-                      className="hidden"
-                      preload="none"
-                      onPlay={handleQuestionAudioPlay}
-                      onEnded={handleQuestionAudioEnded}
-                      onPause={handleQuestionAudioPause}
-                      onError={handleQuestionAudioError}
-                    />
                     {audioUrls?.[currentIndex] ? (
                       <button
                         type="button"
