@@ -1,0 +1,66 @@
+%% ====================================================================
+%% SƠ ĐỒ 1: TỔNG THỂ HỆ THỐNG CAREERFIT 2 SIDE (KHUYÊN DÙNG IN RA GIẤY A4)
+%% ĐÃ CẬP NHẬT TƯƠNG PHẢN CAO, CHỮ ĐẬM SẮC NÉT
+%% ====================================================================
+
+flowchart TB
+    subgraph PLATFORM["NỀN TẢNG CAREERFIT (AI RECRUITMENT ECOSYSTEM)"]
+        direction TB
+
+        %% SIDE 1: PHÍA ỨNG VIÊN
+        subgraph SIDE_CANDIDATE["👤 PHÂN HỆ ỨNG VIÊN (CANDIDATE SIDE)"]
+            direction TB
+            C1["<b>1. Đánh giá & Chấm điểm CV (/score)</b><br/>• Kéo thả PDF/DOCX (hỗ trợ 2 cột)<br/>• Dán JD hoặc chọn 3 Presets mẫu"]
+            C2["<b>2. Báo cáo Chi tiết & ATS Radar (/score/result)</b><br/>• Điểm số 0-100% & Radar 5 chiều<br/>• Bảng đối soát từng dòng JD (Evidence)<br/>• Bóc tách Skill Gap & Gợi ý sửa CV<br/>• Xuất Báo cáo file PDF chuẩn tiếng Việt"]
+            C3["<b>3. Luyện Phỏng vấn Giả lập Voice AI (/interview)</b><br/>• Tự động sinh câu hỏi theo Skill Gap<br/>• AI phát âm tiếng Việt (7 chất giọng)<br/>• Trả lời micro 2 chiều & chấm điểm phản xạ"]
+            C4["<b>4. Khám phá Chuẩn Kỹ năng (/explore)</b><br/>• Cây kỹ năng 17 nhóm ngành & 73 vị trí<br/>• Checklist tự kiểm tra độ sẵn sàng"]
+            C5["<b>5. Dashboard Cá nhân (/dashboard)</b><br/>• Biểu đồ xu hướng tiến bộ điểm số<br/>• Lưu trữ lịch sử các lần nộp CV"]
+
+            C1 --> C2 --> C3
+            C4 -.-> C1
+            C2 -.-> C5
+        end
+
+        %% SIDE 2: PHÍA NHÀ TUYỂN DỤNG
+        subgraph SIDE_HR["🏢 PHÂN HỆ NHÀ TUYỂN DỤNG (RECRUITER / HR SIDE)"]
+            direction TB
+            H1["<b>1. Sàng lọc CV Hàng loạt - Batch Mode (/batch)</b><br/>• Tải lên cùng lúc tối đa 20 file CV<br/>• Nhập 1 bản JD tiêu chuẩn đợt tuyển"]
+            H2["<b>2. Bảng Xếp hạng Ứng viên (/batch/[id])</b><br/>• Xếp hạng tự động từ cao xuống thấp<br/>• Phân loại nhãn: Cao (>=70), Khá, Cần cân nhắc"]
+            H3["<b>3. Ma trận Kỹ năng Đa chiều (Skill Matrix)</b><br/>• Lưới đối chiếu: Ứng viên ↔ Yêu cầu JD<br/>• Đánh dấu trực quan: Có (✓) hoặc Thiếu (✕)<br/>• Ra quyết định mời phỏng vấn trong 30s"]
+
+            H1 --> H2 --> H3
+        end
+
+        %% LÕI AI ENGINE & DATABASE
+        subgraph CORE_AI["⚙️ LÕI AI WORKER & SUPABASE BACKEND"]
+            direction LR
+            PARSER["<b>CvParserAdapter</b><br/>Hexagonal + EasyOCR"]
+            M1["<b>Tầng 1: PhoBERT-NER</b><br/>Trích xuất SKILL, ORG, EDU"]
+            M2["<b>Tầng 2: Embedding 768d</b><br/>Cosine Similarity"]
+            M3["<b>Tầng 3: XGBoost + SHAP</b><br/>Scorer & Feature Weight"]
+            VOICE["<b>Voice AI Engine</b><br/>VieNeu-TTS + PhoWhisper ASR"]
+            DB[("<b>Supabase DB</b><br/>PostgreSQL 11 bảng + Storage")]
+
+            PARSER --> M1 --> M2 --> M3
+        end
+
+    end
+
+    %% KẾT NỐI TƯƠNG TÁC GIỮA CÁC BÊN
+    C1 ==> PARSER
+    M3 ==> C2
+    C3 <==> VOICE
+    H1 ==> PARSER
+    M3 ==> H2
+    CORE_AI <==> DB
+
+    %% STYLING TƯƠNG PHẢN CAO
+    classDef candidateStyle fill:#ffffff,stroke:#2563eb,stroke-width:2.5px,color:#0f172a;
+    classDef hrStyle fill:#ffffff,stroke:#7c3aed,stroke-width:2.5px,color:#0f172a;
+    classDef aiStyle fill:#ffffff,stroke:#059669,stroke-width:2.5px,color:#0f172a;
+    classDef dbStyle fill:#ffffff,stroke:#ea580c,stroke-width:2.5px,color:#0f172a;
+
+    class C1,C2,C3,C4,C5 candidateStyle;
+    class H1,H2,H3 hrStyle;
+    class PARSER,M1,M2,M3,VOICE aiStyle;
+    class DB dbStyle;

@@ -1,0 +1,54 @@
+%%{init: {'theme': 'dark', 'flowchart': {'htmlLabels': true, 'curve': 'basis', 'nodeSpacing': 25, 'rankSpacing': 35}}}%%
+%% ====================================================================
+%% SƠ ĐỒ 2 (DARK MODE): LUỒNG DỮ LIỆU ĐỐI SOÁT 2 CHIỀU (KHÔNG MẤT CHỮ)
+%% ====================================================================
+
+flowchart LR
+    %% INPUT
+    subgraph INPUT ["ĐẦU VÀO DỮ LIỆU &nbsp;&nbsp;&nbsp;&nbsp;"]
+        CV_USER["<b>Ứng viên:</b><br/>1 CV + 1 JD mục tiêu"]
+        CV_BATCH["<b>Nhà tuyển dụng:</b><br/>Lô 20 CV + 1 JD chuẩn đợt tuyển"]
+    end
+
+    %% AI PIPELINE
+    subgraph ENGINE ["PIPELINE AI BẤT ĐỒNG BỘ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+        P1["<b>1. Bóc tách văn bản</b><br/>PDF 2 cột, DOCX, EasyOCR"]
+        P2["<b>2. PhoBERT-NER</b><br/>Trích xuất kỹ năng, học vấn"]
+        P3["<b>3. PhoBERT Embedding</b><br/>So khớp ngữ nghĩa 768 chiều"]
+        P4["<b>4. XGBoost & SHAP</b><br/>Chấm điểm 0-100% & Trọng số"]
+        
+        P1 --> P2 --> P3 --> P4
+    end
+
+    %% OUTPUT CANDIDATE
+    subgraph OUT_USER ["KẾT QUẢ CHO ỨNG VIÊN &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+        R1["<b>Điểm ATS & Radar 5 Chiều</b><br/>Phân tích năng lực tổng thể"]
+        R2["<b>Bảng Đối Soát Từng Dòng</b><br/>Trích xuất dẫn chứng (Evidence)"]
+        R3["<b>Luyện Phỏng Vấn Voice AI</b><br/>Hỏi - Đáp bám theo Skill Gap"]
+        R4["<b>Xuất Báo Cáo PDF</b><br/>Bản chuẩn tiếng Việt in ấn"]
+    end
+
+    %% OUTPUT HR
+    subgraph OUT_HR ["KẾT QUẢ CHO NHÀ TUYỂN DỤNG &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+        H1["<b>Xếp Hạng Ứng Viên</b><br/>Phân loại Cao / Khá / Cân nhắc"]
+        H2["<b>Ma Trận Kỹ Năng</b><br/>Lưới đối chiếu Skill Matrix"]
+        H3["<b>Sàng Lọc 30 Giây</b><br/>Chốt danh sách phỏng vấn nhanh"]
+    end
+
+    %% LIÊN KẾT
+    CV_USER ==> P1
+    CV_BATCH ==> P1
+
+    P4 ==> OUT_USER
+    P4 ==> OUT_HR
+
+    %% STYLING DARK MODE: Nền hộp sẫm công nghệ, Viền phát sáng Neon, Chữ trắng tinh
+    classDef inStyle fill:#1e293b,stroke:#94a3b8,stroke-width:2.5px,color:#ffffff;
+    classDef engineStyle fill:#064e3b,stroke:#34d399,stroke-width:2.5px,color:#ffffff;
+    classDef userStyle fill:#172554,stroke:#60a5fa,stroke-width:2.5px,color:#ffffff;
+    classDef hrStyle fill:#3b0764,stroke:#c084fc,stroke-width:2.5px,color:#ffffff;
+
+    class CV_USER,CV_BATCH inStyle;
+    class P1,P2,P3,P4 engineStyle;
+    class R1,R2,R3,R4 userStyle;
+    class H1,H2,H3 hrStyle;

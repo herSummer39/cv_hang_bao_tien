@@ -70,12 +70,29 @@ export default function BatchResultPage() {
 
   useEffect(() => {
     const first = setTimeout(poll, 0);
-    const t = setInterval(poll, 4000);
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`realtime_batch_${batchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "analysis_jobs",
+          filter: `batch_id=eq.${batchId}`,
+        },
+        () => {
+          poll();
+        }
+      )
+      .subscribe();
+    const t = setInterval(poll, 1200);
     return () => {
       clearTimeout(first);
       clearInterval(t);
+      supabase.removeChannel(channel);
     };
-  }, [poll]);
+  }, [poll, batchId]);
 
   const total = jobs.length;
   const finishedCount = jobs.filter((j) => j.status === "done" || j.status === "error").length;

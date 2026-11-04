@@ -50,21 +50,26 @@ export default function ProcessingPage() {
   const [jobTitle, setJobTitle] = useState("");
 
   useEffect(() => {
-    // Animation log tuần tự
+    // Animation log chuyển đổi nhanh hơn và mượt mà hơn (mỗi 1.6s)
     const logTimer = setInterval(() => {
       setLogIndex((prev) => {
         const next = (prev + 1) % LOG_MESSAGES.length;
         setCurrentLog(LOG_MESSAGES[next]);
         return next;
       });
-    }, 2500);
+    }, 1600);
 
-    // Animate progress chậm (tối đa 85% trước khi có kết quả)
+    // Tiến trình chuyển động mượt mà, nhanh ở các bước đầu (lên ~82% trong 3-4s)
     const progressTimer = setInterval(() => {
-      setProgress((p) => Math.min(p + 0.3, 85));
-    }, 150);
+      setProgress((p) => {
+        if (p < 40) return p + 2.5; // Giai đoạn bóc tách văn bản: chạy nhanh
+        if (p < 75) return p + 1.2; // Giai đoạn PhoBERT-NER & Embedding
+        if (p < 88) return p + 0.4; // Giai đoạn XGBoost & Chấm điểm
+        return Math.min(p + 0.1, 92);
+      });
+    }, 120);
 
-    // Poll Supabase chờ worker xử lý xong
+    // Poll Supabase & Realtime chờ worker xử lý xong (tối ưu độ trễ siêu tốc)
     async function pollJob() {
       let jobId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("job_id") : null;
       if (!jobId) {
@@ -82,15 +87,15 @@ export default function ProcessingPage() {
 
       const supabase = createClient();
       let attempts = 0;
-      const maxAttempts = 120; // 10 phút (120 × 5s)
+      const maxAttempts = 180;
 
-      const poll = setInterval(async () => {
+      // Hàm kiểm tra trạng thái
+      const checkStatus = async () => {
         attempts++;
         if (attempts > maxAttempts) {
-          clearInterval(poll);
           setError("Hết thời gian chờ phản hồi. AI Worker có thể đang bận hoặc chưa khởi chạy.");
           clearInterval(progressTimer);
-          return;
+          return true;
         }
 
         const { data, error: dbErr } = await supabase
@@ -99,7 +104,7 @@ export default function ProcessingPage() {
           .eq("id", jobId)
           .single();
 
-        if (dbErr) return;
+        if (dbErr) return false;
 
         if (data) {
           if (data.cv_filename) setCvFilename(data.cv_filename);
@@ -109,20 +114,68 @@ export default function ProcessingPage() {
         }
 
         if (data?.status === "done" && data.result) {
-          clearInterval(poll);
           clearInterval(progressTimer);
           sessionStorage.setItem("cf_result", JSON.stringify(data.result));
           setProgress(100);
-          setTimeout(() => router.push("/score/result"), 800);
+          setTimeout(() => router.push("/score/result"), 400);
+          return true;
         } else if (data?.status === "error") {
-          clearInterval(poll);
           clearInterval(progressTimer);
           setError("AI Worker báo lỗi: " + (data.error_msg || "Lỗi không xác định"));
           setProgress(100);
+          return true;
         }
-      }, 5000);
+        return false;
+      };
 
-      return () => clearInterval(poll);
+      // 1. Kiểm tra ngay lập tức tại thời điểm t=0
+      checkStatus();
+
+      // 2. Kênh Realtime lắng nghe trực tiếp từ Supabase: 0ms trễ khi Worker update
+      const channel = supabase
+        .channel(`realtime_job_${jobId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "analysis_jobs",
+            filter: `id=eq.${jobId}`,
+          },
+          (payload) => {
+            const updated = payload.new as {
+              status?: string;
+              result?: unknown;
+              error_msg?: string;
+            };
+            if (updated?.status === "done" && updated?.result) {
+              clearInterval(poll);
+              clearInterval(progressTimer);
+              sessionStorage.setItem("cf_result", JSON.stringify(updated.result));
+              setProgress(100);
+              setTimeout(() => router.push("/score/result"), 400);
+            } else if (updated?.status === "error") {
+              clearInterval(poll);
+              clearInterval(progressTimer);
+              setError("AI Worker báo lỗi: " + (updated.error_msg || "Lỗi không xác định"));
+              setProgress(100);
+            }
+          }
+        )
+        .subscribe();
+
+      // 3. Fallback polling mỗi 1.2 giây (thay vì 5.0 giây như trước)
+      const poll = setInterval(async () => {
+        const isFinished = await checkStatus();
+        if (isFinished) {
+          clearInterval(poll);
+        }
+      }, 1200);
+
+      return () => {
+        clearInterval(poll);
+        supabase.removeChannel(channel);
+      };
     }
 
     pollJob();

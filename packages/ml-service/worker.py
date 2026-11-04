@@ -53,7 +53,7 @@ log = logging.getLogger("worker")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")   # dùng anon key (RLS đã mở)
-POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "5"))  # giây
+POLL_INTERVAL = float(os.environ.get("POLL_INTERVAL", "1.0"))  # giây (giảm độ trễ)
 
 BASE_DIR     = Path(__file__).parent
 M1_PATH      = BASE_DIR / "models" / "m1_ner" / "final"
@@ -999,7 +999,7 @@ def analyze(cv_text: str, jd_text: str, job_title: str,
 
 # Poll nhanh khi rảnh — job giọng nói (TTS/ASR) cần phản hồi gần như tức thì
 # vì người dùng đang chờ trực tiếp trong lúc phỏng vấn.
-IDLE_SLEEP = float(os.environ.get("IDLE_SLEEP", "1.5"))
+IDLE_SLEEP = float(os.environ.get("IDLE_SLEEP", "0.8"))
 
 
 def _process_one_asr_job(supabase) -> bool:
