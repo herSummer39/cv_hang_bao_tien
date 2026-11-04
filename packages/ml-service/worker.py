@@ -1047,20 +1047,29 @@ def _process_one_asr_job(supabase) -> bool:
 
 
 def _process_one_tts_step(supabase) -> bool:
-    """Sinh audio cho ĐÚNG 1 câu hỏi tiếp theo của job TTS cũ nhất chưa xong,
+    """Sinh audio cho ĐÚNG 1 câu hỏi tiếp theo của job TTS mới nhất chưa xong,
     cập nhật audio_urls ngay (FE thấy từng câu một). Trả về True nếu có việc."""
     resp = (
         supabase.table("interview_audio_jobs")
         .select("id, voice, questions, audio_urls, status")
         .in_("status", ["pending", "processing"])
-        .order("created_at", desc=False)
-        .limit(1)
+        .order("created_at", desc=True)
+        .limit(5)
         .execute()
     )
     jobs = resp.data or []
     if not jobs:
         return False
+
+    # Ưu tiên phiên phỏng vấn mới nhất đang mở; đóng các job cũ bị bỏ dở để tránh
+    # chạy chồng chéo hoặc làm trễ câu đầu tiên của phiên mới.
     job = jobs[0]
+    for stale_job in jobs[1:]:
+        try:
+            supabase.table("interview_audio_jobs").update({"status": "done"}).eq("id", stale_job["id"]).execute()
+        except Exception:
+            pass
+
     job_id = job["id"]
     try:
         questions = job.get("questions") or []
@@ -1069,6 +1078,9 @@ def _process_one_tts_step(supabase) -> bool:
         if idx >= len(questions):
             supabase.table("interview_audio_jobs").update({"status": "done"}).eq("id", job_id).execute()
             return True
+
+        if job.get("status") == "pending":
+            supabase.table("interview_audio_jobs").update({"status": "processing"}).eq("id", job_id).execute()
 
         voice = job.get("voice") or interview_tts.DEFAULT_VOICE_CODE
         t0 = time.time()
