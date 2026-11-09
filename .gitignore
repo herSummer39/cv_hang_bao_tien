@@ -57,3 +57,13 @@ data/gold/
 
 # Supabase local
 .supabase/
+
+# Personal Documents & Local PDFs (Không đẩy lên Git)
+*.pdf
+*.docx
+*.mmd
+tailieu_baocao_*.md
+Đề tài định hướng _Ngọc Hằng.pdf
+bao_caotuan.pdf
+CV.pdf
+

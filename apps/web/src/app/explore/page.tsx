@@ -183,9 +183,9 @@ export default function ExplorePage() {
               matchedSkills.length > 0
                 ? matchedSkills
                 : [
-                    { id: `sk_${ind.id}_1`, name: "Kỹ năng chuyên môn", type: "hard" as const },
-                    { id: `sk_${ind.id}_2`, name: "Giao tiếp chuyên nghiệp", type: "soft" as const },
-                  ],
+                  { id: `sk_${ind.id}_1`, name: "Kỹ năng chuyên môn", type: "hard" as const },
+                  { id: `sk_${ind.id}_2`, name: "Giao tiếp chuyên nghiệp", type: "soft" as const },
+                ],
           };
         });
 
@@ -355,27 +355,24 @@ export default function ExplorePage() {
                         key={ind.id}
                         type="button"
                         onClick={() => setActiveIndId(ind.id)}
-                        className={`w-full text-left p-3.5 transition-all flex items-center gap-3 group cursor-pointer ${
-                          isSelected
+                        className={`w-full text-left p-3.5 transition-all flex items-center gap-3 group cursor-pointer ${isSelected
                             ? "bg-[#eff4ff] border-l-4 border-l-[#0037b0] shadow-inner"
                             : "bg-white hover:bg-slate-50 border-l-4 border-l-transparent"
-                        }`}
+                          }`}
                       >
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform ${
-                            isSelected
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform ${isSelected
                               ? "bg-[#0037b0] text-white shadow-xs scale-105"
                               : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"
-                          }`}
+                            }`}
                         >
                           <span className="material-symbols-outlined text-[20px]">{ind.icon}</span>
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <h2
-                            className={`text-[13.5px] font-bold truncate ${
-                              isSelected ? "text-[#0037b0]" : "text-[#0b1c30] group-hover:text-slate-900"
-                            }`}
+                            className={`text-[13.5px] font-bold truncate ${isSelected ? "text-[#0037b0]" : "text-[#0b1c30] group-hover:text-slate-900"
+                              }`}
                           >
                             {ind.name}
                           </h2>
@@ -383,11 +380,10 @@ export default function ExplorePage() {
                         </div>
 
                         <span
-                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                            isSelected
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${isSelected
                               ? "bg-blue-200/70 text-[#0037b0]"
                               : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
-                          }`}
+                            }`}
                         >
                           {ind.skills.length}
                         </span>
@@ -466,8 +462,8 @@ export default function ExplorePage() {
                     {matchPercentage === 100
                       ? "🎉 Xuất sắc! Bạn đã sở hữu đầy đủ từ khóa vàng của ngành này. Tải CV lên để AI kiểm tra cách bạn trình bày!"
                       : matchPercentage >= 50
-                      ? "👍 Rất tiềm năng! Bạn đã đáp ứng phần lớn yêu cầu. Hãy xem kỹ các từ khóa còn thiếu để bổ sung vào CV."
-                      : "💡 Nhấp vào các thẻ kỹ năng bên dưới để đánh dấu những gì bạn đã học hoặc từng làm thực tế."}
+                        ? "👍 Rất tiềm năng! Bạn đã đáp ứng phần lớn yêu cầu. Hãy xem kỹ các từ khóa còn thiếu để bổ sung vào CV."
+                        : "💡 Nhấp vào các thẻ kỹ năng bên dưới để đánh dấu những gì bạn đã học hoặc từng làm thực tế."}
                   </p>
                 </div>
 
@@ -495,18 +491,16 @@ export default function ExplorePage() {
                             key={skill.id}
                             type="button"
                             onClick={() => toggleSkill(skill.id)}
-                            className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer select-none group ${
-                              isChecked
+                            className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer select-none group ${isChecked
                                 ? "bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-2xs ring-1 ring-emerald-300"
                                 : "bg-white hover:bg-slate-50 border-slate-200 text-[#0b1c30]"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`material-symbols-outlined text-[19px] shrink-0 transition-colors mt-0.5 ${
-                                isChecked
+                              className={`material-symbols-outlined text-[19px] shrink-0 transition-colors mt-0.5 ${isChecked
                                   ? "text-[#059669]"
                                   : "text-slate-300 group-hover:text-slate-400"
-                              }`}
+                                }`}
                             >
                               {isChecked ? "check_box" : "check_box_outline_blank"}
                             </span>
@@ -550,18 +544,16 @@ export default function ExplorePage() {
                             key={skill.id}
                             type="button"
                             onClick={() => toggleSkill(skill.id)}
-                            className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer select-none group ${
-                              isChecked
+                            className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer select-none group ${isChecked
                                 ? "bg-blue-50/80 border-blue-300 text-blue-950 shadow-2xs ring-1 ring-blue-300"
                                 : "bg-white hover:bg-slate-50 border-slate-200 text-[#0b1c30]"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`material-symbols-outlined text-[19px] shrink-0 transition-colors mt-0.5 ${
-                                isChecked
+                              className={`material-symbols-outlined text-[19px] shrink-0 transition-colors mt-0.5 ${isChecked
                                   ? "text-[#0037b0]"
                                   : "text-slate-300 group-hover:text-slate-400"
-                              }`}
+                                }`}
                             >
                               {isChecked ? "check_box" : "check_box_outline_blank"}
                             </span>

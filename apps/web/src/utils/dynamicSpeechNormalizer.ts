@@ -318,6 +318,65 @@ function scoreMatch(windowSkeleton: string, e: VocabEntry, n: number): number {
   return skeletonSimilarity(windowSkeleton, e.skeleton);
 }
 
+// Bảng ánh xạ xử lý triệt để các trường hợp Google Speech-to-Text (vi-VN) nghe nhầm thuật ngữ IT
+const COMMON_TECH_SPEECH_FIXES: Array<[RegExp, string]> = [
+  // React DevTools / Profiler
+  [/\breact\s+tools\s+profiler\b/gi, "React DevTools Profiler"],
+  [/\breact\s+dev\s*tools\b/gi, "React DevTools"],
+  [/\breact\s+tools\b/gi, "React DevTools"],
+  [/\bprofiler\b/gi, "Profiler"],
+
+  // React.memo / useCallback / useMemo
+  [/\bread\s+memo\b/gi, "React.memo"],
+  [/\breact\s+memo\b/gi, "React.memo"],
+  [/\breact\.memo\b/gi, "React.memo"],
+  [/\buse\s+call\s*back\b/gi, "useCallback"],
+  [/\buse\s*call\s*back\b/gi, "useCallback"],
+  [/\busamer\b/gi, "useMemo"],
+  [/\buse\s+me\s*mo\b/gi, "useMemo"],
+  [/\buser?\s+memo\b/gi, "useMemo"],
+  [/\byou\s+memo\b/gi, "useMemo"],
+
+  // Core Web Vitals (LCP, INP, CLS)
+  [/\bcore\s+web\s+vitals?\b/gi, "Core Web Vitals"],
+  [/\bweb\s+vitals?\b/gi, "Web Vitals"],
+  [/\bl\s*c\s*p\b/gi, "LCP"],
+  [/\bi\s*n\s*p\b/gi, "INP"],
+  [/\bc\s*l\s*s\b/gi, "CLS"],
+  [/\blazy\s+loading?\b/gi, "Lazy loading"],
+  [/\blaze\s+loading?\b/gi, "Lazy loading"],
+  [/\bcode\s*splitting?\b/gi, "Code-splitting"],
+  [/\bc\s*d\s*n\b/gi, "CDN"],
+  [/\bcaching\b/gi, "caching"],
+  [/\bdynamic\s+import\b/gi, "dynamic import"],
+
+  // Component / State / Virtualize
+  [/\bcom\s*po\s*nent\b/gi, "component"],
+  [/\bảo\s+hóa\s+danh\s+sách\b/gi, "ảo hóa danh sách (virtualize)"],
+  [/\bảo\s+hóa\b/gi, "ảo hóa (virtualize)"],
+  [/\bvirtualize\b/gi, "virtualize"],
+
+  // PM / Technical Debt / MVP / Refactor
+  [/\btechnical\s+debt\b/gi, "technical debt"],
+  [/\bnợ\s+kỹ\s+thuật\b/gi, "nợ kỹ thuật (technical debt)"],
+  [/\bproduct\s+manager\b/gi, "Product Manager"],
+  [/\bp\s*m\b/gi, "PM"],
+  [/\bm\s*v\s*p\b/gi, "MVP"],
+  [/\brefactor\b/gi, "refactor"],
+  [/\brice\b/gi, "RICE"],
+  [/\bmoscow\b/gi, "MoSCoW"],
+  [/\broi\b/gi, "ROI"],
+  [/\bbant\b/gi, "BANT"],
+];
+
+export function applyCommonTechFixes(text: string): string {
+  let res = text;
+  for (const [pattern, replacement] of COMMON_TECH_SPEECH_FIXES) {
+    res = res.replace(pattern, replacement);
+  }
+  return res;
+}
+
 /**
  * Thay các cụm bị phiên âm bằng thuật ngữ chuẩn của câu hỏi hiện tại.
  * Cửa sổ n = 4,3,2,1 từ; chọn khớp có điểm cao nhất (hòa → cụm dài hơn).
@@ -327,9 +386,10 @@ export function normalizeTranscriptWithContext(
   context?: QuestionContext
 ): string {
   if (!rawText || !rawText.trim()) return rawText;
-  const words = rawText.trim().split(/\s+/);
+  let text = applyCommonTechFixes(rawText);
+  const words = text.trim().split(/\s+/);
   const entries = buildVocabEntries(context);
-  if (entries.length === 0) return rawText;
+  if (entries.length === 0) return text;
 
   const out: string[] = [];
   let i = 0;
